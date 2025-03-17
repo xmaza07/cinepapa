@@ -180,10 +180,19 @@ export const getMovieDetails = async (id: number): Promise<MovieDetails | null> 
 // Get TV show details
 export const getTVDetails = async (id: number): Promise<TVDetails | null> => {
   try {
+    console.log(`Fetching TV details from: ${BASE_URL}/tv/${id}?api_key=${API_KEY}&language=en-US`); // Debug log
     const response = await fetch(
       `${BASE_URL}/tv/${id}?api_key=${API_KEY}&language=en-US`
     );
+    
+    if (!response.ok) {
+      console.error(`API error: ${response.status} ${response.statusText}`);
+      return null;
+    }
+    
     const data = await response.json();
+    console.log("Raw TV details data:", data); // Debug log
+    
     return {
       ...formatMediaItem({...data, media_type: 'tv'}),
       episode_run_time: data.episode_run_time,

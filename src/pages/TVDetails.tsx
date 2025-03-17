@@ -25,7 +25,9 @@ const TVDetailsPage = () => {
       try {
         setIsLoading(true);
         const tvId = parseInt(id, 10);
+        console.log("Fetching TV details for ID:", tvId); // Debug log
         const data = await getTVDetails(tvId);
+        console.log("TV details data:", data); // Debug log
         setTVShow(data);
         
         if (data && data.seasons && data.seasons.length > 0) {

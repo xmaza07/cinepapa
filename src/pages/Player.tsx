@@ -1,8 +1,8 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { getMovieDetails, getTVDetails, videoSources } from '@/utils/api';
-import { MovieDetails, TVDetails, VideoSource } from '@/utils/types';
+import { getMovieDetails, getTVDetails, videoSources, getSeasonDetails } from '@/utils/api';
+import { MovieDetails, TVDetails, VideoSource, Episode } from '@/utils/types';
 import Navbar from '@/components/Navbar';
 import { Button } from '@/components/ui/button';
 import { 
@@ -12,8 +12,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ArrowLeft, ExternalLink, Film, Tv, Check } from 'lucide-react';
+import { ArrowLeft, ExternalLink, Film, Tv, Check, SkipBack, SkipForward } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const Player = () => {
   const { id, season, episode } = useParams<{
@@ -27,9 +28,12 @@ const Player = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [mediaType, setMediaType] = useState<'movie' | 'tv'>('movie');
   const [mediaDetails, setMediaDetails] = useState<MovieDetails | TVDetails | null>(null);
+  const [episodes, setEpisodes] = useState<Episode[]>([]);
+  const [currentEpisodeIndex, setCurrentEpisodeIndex] = useState<number>(0);
   
   const navigate = useNavigate();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     const fetchMediaDetails = async () => {
@@ -53,6 +57,15 @@ const Player = () => {
         } else if (isTV && season && episode) {
           const tvDetails = await getTVDetails(mediaId);
           if (tvDetails) {
+            // Fetch episodes for the current season
+            const seasonData = await getSeasonDetails(mediaId, parseInt(season, 10));
+            setEpisodes(seasonData);
+            
+            // Find current episode index
+            const currentEpisodeNumber = parseInt(episode, 10);
+            const episodeIndex = seasonData.findIndex(ep => ep.episode_number === currentEpisodeNumber);
+            setCurrentEpisodeIndex(episodeIndex !== -1 ? episodeIndex : 0);
+            
             setTitle(`${tvDetails.name || 'Untitled Show'} - Season ${season} Episode ${episode}`);
             setMediaDetails(tvDetails);
             updateIframeUrl(mediaId, parseInt(season, 10), parseInt(episode, 10));
@@ -112,6 +125,34 @@ const Player = () => {
     }
   };
   
+  const goToNextEpisode = () => {
+    if (mediaType !== 'tv' || !id || !season || episodes.length === 0 || currentEpisodeIndex >= episodes.length - 1) {
+      return;
+    }
+    
+    const nextEpisode = episodes[currentEpisodeIndex + 1];
+    navigate(`/player/tv/${id}/${season}/${nextEpisode.episode_number}`);
+    
+    toast({
+      title: "Navigation",
+      description: `Playing next episode: ${nextEpisode.name}`
+    });
+  };
+  
+  const goToPreviousEpisode = () => {
+    if (mediaType !== 'tv' || !id || !season || episodes.length === 0 || currentEpisodeIndex <= 0) {
+      return;
+    }
+    
+    const prevEpisode = episodes[currentEpisodeIndex - 1];
+    navigate(`/player/tv/${id}/${season}/${prevEpisode.episode_number}`);
+    
+    toast({
+      title: "Navigation",
+      description: `Playing previous episode: ${prevEpisode.name}`
+    });
+  };
+  
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -162,6 +203,33 @@ const Player = () => {
                 ></iframe>
               </div>
             </div>
+            
+            {/* Episode navigation - Show only for TV */}
+            {mediaType === 'tv' && episodes.length > 1 && (
+              <div className="max-w-6xl mx-auto mt-4 flex justify-center gap-4">
+                <Button
+                  variant="outline"
+                  size={isMobile ? "icon" : "default"}
+                  onClick={goToPreviousEpisode}
+                  disabled={currentEpisodeIndex <= 0}
+                  className="border-white/20 bg-black/50 text-white hover:bg-black/70"
+                >
+                  <SkipBack className="h-4 w-4" />
+                  {!isMobile && <span>Previous Episode</span>}
+                </Button>
+                
+                <Button
+                  variant="outline"
+                  size={isMobile ? "icon" : "default"}
+                  onClick={goToNextEpisode}
+                  disabled={currentEpisodeIndex >= episodes.length - 1}
+                  className="border-white/20 bg-black/50 text-white hover:bg-black/70"
+                >
+                  {!isMobile && <span>Next Episode</span>}
+                  <SkipForward className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
             
             {/* Video source selector */}
             <div className="max-w-6xl mx-auto mt-6 mb-8">

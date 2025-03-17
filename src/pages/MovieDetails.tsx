@@ -6,14 +6,18 @@ import { MovieDetails } from '@/utils/types';
 import { Button } from '@/components/ui/button';
 import Navbar from '@/components/Navbar';
 import ContentRow from '@/components/ContentRow';
-import { Play, Clock, Calendar, Star, ArrowLeft } from 'lucide-react';
+import ReviewSection from '@/components/ReviewSection';
+import { Play, Clock, Calendar, Star, ArrowLeft, Shield } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const MovieDetailsPage = () => {
   const { id } = useParams<{ id: string }>();
   const [movie, setMovie] = useState<MovieDetails | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [backdropLoaded, setBackdropLoaded] = useState(false);
+  const [activeTab, setActiveTab] = useState<'about' | 'reviews'>('about');
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   
   useEffect(() => {
     const fetchMovieDetails = async () => {
@@ -118,6 +122,13 @@ const MovieDetailsPage = () => {
               )}
               
               <div className="flex flex-wrap items-center gap-4 mb-6">
+                {movie.certification && (
+                  <div className="flex items-center bg-white/20 px-2 py-1 rounded">
+                    <Shield className="h-4 w-4 mr-1 text-white" />
+                    <span className="text-white font-medium text-sm">{movie.certification}</span>
+                  </div>
+                )}
+                
                 {movie.release_date && (
                   <div className="flex items-center text-white/80">
                     <Calendar className="h-4 w-4 mr-2" />
@@ -165,57 +176,91 @@ const MovieDetailsPage = () => {
         </div>
       </div>
       
-      {/* Additional movie details */}
+      {/* Tabs for About and Reviews */}
       <div className="max-w-6xl mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="glass p-6 rounded-xl">
-            <h3 className="text-lg font-semibold text-white mb-3">Status</h3>
-            <p className="text-white/80">{movie.status}</p>
-          </div>
-          
-          <div className="glass p-6 rounded-xl">
-            <h3 className="text-lg font-semibold text-white mb-3">Budget</h3>
-            <p className="text-white/80">
-              {movie.budget > 0 
-                ? `$${movie.budget.toLocaleString()}` 
-                : 'Not available'}
-            </p>
-          </div>
-          
-          <div className="glass p-6 rounded-xl">
-            <h3 className="text-lg font-semibold text-white mb-3">Revenue</h3>
-            <p className="text-white/80">
-              {movie.revenue > 0 
-                ? `$${movie.revenue.toLocaleString()}` 
-                : 'Not available'}
-            </p>
-          </div>
+        <div className="flex border-b border-white/10 mb-6">
+          <button
+            className={`py-2 px-4 font-medium ${
+              activeTab === 'about' 
+                ? 'text-white border-b-2 border-accent' 
+                : 'text-white/60 hover:text-white'
+            }`}
+            onClick={() => setActiveTab('about')}
+          >
+            About
+          </button>
+          <button
+            className={`py-2 px-4 font-medium ${
+              activeTab === 'reviews' 
+                ? 'text-white border-b-2 border-accent' 
+                : 'text-white/60 hover:text-white'
+            }`}
+            onClick={() => setActiveTab('reviews')}
+          >
+            Reviews
+          </button>
         </div>
         
-        {/* Production companies */}
-        {movie.production_companies.length > 0 && (
-          <div className="mt-8">
-            <h3 className="text-xl font-semibold text-white mb-4">Production Companies</h3>
-            <div className="flex flex-wrap gap-6">
-              {movie.production_companies.map((company) => (
-                <div key={company.id} className="text-center">
-                  {company.logo_path ? (
-                    <div className="bg-white/10 p-3 rounded-lg w-24 h-16 flex items-center justify-center mb-2">
-                      <img 
-                        src={`${posterSizes.small}${company.logo_path}`} 
-                        alt={company.name} 
-                        className="max-w-full max-h-full"
-                      />
-                    </div>
-                  ) : (
-                    <div className="bg-white/10 p-3 rounded-lg w-24 h-16 flex items-center justify-center mb-2">
-                      <span className="text-white/70 text-xs text-center">{company.name}</span>
-                    </div>
-                  )}
-                  <p className="text-white/70 text-sm">{company.name}</p>
-                </div>
-              ))}
+        {activeTab === 'about' ? (
+          <>
+            {/* Additional movie details */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="glass p-6 rounded-xl">
+                <h3 className="text-lg font-semibold text-white mb-3">Status</h3>
+                <p className="text-white/80">{movie.status}</p>
+              </div>
+              
+              <div className="glass p-6 rounded-xl">
+                <h3 className="text-lg font-semibold text-white mb-3">Budget</h3>
+                <p className="text-white/80">
+                  {movie.budget > 0 
+                    ? `$${movie.budget.toLocaleString()}` 
+                    : 'Not available'}
+                </p>
+              </div>
+              
+              <div className="glass p-6 rounded-xl">
+                <h3 className="text-lg font-semibold text-white mb-3">Revenue</h3>
+                <p className="text-white/80">
+                  {movie.revenue > 0 
+                    ? `$${movie.revenue.toLocaleString()}` 
+                    : 'Not available'}
+                </p>
+              </div>
             </div>
+            
+            {/* Production companies */}
+            {movie.production_companies.length > 0 && (
+              <div className="mt-8">
+                <h3 className="text-xl font-semibold text-white mb-4">Production Companies</h3>
+                <div className="flex flex-wrap gap-6">
+                  {movie.production_companies.map((company) => (
+                    <div key={company.id} className="text-center">
+                      {company.logo_path ? (
+                        <div className="bg-white/10 p-3 rounded-lg w-24 h-16 flex items-center justify-center mb-2">
+                          <img 
+                            src={`${posterSizes.small}${company.logo_path}`} 
+                            alt={company.name} 
+                            className="max-w-full max-h-full"
+                          />
+                        </div>
+                      ) : (
+                        <div className="bg-white/10 p-3 rounded-lg w-24 h-16 flex items-center justify-center mb-2">
+                          <span className="text-white/70 text-xs text-center">{company.name}</span>
+                        </div>
+                      )}
+                      <p className="text-white/70 text-sm">{company.name}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
+        ) : (
+          /* Reviews section */
+          <div className="mb-8">
+            <h3 className="text-xl font-semibold text-white mb-4">User Reviews</h3>
+            <ReviewSection mediaId={parseInt(id!, 10)} mediaType="movie" />
           </div>
         )}
       </div>

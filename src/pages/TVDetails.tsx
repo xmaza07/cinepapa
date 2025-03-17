@@ -6,7 +6,8 @@ import { TVDetails, Episode } from '@/utils/types';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Navbar from '@/components/Navbar';
-import { Play, Calendar, Star, ArrowLeft, List } from 'lucide-react';
+import ReviewSection from '@/components/ReviewSection';
+import { Play, Calendar, Star, ArrowLeft, List, Shield } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 const TVDetailsPage = () => {
@@ -16,6 +17,7 @@ const TVDetailsPage = () => {
   const [selectedSeason, setSelectedSeason] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [backdropLoaded, setBackdropLoaded] = useState(false);
+  const [activeTab, setActiveTab] = useState<'episodes' | 'about' | 'reviews'>('episodes');
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   
@@ -147,6 +149,13 @@ const TVDetailsPage = () => {
               )}
               
               <div className="flex flex-wrap items-center gap-4 mb-6">
+                {tvShow.certification && (
+                  <div className="flex items-center bg-white/20 px-2 py-1 rounded">
+                    <Shield className="h-4 w-4 mr-1 text-white" />
+                    <span className="text-white font-medium text-sm">{tvShow.certification}</span>
+                  </div>
+                )}
+                
                 {tvShow.first_air_date && (
                   <div className="flex items-center text-white/80">
                     <Calendar className="h-4 w-4 mr-2" />
@@ -194,82 +203,179 @@ const TVDetailsPage = () => {
         </div>
       </div>
       
-      {/* Seasons and Episodes */}
+      {/* Content Tabs */}
       <div className="max-w-6xl mx-auto px-4 py-8">
-        <h2 className="text-2xl font-bold text-white mb-6">Seasons & Episodes</h2>
+        <div className="flex border-b border-white/10 mb-6 overflow-x-auto pb-1 hide-scrollbar">
+          <button
+            className={`py-2 px-4 font-medium whitespace-nowrap ${
+              activeTab === 'episodes' 
+                ? 'text-white border-b-2 border-accent' 
+                : 'text-white/60 hover:text-white'
+            }`}
+            onClick={() => setActiveTab('episodes')}
+          >
+            Episodes
+          </button>
+          <button
+            className={`py-2 px-4 font-medium whitespace-nowrap ${
+              activeTab === 'about' 
+                ? 'text-white border-b-2 border-accent' 
+                : 'text-white/60 hover:text-white'
+            }`}
+            onClick={() => setActiveTab('about')}
+          >
+            About
+          </button>
+          <button
+            className={`py-2 px-4 font-medium whitespace-nowrap ${
+              activeTab === 'reviews' 
+                ? 'text-white border-b-2 border-accent' 
+                : 'text-white/60 hover:text-white'
+            }`}
+            onClick={() => setActiveTab('reviews')}
+          >
+            Reviews
+          </button>
+        </div>
         
-        {/* Season selector - wrapped in Tabs component */}
-        <Tabs 
-          defaultValue={selectedSeason.toString()} 
-          onValueChange={(value) => setSelectedSeason(parseInt(value, 10))}
-          className="mb-6"
-        >
-          <TabsList className="bg-white/10 p-1 overflow-x-auto flex-nowrap whitespace-nowrap max-w-full">
-            {tvShow.seasons
-              .filter(season => season.season_number > 0)
-              .map(season => (
-                <TabsTrigger 
-                  key={season.id}
-                  value={season.season_number.toString()}
-                  className={selectedSeason === season.season_number ? 'text-white' : 'text-white/70'}
-                >
-                  Season {season.season_number}
-                </TabsTrigger>
-              ))}
-          </TabsList>
-          
-          {/* We don't need separate TabsContent components since we're managing the episodes state with our own state */}
-        </Tabs>
-        
-        {/* Episodes list */}
-        <div className="space-y-4">
-          {episodes.length > 0 ? (
-            episodes.map(episode => (
-              <div key={episode.id} className="glass p-4 rounded-lg">
-                <div className="flex flex-col md:flex-row gap-4">
-                  {episode.still_path && (
-                    <div className="flex-shrink-0 w-full md:w-48">
-                      <img 
-                        src={`${backdropSizes.small}${episode.still_path}`} 
-                        alt={`${episode.name} still`}
-                        className="w-full h-auto rounded-lg"
-                      />
-                    </div>
-                  )}
-                  
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 className="text-white font-medium">
-                        {episode.episode_number}. {episode.name}
-                      </h3>
-                      {episode.vote_average > 0 && (
-                        <div className="flex items-center text-amber-400 text-sm">
-                          <Star className="h-3 w-3 mr-1 fill-amber-400" />
-                          {episode.vote_average.toFixed(1)}
+        {/* Episodes Tab */}
+        {activeTab === 'episodes' && (
+          <>
+            <h2 className="text-2xl font-bold text-white mb-6">Seasons & Episodes</h2>
+            
+            {/* Season selector - wrapped in Tabs component */}
+            <Tabs 
+              defaultValue={selectedSeason.toString()} 
+              onValueChange={(value) => setSelectedSeason(parseInt(value, 10))}
+              className="mb-6"
+            >
+              <TabsList className="bg-white/10 p-1 overflow-x-auto flex-nowrap whitespace-nowrap max-w-full">
+                {tvShow.seasons
+                  .filter(season => season.season_number > 0)
+                  .map(season => (
+                    <TabsTrigger 
+                      key={season.id}
+                      value={season.season_number.toString()}
+                      className={selectedSeason === season.season_number ? 'text-white' : 'text-white/70'}
+                    >
+                      Season {season.season_number}
+                    </TabsTrigger>
+                  ))}
+              </TabsList>
+              
+              {/* We don't need separate TabsContent components since we're managing the episodes state with our own state */}
+            </Tabs>
+            
+            {/* Episodes list */}
+            <div className="space-y-4">
+              {episodes.length > 0 ? (
+                episodes.map(episode => (
+                  <div key={episode.id} className="glass p-4 rounded-lg">
+                    <div className="flex flex-col md:flex-row gap-4">
+                      {episode.still_path && (
+                        <div className="flex-shrink-0 w-full md:w-48">
+                          <img 
+                            src={`${backdropSizes.small}${episode.still_path}`} 
+                            alt={`${episode.name} still`}
+                            className="w-full h-auto rounded-lg"
+                          />
                         </div>
                       )}
+                      
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between mb-2">
+                          <h3 className="text-white font-medium">
+                            {episode.episode_number}. {episode.name}
+                          </h3>
+                          {episode.vote_average > 0 && (
+                            <div className="flex items-center text-amber-400 text-sm">
+                              <Star className="h-3 w-3 mr-1 fill-amber-400" />
+                              {episode.vote_average.toFixed(1)}
+                            </div>
+                          )}
+                        </div>
+                        
+                        <p className="text-white/70 text-sm mb-3 line-clamp-2">{episode.overview}</p>
+                        
+                        <Button 
+                          onClick={() => handlePlayEpisode(episode.season_number, episode.episode_number)}
+                          size="sm"
+                          className="bg-accent hover:bg-accent/80 text-white flex items-center"
+                        >
+                          <Play className="h-3 w-3 mr-1" />
+                          Play
+                        </Button>
+                      </div>
                     </div>
-                    
-                    <p className="text-white/70 text-sm mb-3 line-clamp-2">{episode.overview}</p>
-                    
-                    <Button 
-                      onClick={() => handlePlayEpisode(episode.season_number, episode.episode_number)}
-                      size="sm"
-                      className="bg-accent hover:bg-accent/80 text-white flex items-center"
-                    >
-                      <Play className="h-3 w-3 mr-1" />
-                      Play
-                    </Button>
                   </div>
+                ))
+              ) : (
+                <div className="text-center py-8 text-white/70">
+                  No episodes available for this season.
+                </div>
+              )}
+            </div>
+          </>
+        )}
+        
+        {/* About Tab */}
+        {activeTab === 'about' && (
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold text-white mb-6">About the Show</h2>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+              <div className="glass p-6 rounded-xl">
+                <h3 className="text-lg font-semibold text-white mb-3">Status</h3>
+                <p className="text-white/80">{tvShow.status}</p>
+              </div>
+              
+              <div className="glass p-6 rounded-xl">
+                <h3 className="text-lg font-semibold text-white mb-3">Episodes</h3>
+                <p className="text-white/80">{tvShow.number_of_episodes}</p>
+              </div>
+              
+              <div className="glass p-6 rounded-xl">
+                <h3 className="text-lg font-semibold text-white mb-3">Seasons</h3>
+                <p className="text-white/80">{tvShow.number_of_seasons}</p>
+              </div>
+            </div>
+            
+            {/* Production companies */}
+            {tvShow.production_companies.length > 0 && (
+              <div className="mb-8">
+                <h3 className="text-xl font-semibold text-white mb-4">Production Companies</h3>
+                <div className="flex flex-wrap gap-6">
+                  {tvShow.production_companies.map((company) => (
+                    <div key={company.id} className="text-center">
+                      {company.logo_path ? (
+                        <div className="bg-white/10 p-3 rounded-lg w-24 h-16 flex items-center justify-center mb-2">
+                          <img 
+                            src={`${posterSizes.small}${company.logo_path}`} 
+                            alt={company.name} 
+                            className="max-w-full max-h-full"
+                          />
+                        </div>
+                      ) : (
+                        <div className="bg-white/10 p-3 rounded-lg w-24 h-16 flex items-center justify-center mb-2">
+                          <span className="text-white/70 text-xs text-center">{company.name}</span>
+                        </div>
+                      )}
+                      <p className="text-white/70 text-sm">{company.name}</p>
+                    </div>
+                  ))}
                 </div>
               </div>
-            ))
-          ) : (
-            <div className="text-center py-8 text-white/70">
-              No episodes available for this season.
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        )}
+        
+        {/* Reviews Tab */}
+        {activeTab === 'reviews' && (
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold text-white mb-6">User Reviews</h2>
+            <ReviewSection mediaId={parseInt(id!, 10)} mediaType="tv" />
+          </div>
+        )}
       </div>
     </div>
   );

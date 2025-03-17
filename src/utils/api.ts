@@ -1,4 +1,4 @@
-import { Media, MovieDetails, TVDetails, Episode } from './types';
+import { Media, MovieDetails, TVDetails, Episode, Review } from './types';
 
 const API_KEY = '297f1b91919bae59d50ed815f8d2e14c';
 const BASE_URL = 'https://api.themoviedb.org/3';
@@ -158,9 +158,25 @@ export const getTopRatedTVShows = async (): Promise<Media[]> => {
 export const getMovieDetails = async (id: number): Promise<MovieDetails | null> => {
   try {
     const response = await fetch(
-      `${BASE_URL}/movie/${id}?api_key=${API_KEY}&language=en-US`
+      `${BASE_URL}/movie/${id}?api_key=${API_KEY}&language=en-US&append_to_response=release_dates`
     );
+    
+    if (!response.ok) {
+      console.error(`API error: ${response.status} ${response.statusText}`);
+      return null;
+    }
+    
     const data = await response.json();
+    
+    // Get the US certification
+    let certification = "";
+    if (data.release_dates && data.release_dates.results) {
+      const usReleases = data.release_dates.results.find((country: any) => country.iso_3166_1 === "US");
+      if (usReleases && usReleases.release_dates && usReleases.release_dates.length > 0) {
+        certification = usReleases.release_dates[0].certification || "";
+      }
+    }
+    
     return {
       ...formatMediaItem({...data, media_type: 'movie'}),
       runtime: data.runtime,
@@ -170,6 +186,7 @@ export const getMovieDetails = async (id: number): Promise<MovieDetails | null> 
       budget: data.budget,
       revenue: data.revenue,
       production_companies: data.production_companies,
+      certification: certification,
     } as MovieDetails;
   } catch (error) {
     console.error(`Error fetching movie details for id ${id}:`, error);
@@ -180,9 +197,9 @@ export const getMovieDetails = async (id: number): Promise<MovieDetails | null> 
 // Get TV show details
 export const getTVDetails = async (id: number): Promise<TVDetails | null> => {
   try {
-    console.log(`Fetching TV details from: ${BASE_URL}/tv/${id}?api_key=${API_KEY}&language=en-US`); // Debug log
+    console.log(`Fetching TV details from: ${BASE_URL}/tv/${id}?api_key=${API_KEY}&language=en-US&append_to_response=content_ratings`); // Debug log
     const response = await fetch(
-      `${BASE_URL}/tv/${id}?api_key=${API_KEY}&language=en-US`
+      `${BASE_URL}/tv/${id}?api_key=${API_KEY}&language=en-US&append_to_response=content_ratings`
     );
     
     if (!response.ok) {
@@ -192,6 +209,15 @@ export const getTVDetails = async (id: number): Promise<TVDetails | null> => {
     
     const data = await response.json();
     console.log("Raw TV details data:", data); // Debug log
+    
+    // Get the US certification
+    let certification = "";
+    if (data.content_ratings && data.content_ratings.results) {
+      const usRating = data.content_ratings.results.find((country: any) => country.iso_3166_1 === "US");
+      if (usRating) {
+        certification = usRating.rating || "";
+      }
+    }
     
     return {
       ...formatMediaItem({...data, media_type: 'tv'}),
@@ -203,6 +229,7 @@ export const getTVDetails = async (id: number): Promise<TVDetails | null> => {
       number_of_seasons: data.number_of_seasons,
       seasons: data.seasons,
       production_companies: data.production_companies,
+      certification: certification,
     } as TVDetails;
   } catch (error) {
     console.error(`Error fetching TV details for id ${id}:`, error);
@@ -223,6 +250,29 @@ export const getSeasonDetails = async (
     return data.episodes;
   } catch (error) {
     console.error(`Error fetching season ${seasonNumber} for TV show ${id}:`, error);
+    return [];
+  }
+};
+
+// Get reviews for movie or TV show
+export const getReviews = async (
+  id: number,
+  mediaType: 'movie' | 'tv'
+): Promise<Review[]> => {
+  try {
+    const response = await fetch(
+      `${BASE_URL}/${mediaType}/${id}/reviews?api_key=${API_KEY}&language=en-US`
+    );
+    
+    if (!response.ok) {
+      console.error(`API error: ${response.status} ${response.statusText}`);
+      return [];
+    }
+    
+    const data = await response.json();
+    return data.results;
+  } catch (error) {
+    console.error(`Error fetching reviews for ${mediaType} ${id}:`, error);
     return [];
   }
 };

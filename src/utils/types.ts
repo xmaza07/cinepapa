@@ -21,6 +21,7 @@ export interface MovieDetails extends Media {
   budget: number;
   revenue: number;
   production_companies: Company[];
+  certification?: string;
 }
 
 export interface TVDetails extends Media {
@@ -32,6 +33,7 @@ export interface TVDetails extends Media {
   number_of_seasons: number;
   seasons: Season[];
   production_companies: Company[];
+  certification?: string;
 }
 
 export interface Genre {
@@ -69,5 +71,20 @@ export interface Episode {
 export interface VideoSource {
   key: string;
   name: string;
+  url: string;
+}
+
+export interface Review {
+  id: string;
+  author: string;
+  author_details: {
+    name: string;
+    username: string;
+    avatar_path: string | null;
+    rating: number | null;
+  };
+  content: string;
+  created_at: string;
+  updated_at: string;
   url: string;
 }

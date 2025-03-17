@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { cn } from "@/lib/utils";
@@ -8,9 +9,10 @@ import { Star } from 'lucide-react';
 interface MediaCardProps {
   media: Media;
   className?: string;
+  featured?: boolean; // Added the featured property to fix the type error
 }
 
-const MediaCard = ({ media, className }: MediaCardProps) => {
+const MediaCard = ({ media, className, featured = false }: MediaCardProps) => {
   // Added console log for debugging
   console.log(`MediaCard: ${media.media_type}/${media.id} - ${media.title || media.name}`);
   

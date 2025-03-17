@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Navbar from '@/components/Navbar';
 import { Play, Calendar, Star, ArrowLeft, List } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const TVDetailsPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -16,6 +17,7 @@ const TVDetailsPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [backdropLoaded, setBackdropLoaded] = useState(false);
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   
   // Fetch TV show details
   useEffect(() => {
@@ -196,23 +198,28 @@ const TVDetailsPage = () => {
       <div className="max-w-6xl mx-auto px-4 py-8">
         <h2 className="text-2xl font-bold text-white mb-6">Seasons & Episodes</h2>
         
-        {/* Season selector */}
-        <div className="mb-6">
-          <TabsList className="bg-white/10 p-1">
+        {/* Season selector - wrapped in Tabs component */}
+        <Tabs 
+          defaultValue={selectedSeason.toString()} 
+          onValueChange={(value) => setSelectedSeason(parseInt(value, 10))}
+          className="mb-6"
+        >
+          <TabsList className="bg-white/10 p-1 overflow-x-auto flex-nowrap whitespace-nowrap max-w-full">
             {tvShow.seasons
               .filter(season => season.season_number > 0)
               .map(season => (
                 <TabsTrigger 
                   key={season.id}
                   value={season.season_number.toString()}
-                  onClick={() => setSelectedSeason(season.season_number)}
                   className={selectedSeason === season.season_number ? 'text-white' : 'text-white/70'}
                 >
                   Season {season.season_number}
                 </TabsTrigger>
               ))}
           </TabsList>
-        </div>
+          
+          {/* We don't need separate TabsContent components since we're managing the episodes state with our own state */}
+        </Tabs>
         
         {/* Episodes list */}
         <div className="space-y-4">

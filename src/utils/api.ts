@@ -1,4 +1,3 @@
-
 import { Media, MovieDetails, TVDetails, Episode } from './types';
 
 const API_KEY = '297f1b91919bae59d50ed815f8d2e14c';
@@ -20,7 +19,7 @@ export const backdropSizes = {
   original: `${IMAGE_BASE_URL}/original`,
 };
 
-// Video sources for iframe
+// Video sources for iframe - expanded with more options
 export const videoSources = [
   {
     key: 'vidlink',
@@ -42,6 +41,27 @@ export const videoSources = [
     getMovieUrl: (id: number) => `https://www.2embed.cc/embed/${id}`,
     getTVUrl: (id: number, season: number, episode: number) => 
       `https://www.2embed.cc/embed/tv/${id}&s=${season}&e=${episode}`,
+  },
+  {
+    key: 'multiembed',
+    name: 'MultiEmbed',
+    getMovieUrl: (id: number) => `https://multiembed.mov/video_id=${id}&tmdb=1`,
+    getTVUrl: (id: number, season: number, episode: number) => 
+      `https://multiembed.mov/video_id=${id}&tmdb=1&s=${season}&e=${episode}`,
+  },
+  {
+    key: '2embed-org',
+    name: '2Embed.org',
+    getMovieUrl: (id: number) => `https://2embed.org/embed/movie/${id}`,
+    getTVUrl: (id: number, season: number, episode: number) => 
+      `https://2embed.org/embed/tv/${id}/${season}/${episode}`,
+  },
+  {
+    key: 'vidfast',
+    name: 'VidFast',
+    getMovieUrl: (id: number) => `https://vidfast.pro/movie/${id}?autoPlay=true`,
+    getTVUrl: (id: number, season: number, episode: number) => 
+      `https://vidfast.pro/tv/${id}/${season}/${episode}?autoPlay=true`,
   },
 ];
 

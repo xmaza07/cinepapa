@@ -7,10 +7,15 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import MediaGrid from '@/components/MediaGrid';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Tv } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Tv, ChevronDown } from 'lucide-react';
+
+const ITEMS_PER_PAGE = 20;
 
 const TVShows = () => {
   const [activeTab, setActiveTab] = useState<'popular' | 'top_rated'>('popular');
+  const [popularPage, setPopularPage] = useState(1);
+  const [topRatedPage, setTopRatedPage] = useState(1);
   
   const popularTVQuery = useQuery({
     queryKey: ['popularTV'],
@@ -21,6 +26,32 @@ const TVShows = () => {
     queryKey: ['topRatedTV'],
     queryFn: getTopRatedTVShows,
   });
+  
+  const handleShowMorePopular = () => {
+    setPopularPage(prev => prev + 1);
+  };
+  
+  const handleShowMoreTopRated = () => {
+    setTopRatedPage(prev => prev + 1);
+  };
+  
+  // Calculate displayed items based on current page
+  const displayedPopularTV = popularTVQuery.data 
+    ? popularTVQuery.data.slice(0, popularPage * ITEMS_PER_PAGE)
+    : [];
+  
+  const displayedTopRatedTV = topRatedTVQuery.data 
+    ? topRatedTVQuery.data.slice(0, topRatedPage * ITEMS_PER_PAGE)
+    : [];
+  
+  // Check if there are more items to load
+  const hasMorePopular = popularTVQuery.data 
+    ? popularTVQuery.data.length > displayedPopularTV.length
+    : false;
+    
+  const hasMoreTopRated = topRatedTVQuery.data
+    ? topRatedTVQuery.data.length > displayedTopRatedTV.length
+    : false;
   
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -45,7 +76,21 @@ const TVShows = () => {
               ) : popularTVQuery.isError ? (
                 <div className="py-12 text-center text-white">Error loading TV shows. Please try again.</div>
               ) : (
-                <MediaGrid media={popularTVQuery.data || []} title="Popular TV Shows" />
+                <>
+                  <MediaGrid media={displayedPopularTV} title="Popular TV Shows" />
+                  
+                  {hasMorePopular && (
+                    <div className="flex justify-center my-8">
+                      <Button 
+                        onClick={handleShowMorePopular}
+                        variant="outline"
+                        className="border-white/10 text-white hover:bg-white/10"
+                      >
+                        Show More <ChevronDown className="ml-2 h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
+                </>
               )}
             </TabsContent>
             
@@ -55,7 +100,21 @@ const TVShows = () => {
               ) : topRatedTVQuery.isError ? (
                 <div className="py-12 text-center text-white">Error loading TV shows. Please try again.</div>
               ) : (
-                <MediaGrid media={topRatedTVQuery.data || []} title="Top Rated TV Shows" />
+                <>
+                  <MediaGrid media={displayedTopRatedTV} title="Top Rated TV Shows" />
+                  
+                  {hasMoreTopRated && (
+                    <div className="flex justify-center my-8">
+                      <Button 
+                        onClick={handleShowMoreTopRated}
+                        variant="outline"
+                        className="border-white/10 text-white hover:bg-white/10"
+                      >
+                        Show More <ChevronDown className="ml-2 h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
+                </>
               )}
             </TabsContent>
           </Tabs>

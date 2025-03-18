@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getPopularMovies, getTopRatedMovies } from '@/utils/api';
 import { Media } from '@/utils/types';
@@ -7,10 +7,15 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import MediaGrid from '@/components/MediaGrid';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Film } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Film, ChevronDown } from 'lucide-react';
+
+const ITEMS_PER_PAGE = 20;
 
 const Movies = () => {
   const [activeTab, setActiveTab] = useState<'popular' | 'top_rated'>('popular');
+  const [popularPage, setPopularPage] = useState(1);
+  const [topRatedPage, setTopRatedPage] = useState(1);
   
   const popularMoviesQuery = useQuery({
     queryKey: ['popularMovies'],
@@ -21,6 +26,32 @@ const Movies = () => {
     queryKey: ['topRatedMovies'],
     queryFn: getTopRatedMovies,
   });
+  
+  const handleShowMorePopular = () => {
+    setPopularPage(prev => prev + 1);
+  };
+  
+  const handleShowMoreTopRated = () => {
+    setTopRatedPage(prev => prev + 1);
+  };
+  
+  // Calculate displayed items based on current page
+  const displayedPopularMovies = popularMoviesQuery.data 
+    ? popularMoviesQuery.data.slice(0, popularPage * ITEMS_PER_PAGE)
+    : [];
+  
+  const displayedTopRatedMovies = topRatedMoviesQuery.data 
+    ? topRatedMoviesQuery.data.slice(0, topRatedPage * ITEMS_PER_PAGE)
+    : [];
+  
+  // Check if there are more items to load
+  const hasMorePopular = popularMoviesQuery.data 
+    ? popularMoviesQuery.data.length > displayedPopularMovies.length
+    : false;
+    
+  const hasMoreTopRated = topRatedMoviesQuery.data
+    ? topRatedMoviesQuery.data.length > displayedTopRatedMovies.length
+    : false;
   
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -45,7 +76,21 @@ const Movies = () => {
               ) : popularMoviesQuery.isError ? (
                 <div className="py-12 text-center text-white">Error loading movies. Please try again.</div>
               ) : (
-                <MediaGrid media={popularMoviesQuery.data || []} title="Popular Movies" />
+                <>
+                  <MediaGrid media={displayedPopularMovies} title="Popular Movies" />
+                  
+                  {hasMorePopular && (
+                    <div className="flex justify-center my-8">
+                      <Button 
+                        onClick={handleShowMorePopular}
+                        variant="outline"
+                        className="border-white/10 text-white hover:bg-white/10"
+                      >
+                        Show More <ChevronDown className="ml-2 h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
+                </>
               )}
             </TabsContent>
             
@@ -55,7 +100,21 @@ const Movies = () => {
               ) : topRatedMoviesQuery.isError ? (
                 <div className="py-12 text-center text-white">Error loading movies. Please try again.</div>
               ) : (
-                <MediaGrid media={topRatedMoviesQuery.data || []} title="Top Rated Movies" />
+                <>
+                  <MediaGrid media={displayedTopRatedMovies} title="Top Rated Movies" />
+                  
+                  {hasMoreTopRated && (
+                    <div className="flex justify-center my-8">
+                      <Button 
+                        onClick={handleShowMoreTopRated}
+                        variant="outline"
+                        className="border-white/10 text-white hover:bg-white/10"
+                      >
+                        Show More <ChevronDown className="ml-2 h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
+                </>
               )}
             </TabsContent>
           </Tabs>

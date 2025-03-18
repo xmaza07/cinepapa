@@ -3,7 +3,9 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Home, Film, Tv, TrendingUp, Menu, X } from 'lucide-react';
+import { Search, Home, Film, Tv, TrendingUp, Menu, X, Keyboard } from 'lucide-react';
+import { useToast } from "@/components/ui/use-toast";
+import InstallPWAButton from './InstallPWAButton';
 
 interface NavItem {
   title: string;
@@ -15,8 +17,10 @@ const Navbar = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [showKeyboardHint, setShowKeyboardHint] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  const { toast } = useToast();
   
   const navItems: NavItem[] = [
     { title: 'Home', path: '/', icon: <Home className="h-4 w-4 mr-2" /> },
@@ -39,6 +43,17 @@ const Navbar = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // Show keyboard hint on first visit
+  useEffect(() => {
+    const hasSeenHint = localStorage.getItem('hasSeenKeyboardHint');
+    if (!hasSeenHint) {
+      setTimeout(() => {
+        setShowKeyboardHint(true);
+        localStorage.setItem('hasSeenKeyboardHint', 'true');
+      }, 5000);
+    }
+  }, []);
+
   // Handle search submission
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,6 +62,16 @@ const Navbar = () => {
       setSearchQuery('');
       setIsMobileMenuOpen(false);
     }
+  };
+
+  // Show keyboard shortcut toast
+  const showKeyboardShortcutToast = () => {
+    toast({
+      title: "Keyboard Shortcut",
+      description: "Press / to quickly focus the search bar from anywhere",
+      duration: 5000,
+    });
+    setShowKeyboardHint(false);
   };
 
   return (
@@ -85,20 +110,38 @@ const Navbar = () => {
         
         {/* Search Form */}
         <form onSubmit={handleSearch} className="hidden md:flex items-center relative ml-4">
-          <div className="relative">
+          <div className="relative group">
             <Search className="h-4 w-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
             <Input
               type="search"
-              placeholder="Search..."
+              placeholder="Search... (Press /)"
               className="w-[180px] bg-white/10 border-white/10 pl-9 text-white placeholder:text-white/50 focus:bg-white/15"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
+            
+            {/* Keyboard shortcut hint */}
+            {showKeyboardHint && (
+              <div 
+                className="absolute right-0 top-full mt-2 bg-background border border-white/10 p-2 rounded text-xs text-white animate-fade-in z-50"
+                onClick={showKeyboardShortcutToast}
+              >
+                <div className="flex items-center cursor-pointer">
+                  <Keyboard className="h-3 w-3 mr-1 text-accent" />
+                  Press / for quick search
+                </div>
+              </div>
+            )}
           </div>
           <Button type="submit" variant="ghost" size="sm" className="ml-2 hidden">
             Search
           </Button>
         </form>
+        
+        {/* Install PWA Button */}
+        <div className="hidden md:block ml-2">
+          <InstallPWAButton />
+        </div>
         
         {/* Mobile Menu Button */}
         <button
@@ -145,6 +188,11 @@ const Navbar = () => {
                 />
               </div>
             </form>
+            
+            {/* Mobile Install PWA Button */}
+            <div className="pt-2">
+              <InstallPWAButton />
+            </div>
           </div>
         </div>
       )}

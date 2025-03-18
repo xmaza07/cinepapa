@@ -1,3 +1,4 @@
+
 import { Media, MovieDetails, TVDetails, Episode, Review } from './types';
 
 const API_KEY = '297f1b91919bae59d50ed815f8d2e14c';
@@ -19,7 +20,7 @@ export const backdropSizes = {
   original: `${IMAGE_BASE_URL}/original`,
 };
 
-// Video sources for iframe - expanded with more options
+// Enhanced video sources with more options
 export const videoSources = [
   {
     key: 'vidlink',
@@ -57,11 +58,116 @@ export const videoSources = [
       `https://2embed.org/embed/tv/${id}/${season}/${episode}`,
   },
   {
+    key: 'autoembed-co',
+    name: 'AutoEmbed.co',
+    getMovieUrl: (id: number) => `https://autoembed.co/movie/tmdb/${id}`,
+    getTVUrl: (id: number, season: number, episode: number) => 
+      `https://autoembed.co/tv/tmdb/${id}-${season}-${episode}`,
+  },
+  {
+    key: 'vidsrc-xyz',
+    name: 'VidSrc.xyz',
+    getMovieUrl: (id: number) => `https://vidsrc.xyz/embed/movie?tmdb=${id}&ds_lang=en`,
+    getTVUrl: (id: number, season: number, episode: number) => 
+      `https://vidsrc.xyz/embed/tv?tmdb=${id}&season=${season}&episode=${episode}&ds_lang=en`,
+  },
+  {
+    key: 'moviesapi',
+    name: 'MoviesAPI',
+    getMovieUrl: (id: number) => `https://moviesapi.club/movie/${id}`,
+    getTVUrl: (id: number, season: number, episode: number) => 
+      `https://moviesapi.club/tv/${id}-${season}-${episode}`,
+  },
+  {
+    key: 'nontongo',
+    name: 'NontonGo',
+    getMovieUrl: (id: number) => `https://www.NontonGo.win/embed/movie/${id}`,
+    getTVUrl: (id: number, season: number, episode: number) => 
+      `https://www.NontonGo.win/embed/tv/${id}/${season}/${episode}`,
+  },
+  {
+    key: '111movies',
+    name: '111Movies',
+    getMovieUrl: (id: number) => `https://111movies.com/movie/${id}`,
+    getTVUrl: (id: number, season: number, episode: number) => 
+      `https://111movies.com/tv/${id}/${season}/${episode}`,
+  },
+  {
+    key: 'flicky',
+    name: 'Flicky',
+    getMovieUrl: (id: number) => `https://flicky.host/embed/movie?id=${id}`,
+    getTVUrl: (id: number, season: number, episode: number) => 
+      `https://flicky.host/embed/tv?id=${id}/${season}/${episode}`,
+  },
+  {
+    key: 'vidjoy',
+    name: 'VidJoy',
+    getMovieUrl: (id: number) => `https://vidjoy.pro/embed/movie/${id}`,
+    getTVUrl: (id: number, season: number, episode: number) => 
+      `https://vidjoy.pro/embed/tv/${id}/${season}/${episode}`,
+  },
+  {
+    key: 'embed-su',
+    name: 'Embed.su',
+    getMovieUrl: (id: number) => `https://embed.su/embed/movie/${id}`,
+    getTVUrl: (id: number, season: number, episode: number) => 
+      `https://embed.su/embed/tv/${id}/${season}/${episode}`,
+  },
+  {
+    key: 'primewire',
+    name: 'PrimeWire',
+    getMovieUrl: (id: number) => `https://www.primewire.tf/embed/movie?tmdb=${id}`,
+    getTVUrl: (id: number, season: number, episode: number) => 
+      `https://www.primewire.tf/embed/tv?tmdb=${id}&season=${season}&episode=${episode}`,
+  },
+  {
+    key: 'smashystream',
+    name: 'SmashyStream',
+    getMovieUrl: (id: number) => `https://embed.smashystream.com/playere.php?tmdb=${id}`,
+    getTVUrl: (id: number, season: number, episode: number) => 
+      `https://embed.smashystream.com/playere.php?tmdb=${id}&season=${season}&episode=${episode}`,
+  },
+  {
+    key: 'vidstream',
+    name: 'VidStream',
+    getMovieUrl: (id: number) => `https://vidstream.site/embed/movie/${id}`,
+    getTVUrl: (id: number, season: number, episode: number) => 
+      `https://vidstream.site/embed/tv/${id}/${episode}`,
+  },
+  {
+    key: 'videasy',
+    name: 'Videasy',
+    getMovieUrl: (id: number) => `https://player.videasy.net/movie/${id}`,
+    getTVUrl: (id: number, season: number, episode: number) => 
+      `https://player.videasy.net/tv/${id}/${season}/${episode}`,
+  },
+  {
+    key: 'vidsrc-wtf-2',
+    name: 'VidSrc.wtf (API 2)',
+    getMovieUrl: (id: number) => `https://vidsrc.wtf/api/2/movie?id=${id}`,
+    getTVUrl: (id: number, season: number, episode: number) => 
+      `https://vidsrc.wtf/api/2/tv?id=${id}&s=${season}&e=${episode}`,
+  },
+  {
+    key: 'vidsrc-wtf-3',
+    name: 'VidSrc.wtf (API 3)',
+    getMovieUrl: (id: number) => `https://vidsrc.wtf/api/3/movie?id=${id}`,
+    getTVUrl: (id: number, season: number, episode: number) => 
+      `https://vidsrc.wtf/api/3/tv?id=${id}&s=${season}&e=${episode}`,
+  },
+  {
     key: 'vidfast',
     name: 'VidFast',
     getMovieUrl: (id: number) => `https://vidfast.pro/movie/${id}?autoPlay=true`,
     getTVUrl: (id: number, season: number, episode: number) => 
       `https://vidfast.pro/tv/${id}/${season}/${episode}?autoPlay=true`,
+  },
+  {
+    key: 'vidbinge',
+    name: 'VidBinge',
+    getMovieUrl: (id: number) => `https://vidbinge.dev/embed/movie/${id}`,
+    getTVUrl: (id: number, season: number, episode: number) => 
+      `https://vidbinge.dev/embed/tv/${id}/${season}/${episode}`,
   },
 ];
 
@@ -278,12 +384,12 @@ export const getReviews = async (
 };
 
 // Search for movies and TV shows
-export const searchMedia = async (query: string): Promise<Media[]> => {
+export const searchMedia = async (query: string, page: number = 1): Promise<Media[]> => {
   try {
     const response = await fetch(
       `${BASE_URL}/search/multi?api_key=${API_KEY}&language=en-US&query=${encodeURIComponent(
         query
-      )}&include_adult=false`
+      )}&page=${page}&include_adult=false`
     );
     const data = await response.json();
     return data.results

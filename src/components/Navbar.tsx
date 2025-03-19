@@ -1,9 +1,8 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Home, Film, Tv, TrendingUp, Menu, X, Keyboard } from 'lucide-react';
+import { Search, Home, Film, Tv, TrendingUp, Menu, X, Keyboard, ArrowRight } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
 import InstallPWAButton from './InstallPWAButton';
 
@@ -29,7 +28,6 @@ const Navbar = () => {
     { title: 'Trending', path: '/trending', icon: <TrendingUp className="h-4 w-4 mr-2" /> },
   ];
 
-  // Handle scroll event to change navbar appearance
   useEffect(() => {
     const handleScroll = () => {
       if (window.scrollY > 50) {
@@ -43,7 +41,6 @@ const Navbar = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Show keyboard hint on first visit
   useEffect(() => {
     const hasSeenHint = localStorage.getItem('hasSeenKeyboardHint');
     if (!hasSeenHint) {
@@ -54,17 +51,21 @@ const Navbar = () => {
     }
   }, []);
 
-  // Handle search submission
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
       navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
       setSearchQuery('');
       setIsMobileMenuOpen(false);
+      
+      toast({
+        title: "Searching...",
+        description: `Finding results for "${searchQuery.trim()}"`,
+        duration: 2000,
+      });
     }
   };
 
-  // Show keyboard shortcut toast
   const showKeyboardShortcutToast = () => {
     toast({
       title: "Keyboard Shortcut",
@@ -81,7 +82,6 @@ const Navbar = () => {
       }`}
     >
       <div className="container mx-auto px-4 md:px-6 flex items-center justify-between">
-        {/* Logo */}
         <Link 
           to="/" 
           className="flex items-center text-white text-xl font-bold transition-transform hover:scale-105"
@@ -90,7 +90,6 @@ const Navbar = () => {
           <span className="ml-1">Stream</span>
         </Link>
         
-        {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center space-x-1">
           {navItems.map((item) => (
             <Link
@@ -108,19 +107,17 @@ const Navbar = () => {
           ))}
         </nav>
         
-        {/* Search Form */}
         <form onSubmit={handleSearch} className="hidden md:flex items-center relative ml-4">
           <div className="relative group">
             <Search className="h-4 w-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
             <Input
               type="search"
               placeholder="Search... (Press /)"
-              className="w-[180px] bg-white/10 border-white/10 pl-9 text-white placeholder:text-white/50 focus:bg-white/15"
+              className="w-[180px] lg:w-[220px] bg-white/10 border-white/10 pl-9 text-white placeholder:text-white/50 focus:bg-white/15"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
             
-            {/* Keyboard shortcut hint */}
             {showKeyboardHint && (
               <div 
                 className="absolute right-0 top-full mt-2 bg-background border border-white/10 p-2 rounded text-xs text-white animate-fade-in z-50"
@@ -133,17 +130,21 @@ const Navbar = () => {
               </div>
             )}
           </div>
-          <Button type="submit" variant="ghost" size="sm" className="ml-2 hidden">
-            Search
+          <Button 
+            type="submit" 
+            size="sm" 
+            variant="ghost" 
+            className="ml-2 bg-white/10 hover:bg-white/20 text-white transition-colors"
+          >
+            <ArrowRight className="h-4 w-4" />
+            <span className="sr-only">Search</span>
           </Button>
         </form>
         
-        {/* Install PWA Button */}
         <div className="hidden md:block ml-2">
           <InstallPWAButton />
         </div>
         
-        {/* Mobile Menu Button */}
         <button
           className="md:hidden text-white p-2"
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -157,7 +158,6 @@ const Navbar = () => {
         </button>
       </div>
       
-      {/* Mobile Menu */}
       {isMobileMenuOpen && (
         <div className="md:hidden glass animate-fade-in">
           <div className="px-4 py-3 space-y-3">
@@ -177,7 +177,7 @@ const Navbar = () => {
               </Link>
             ))}
             <form onSubmit={handleSearch} className="pt-2">
-              <div className="relative">
+              <div className="relative flex items-center">
                 <Search className="h-4 w-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
                 <Input
                   type="search"
@@ -186,10 +186,17 @@ const Navbar = () => {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
+                <Button 
+                  type="submit" 
+                  size="sm" 
+                  variant="ghost" 
+                  className="ml-2 bg-white/10 hover:bg-white/20 text-white"
+                >
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
               </div>
             </form>
             
-            {/* Mobile Install PWA Button */}
             <div className="pt-2">
               <InstallPWAButton />
             </div>

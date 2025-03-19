@@ -1,7 +1,7 @@
 
 import { Media } from '@/utils/types';
 import MediaCard from './MediaCard';
-import { motion } from 'framer-motion';
+import { motion, Variants } from 'framer-motion';
 
 interface MediaGridProps {
   media: Media[];
@@ -18,7 +18,7 @@ const MediaGrid = ({ media, title, listView = false }: MediaGridProps) => {
     );
   }
 
-  const container = {
+  const container: Variants = {
     hidden: { opacity: 0 },
     show: {
       opacity: 1,
@@ -28,7 +28,7 @@ const MediaGrid = ({ media, title, listView = false }: MediaGridProps) => {
     }
   };
 
-  const item = {
+  const item: Variants = {
     hidden: { opacity: 0, y: 20 },
     show: { opacity: 1, y: 0 }
   };
@@ -44,31 +44,31 @@ const MediaGrid = ({ media, title, listView = false }: MediaGridProps) => {
           initial="hidden"
           animate="show"
         >
-          {media.map((item, index) => (
+          {media.map((mediaItem, index) => (
             <motion.div 
-              key={`${item.media_type}-${item.id}`}
+              key={`${mediaItem.media_type}-${mediaItem.id}`}
               variants={item}
               className="glass p-4 rounded-lg hover:bg-white/10 transition-colors"
             >
               <div className="flex gap-4 items-center">
                 <div className="flex-shrink-0 w-16 h-24 md:w-20 md:h-30 overflow-hidden rounded-md">
-                  <MediaCard key={`${item.media_type}-${item.id}`} media={item} className="h-full w-full" minimal />
+                  <MediaCard key={`${mediaItem.media_type}-${mediaItem.id}`} media={mediaItem} className="h-full w-full" minimal />
                 </div>
                 <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-white">{item.title || item.name}</h3>
+                  <h3 className="text-lg font-semibold text-white">{mediaItem.title || mediaItem.name}</h3>
                   <div className="flex items-center text-sm text-white/70 mb-2">
                     <span>
-                      {item.media_type === 'movie'
-                        ? item.release_date?.substring(0, 4)
-                        : item.first_air_date?.substring(0, 4)}
+                      {mediaItem.media_type === 'movie'
+                        ? mediaItem.release_date?.substring(0, 4)
+                        : mediaItem.first_air_date?.substring(0, 4)}
                     </span>
-                    {item.vote_average > 0 && (
+                    {mediaItem.vote_average > 0 && (
                       <span className="ml-3 flex items-center text-amber-400">
-                        ★ {item.vote_average.toFixed(1)}
+                        ★ {mediaItem.vote_average.toFixed(1)}
                       </span>
                     )}
                   </div>
-                  <p className="text-white/70 text-sm line-clamp-2">{item.overview}</p>
+                  <p className="text-white/70 text-sm line-clamp-2">{mediaItem.overview}</p>
                 </div>
               </div>
             </motion.div>
@@ -81,9 +81,9 @@ const MediaGrid = ({ media, title, listView = false }: MediaGridProps) => {
           initial="hidden"
           animate="show"
         >
-          {media.map((item) => (
-            <motion.div key={`${item.media_type}-${item.id}`} variants={item}>
-              <MediaCard media={item} />
+          {media.map((mediaItem) => (
+            <motion.div key={`${mediaItem.media_type}-${mediaItem.id}`} variants={item}>
+              <MediaCard media={mediaItem} />
             </motion.div>
           ))}
         </motion.div>

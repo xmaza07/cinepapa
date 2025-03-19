@@ -4,21 +4,44 @@ import { Link } from 'react-router-dom';
 import { cn } from "@/lib/utils";
 import { Media } from '@/utils/types';
 import { posterSizes } from '@/utils/api';
-import { Star } from 'lucide-react';
+import { Star, Info } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 interface MediaCardProps {
   media: Media;
   className?: string;
   featured?: boolean;
+  minimal?: boolean;
 }
 
-const MediaCard = ({ media, className, featured = false }: MediaCardProps) => {
+const MediaCard = ({ media, className, featured = false, minimal = false }: MediaCardProps) => {
   // Added console log for debugging
   console.log(`MediaCard: ${media.media_type}/${media.id} - ${media.title || media.name}`);
   
   const detailPath = media.media_type === 'movie' 
     ? `/movie/${media.id}` 
     : `/tv/${media.id}`;
+  
+  if (minimal) {
+    return (
+      <Link 
+        to={detailPath} 
+        className={cn(
+          "block h-full",
+          className
+        )}
+      >
+        <div className="relative h-full rounded-md overflow-hidden shadow-md">
+          <img
+            src={`${posterSizes.medium}${media.poster_path}`}
+            alt={media.title || media.name || 'Media Poster'}
+            className="object-cover w-full h-full"
+            loading="lazy"
+          />
+        </div>
+      </Link>
+    );
+  }
   
   return (
     <Link 
@@ -36,6 +59,15 @@ const MediaCard = ({ media, className, featured = false }: MediaCardProps) => {
           loading="lazy"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover/card:opacity-100 transition-opacity duration-300" />
+        
+        <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/90 to-transparent translate-y-full group-hover/card:translate-y-0 transition-transform duration-300">
+          <p className="text-white/80 text-xs line-clamp-3">{media.overview}</p>
+          <div className="flex justify-center mt-2">
+            <button className="glass px-3 py-1 rounded text-xs flex items-center gap-1 text-white hover:bg-white/20 transition-colors">
+              <Info size={12} /> Details
+            </button>
+          </div>
+        </div>
       </div>
       
       <div className="mt-2 px-1 transition-all duration-300 group-hover/card:translate-y-0">

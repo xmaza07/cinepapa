@@ -11,6 +11,7 @@ import { Media } from '@/utils/types';
 import Navbar from '@/components/Navbar';
 import Hero from '@/components/Hero';
 import ContentRow from '@/components/ContentRow';
+import Footer from '@/components/Footer';
 
 const Index = () => {
   const [trendingMedia, setTrendingMedia] = useState<Media[]>([]);
@@ -19,6 +20,7 @@ const Index = () => {
   const [topRatedMovies, setTopRatedMovies] = useState<Media[]>([]);
   const [topRatedTVShows, setTopRatedTVShows] = useState<Media[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [contentVisible, setContentVisible] = useState(false);
   
   // Fetch data on component mount
   useEffect(() => {
@@ -49,6 +51,11 @@ const Index = () => {
         console.error('Error fetching homepage data:', error);
       } finally {
         setIsLoading(false);
+        
+        // Delay showing content for a smoother animation
+        setTimeout(() => {
+          setContentVisible(true);
+        }, 300);
       }
     };
     
@@ -68,8 +75,8 @@ const Index = () => {
           {/* Hero section with featured content */}
           {trendingMedia.length > 0 && <Hero media={trendingMedia.slice(0, 5)} />}
           
-          {/* Content rows */}
-          <div className="mt-8 md:mt-12">
+          {/* Content rows with staggered animations */}
+          <div className={`mt-8 md:mt-12 transition-opacity duration-500 ${contentVisible ? 'opacity-100' : 'opacity-0'}`}>
             <ContentRow title="Trending Now" media={trendingMedia} featured />
             <ContentRow title="Popular Movies" media={popularMovies} />
             <ContentRow title="Popular TV Shows" media={popularTVShows} />
@@ -78,6 +85,8 @@ const Index = () => {
           </div>
         </>
       )}
+      
+      <Footer />
     </main>
   );
 };

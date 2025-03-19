@@ -9,7 +9,7 @@ import { Star } from 'lucide-react';
 interface MediaCardProps {
   media: Media;
   className?: string;
-  featured?: boolean; // Added the featured property to fix the type error
+  featured?: boolean;
 }
 
 const MediaCard = ({ media, className, featured = false }: MediaCardProps) => {
@@ -21,17 +21,24 @@ const MediaCard = ({ media, className, featured = false }: MediaCardProps) => {
     : `/tv/${media.id}`;
   
   return (
-    <Link to={detailPath} className={cn("relative block group/card", className)}>
+    <Link 
+      to={detailPath} 
+      className={cn(
+        "relative block group/card transform transition-all duration-300 hover:-translate-y-2",
+        className
+      )}
+    >
       <div className="relative rounded-md overflow-hidden shadow-md aspect-[2/3]">
         <img
           src={`${posterSizes.medium}${media.poster_path}`}
           alt={media.title || media.name || 'Media Poster'}
-          className="object-cover w-full h-full transition-transform duration-300 group-hover/card:scale-105"
+          className="object-cover w-full h-full transition-transform duration-500 group-hover/card:scale-110"
+          loading="lazy"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover/card:opacity-100 transition-opacity duration-300" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover/card:opacity-100 transition-opacity duration-300" />
       </div>
       
-      <div className="mt-2 px-1">
+      <div className="mt-2 px-1 transition-all duration-300 group-hover/card:translate-y-0">
         <h3 className="text-white font-medium line-clamp-1 text-balance">{media.title || media.name}</h3>
         
         <div className="flex items-center justify-between mt-1 text-sm text-white/70">
@@ -43,7 +50,7 @@ const MediaCard = ({ media, className, featured = false }: MediaCardProps) => {
           
           {media.vote_average > 0 && (
             <div className="flex items-center text-amber-400">
-              <Star className="h-4 w-4 mr-1 fill-amber-400" />
+              <Star className="h-4 w-4 mr-1 fill-amber-400 group-hover/card:animate-pulse" />
               {media.vote_average.toFixed(1)}
             </div>
           )}

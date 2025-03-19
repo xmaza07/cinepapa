@@ -13,6 +13,7 @@ interface HeroProps {
 const Hero = ({ media }: HeroProps) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [isTransitioning, setIsTransitioning] = useState(false);
   const navigate = useNavigate();
   const featuredMedia = media[currentIndex];
 
@@ -21,12 +22,22 @@ const Hero = ({ media }: HeroProps) => {
     if (media.length === 0) return;
     
     const interval = setInterval(() => {
-      setIsLoaded(false);
-      setCurrentIndex((prevIndex) => (prevIndex + 1) % media.length);
+      setIsTransitioning(true);
+      setTimeout(() => {
+        setIsLoaded(false);
+        setCurrentIndex((prevIndex) => (prevIndex + 1) % media.length);
+      }, 500);
     }, 10000);
     
     return () => clearInterval(interval);
   }, [media]);
+
+  // Reset transitioning state when new image is loaded
+  useEffect(() => {
+    if (isLoaded) {
+      setIsTransitioning(false);
+    }
+  }, [isLoaded]);
 
   if (!featuredMedia) return null;
   
@@ -59,9 +70,9 @@ const Hero = ({ media }: HeroProps) => {
       <img
         src={`${backdropSizes.original}${featuredMedia.backdrop_path}`}
         alt={title}
-        className={`w-full h-full object-cover transition-opacity duration-700 ${
-          isLoaded ? 'opacity-100' : 'opacity-0'
-        }`}
+        className={`w-full h-full object-cover transition-all duration-1000 ${
+          isLoaded ? 'opacity-100 scale-100' : 'opacity-0 scale-105'
+        } ${isTransitioning ? 'opacity-50' : ''}`}
         onLoad={() => setIsLoaded(true)}
       />
       
@@ -69,8 +80,10 @@ const Hero = ({ media }: HeroProps) => {
       <div className="absolute inset-0 hero-gradient" />
       
       {/* Content */}
-      <div className="absolute bottom-0 left-0 right-0 p-6 md:p-12 lg:p-16 flex flex-col items-start max-w-3xl animate-slide-up">
-        <div className="flex items-center space-x-3 mb-2">
+      <div className={`absolute bottom-0 left-0 right-0 p-6 md:p-12 lg:p-16 flex flex-col items-start max-w-3xl transition-all duration-1000 ${
+        isLoaded && !isTransitioning ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'
+      }`}>
+        <div className="flex items-center space-x-3 mb-2 animate-fade-in">
           <span className="px-2 py-1 rounded bg-accent text-xs font-medium text-white uppercase tracking-wider">
             {featuredMedia.media_type === 'movie' ? 'Movie' : 'TV Series'}
           </span>
@@ -94,7 +107,7 @@ const Hero = ({ media }: HeroProps) => {
         <div className="flex space-x-4">
           <Button 
             onClick={handlePlay}
-            className="bg-accent hover:bg-accent/80 text-white flex items-center"
+            className="bg-accent hover:bg-accent/80 text-white flex items-center transition-transform hover:scale-105"
           >
             <Play className="h-4 w-4 mr-2" />
             Play
@@ -102,7 +115,7 @@ const Hero = ({ media }: HeroProps) => {
           <Button 
             onClick={handleMoreInfo}
             variant="outline" 
-            className="border-white/20 bg-black/50 text-white hover:bg-black/70 flex items-center"
+            className="border-white/20 bg-black/50 text-white hover:bg-black/70 flex items-center transition-transform hover:scale-105"
           >
             <Info className="h-4 w-4 mr-2" />
             More Info
@@ -121,8 +134,11 @@ const Hero = ({ media }: HeroProps) => {
                 : 'bg-white/40 hover:bg-white/60'
             }`}
             onClick={() => {
-              setIsLoaded(false);
-              setCurrentIndex(index);
+              setIsTransitioning(true);
+              setTimeout(() => {
+                setIsLoaded(false);
+                setCurrentIndex(index);
+              }, 300);
             }}
             aria-label={`View featured item ${index + 1}`}
           />

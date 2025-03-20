@@ -5,6 +5,9 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
+import { AuthProvider } from "@/hooks/use-auth";
+import { WatchHistoryProvider } from "@/hooks/use-watch-history";
+import { UserPreferencesProvider } from "@/hooks/use-user-preferences";
 import Index from "./pages/Index";
 import Movies from "./pages/Movies";
 import TVShows from "./pages/TVShows";
@@ -13,8 +16,8 @@ import MovieDetails from "./pages/MovieDetails";
 import TVDetails from "./pages/TVDetails";
 import Player from "./pages/Player";
 import Search from "./pages/Search";
+import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
-import Footer from "./components/Footer";
 
 const queryClient = new QueryClient();
 
@@ -35,6 +38,7 @@ const AnimatedRoutes = () => {
         <Route path="/player/movie/:id" element={<Player />} />
         <Route path="/player/tv/:id/:season/:episode" element={<Player />} />
         <Route path="/search" element={<Search />} />
+        <Route path="/profile" element={<Profile />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </AnimatePresence>
@@ -44,11 +48,17 @@ const AnimatedRoutes = () => {
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <AnimatedRoutes />
-      </BrowserRouter>
+      <AuthProvider>
+        <UserPreferencesProvider>
+          <WatchHistoryProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <AnimatedRoutes />
+            </BrowserRouter>
+          </WatchHistoryProvider>
+        </UserPreferencesProvider>
+      </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );

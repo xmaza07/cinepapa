@@ -8,12 +8,15 @@ import {
   getTopRatedTVShows
 } from '@/utils/api';
 import { Media } from '@/utils/types';
+import { useAuth } from '@/hooks/use-auth';
 import Navbar from '@/components/Navbar';
 import Hero from '@/components/Hero';
 import ContentRow from '@/components/ContentRow';
+import ContinueWatching from '@/components/ContinueWatching';
 import Footer from '@/components/Footer';
 
 const Index = () => {
+  const { user } = useAuth();
   const [trendingMedia, setTrendingMedia] = useState<Media[]>([]);
   const [popularMovies, setPopularMovies] = useState<Media[]>([]);
   const [popularTVShows, setPopularTVShows] = useState<Media[]>([]);
@@ -21,6 +24,7 @@ const Index = () => {
   const [topRatedTVShows, setTopRatedTVShows] = useState<Media[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [contentVisible, setContentVisible] = useState(false);
+  const [heroItem, setHeroItem] = useState<Media | null>(null);
   
   // Fetch data on component mount
   useEffect(() => {
@@ -41,8 +45,17 @@ const Index = () => {
           getTopRatedTVShows()
         ]);
         
+        // Filter content with backdrop images
+        const filteredTrendingData = trendingData.filter(item => item.backdrop_path);
+        
+        // Set a random trending item for hero
+        if (filteredTrendingData.length > 0) {
+          const randomIndex = Math.floor(Math.random() * Math.min(5, filteredTrendingData.length));
+          setHeroItem(filteredTrendingData[randomIndex]);
+        }
+        
         // Update state with fetched data
-        setTrendingMedia(trendingData.filter(item => item.backdrop_path));
+        setTrendingMedia(filteredTrendingData);
         setPopularMovies(popularMoviesData);
         setPopularTVShows(popularTVData);
         setTopRatedMovies(topMoviesData);
@@ -73,10 +86,13 @@ const Index = () => {
       ) : (
         <>
           {/* Hero section with featured content */}
-          {trendingMedia.length > 0 && <Hero media={trendingMedia.slice(0, 5)} />}
+          {heroItem && <Hero media={[heroItem]} />}
           
           {/* Content rows with staggered animations */}
           <div className={`mt-8 md:mt-12 transition-opacity duration-500 ${contentVisible ? 'opacity-100' : 'opacity-0'}`}>
+            {/* Continue watching section - only appears for logged in users with watch history */}
+            {user && <ContinueWatching />}
+            
             <ContentRow title="Trending Now" media={trendingMedia} featured />
             <ContentRow title="Popular Movies" media={popularMovies} />
             <ContentRow title="Popular TV Shows" media={popularTVShows} />

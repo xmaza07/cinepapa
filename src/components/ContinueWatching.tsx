@@ -30,7 +30,8 @@ const ContinueWatching = () => {
       try {
         setIsLoading(true);
         const data = await getContinueWatching();
-        setContinueItems(data);
+        // Use type assertion to ensure types match
+        setContinueItems(data as WatchHistoryItem[]);
       } catch (error) {
         console.error('Error fetching continue watching:', error);
       } finally {

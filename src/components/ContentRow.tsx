@@ -6,11 +6,19 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface ContentRowProps {
   title: string;
-  media: Media[];
+  items: Media[];  // Changed from media to items
+  isLoading?: boolean;
+  mediaType?: string;
   featured?: boolean;
 }
 
-const ContentRow = ({ title, media, featured = false }: ContentRowProps) => {
+const ContentRow = ({ 
+  title, 
+  items, // Changed from media to items
+  isLoading = false,
+  mediaType,
+  featured = false 
+}: ContentRowProps) => {
   const rowRef = useRef<HTMLDivElement>(null);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [showRightArrow, setShowRightArrow] = useState(true);
@@ -38,7 +46,7 @@ const ContentRow = ({ title, media, featured = false }: ContentRowProps) => {
     rowRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
   };
   
-  if (!media || media.length === 0) return null;
+  if (!items || items.length === 0) return null;
   
   return (
     <div 
@@ -71,7 +79,7 @@ const ContentRow = ({ title, media, featured = false }: ContentRowProps) => {
           className="flex overflow-x-auto hide-scrollbar gap-4 pb-4"
           onScroll={handleScroll}
         >
-          {media.map((item, index) => (
+          {items.map((item, index) => (
             <div 
               key={`${item.media_type}-${item.id}`} 
               className={featured ? 'flex-none w-[220px]' : 'flex-none w-[160px] md:w-[180px]'}

@@ -46,7 +46,13 @@ export const useWatchHistory = () => {
 
         if (error) throw error;
         
-        setHistory(data || []);
+        // Type assertion to handle the Supabase data correctly
+        const typedData = data?.map(item => ({
+          ...item,
+          media_type: item.media_type as 'movie' | 'tv'
+        })) || [];
+        
+        setHistory(typedData as WatchHistoryItem[]);
       } catch (error: any) {
         console.error('Error fetching watch history:', error);
         toast({
@@ -178,7 +184,11 @@ export const useWatchHistory = () => {
       
       if (error) throw error;
       
-      return data;
+      // Type assertion for the media_type
+      return data ? {
+        ...data,
+        media_type: data.media_type as 'movie' | 'tv'
+      } as WatchHistoryItem : null;
     } catch (error: any) {
       console.error('Error fetching watch history item:', error);
       return null;
@@ -200,7 +210,11 @@ export const useWatchHistory = () => {
         
       if (error) throw error;
       
-      return data || [];
+      // Type assertion for media_type
+      return (data || []).map(item => ({
+        ...item,
+        media_type: item.media_type as 'movie' | 'tv'
+      })) as WatchHistoryItem[];
     } catch (error: any) {
       console.error('Error fetching continue watching:', error);
       return [];

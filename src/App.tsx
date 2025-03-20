@@ -17,6 +17,7 @@ import TVDetails from "./pages/TVDetails";
 import Player from "./pages/Player";
 import Search from "./pages/Search";
 import Profile from "./pages/Profile";
+import WatchHistory from "./pages/WatchHistory";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -39,6 +40,7 @@ const AnimatedRoutes = () => {
         <Route path="/player/tv/:id/:season/:episode" element={<Player />} />
         <Route path="/search" element={<Search />} />
         <Route path="/profile" element={<Profile />} />
+        <Route path="/watch-history" element={<WatchHistory />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </AnimatePresence>

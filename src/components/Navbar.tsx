@@ -1,8 +1,9 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Home, Film, Tv, TrendingUp, Menu, X, Keyboard, ArrowRight } from 'lucide-react';
+import { Search, Home, Film, Tv, TrendingUp, Menu, X, Keyboard, ArrowRight, History } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
 import InstallPWAButton from './InstallPWAButton';
 
@@ -26,6 +27,7 @@ const Navbar = () => {
     { title: 'Movies', path: '/movies', icon: <Film className="h-4 w-4 mr-2" /> },
     { title: 'TV Shows', path: '/tv', icon: <Tv className="h-4 w-4 mr-2" /> },
     { title: 'Trending', path: '/trending', icon: <TrendingUp className="h-4 w-4 mr-2" /> },
+    { title: 'Watch History', path: '/watch-history', icon: <History className="h-4 w-4 mr-2" /> },
   ];
 
   useEffect(() => {

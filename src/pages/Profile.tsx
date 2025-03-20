@@ -75,7 +75,8 @@ const Profile = () => {
         <div className="glass p-6 rounded-lg mb-8">
           <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
             <Avatar className="h-24 w-24 bg-accent text-white text-2xl">
-              <AvatarImage src={user.user_metadata?.avatar_url} alt={user.email || 'User'} />
+              {/* Fix: Remove avatar_url which doesn't exist in the type */}
+              <AvatarImage src="" alt={user.email || 'User'} />
               <AvatarFallback>
                 {user.email ? user.email.substring(0, 2).toUpperCase() : 'U'}
               </AvatarFallback>
@@ -83,7 +84,8 @@ const Profile = () => {
             
             <div className="flex-1">
               <h1 className="text-2xl font-bold text-white mb-1">
-                {user.user_metadata?.full_name || user.email || 'User Profile'}
+                {/* Fix: Use name instead of full_name which doesn't exist in the type */}
+                {user.user_metadata?.name || user.email || 'User Profile'}
               </h1>
               <p className="text-white/70">{user.email}</p>
               <div className="mt-4 flex flex-wrap gap-3">

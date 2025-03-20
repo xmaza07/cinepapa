@@ -12,9 +12,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ArrowLeft, ExternalLink, Film, Tv, Check, SkipBack, SkipForward } from 'lucide-react';
+import { ArrowLeft, ExternalLink, Film, Tv, Check, SkipBack, SkipForward, Heart, Bookmark } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useWatchHistory } from '@/hooks/use-watch-history';
+import { useAuth } from '@/hooks/use-auth';
 
 const Player = () => {
   const { id, season, episode } = useParams<{
@@ -30,10 +32,23 @@ const Player = () => {
   const [mediaDetails, setMediaDetails] = useState<MovieDetails | TVDetails | null>(null);
   const [episodes, setEpisodes] = useState<Episode[]>([]);
   const [currentEpisodeIndex, setCurrentEpisodeIndex] = useState<number>(0);
-  
+
   const navigate = useNavigate();
   const { toast } = useToast();
   const isMobile = useIsMobile();
+  const { user } = useAuth();
+  const { 
+    addToWatchHistory, 
+    addToFavorites, 
+    addToWatchlist, 
+    removeFromFavorites,
+    removeFromWatchlist,
+    isInFavorites,
+    isInWatchlist
+  } = useWatchHistory();
+
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [isInMyWatchlist, setIsInMyWatchlist] = useState(false);
 
   useEffect(() => {
     const fetchMediaDetails = async () => {
@@ -53,6 +68,32 @@ const Player = () => {
             setTitle(movieDetails.title || 'Untitled Movie');
             setMediaDetails(movieDetails);
             updateIframeUrl(mediaId);
+
+            // Check if the movie is in favorites or watchlist
+            setIsFavorite(isInFavorites(mediaId, 'movie'));
+            setIsInMyWatchlist(isInWatchlist(mediaId, 'movie'));
+            
+            // Automatically add to watch history
+            if (user) {
+              const duration = movieDetails.runtime * 60; // convert minutes to seconds
+              addToWatchHistory(
+                {
+                  id: mediaId,
+                  title: movieDetails.title || 'Untitled Movie',
+                  poster_path: movieDetails.poster_path,
+                  backdrop_path: movieDetails.backdrop_path,
+                  overview: movieDetails.overview,
+                  vote_average: movieDetails.vote_average,
+                  media_type: 'movie',
+                  genre_ids: movieDetails.genres.map(g => g.id)
+                },
+                0, // Initial position
+                duration, 
+                undefined, 
+                undefined,
+                selectedSource
+              );
+            }
           }
         } else if (isTV && season && episode) {
           const tvDetails = await getTVDetails(mediaId);
@@ -66,9 +107,36 @@ const Player = () => {
             const episodeIndex = seasonData.findIndex(ep => ep.episode_number === currentEpisodeNumber);
             setCurrentEpisodeIndex(episodeIndex !== -1 ? episodeIndex : 0);
             
-            setTitle(`${tvDetails.name || 'Untitled Show'} - Season ${season} Episode ${episode}`);
+            const episodeTitle = seasonData.find(ep => ep.episode_number === currentEpisodeNumber)?.name || '';
+            setTitle(`${tvDetails.name || 'Untitled Show'} - Season ${season} Episode ${episode}${episodeTitle ? ': ' + episodeTitle : ''}`);
             setMediaDetails(tvDetails);
             updateIframeUrl(mediaId, parseInt(season, 10), parseInt(episode, 10));
+
+            // Check if the TV show is in favorites or watchlist
+            setIsFavorite(isInFavorites(mediaId, 'tv'));
+            setIsInMyWatchlist(isInWatchlist(mediaId, 'tv'));
+            
+            // Automatically add to watch history
+            if (user) {
+              const duration = tvDetails.episode_run_time[0] ? tvDetails.episode_run_time[0] * 60 : 1800; // Default to 30 minutes if not provided
+              addToWatchHistory(
+                {
+                  id: mediaId,
+                  name: tvDetails.name || 'Untitled Show',
+                  poster_path: tvDetails.poster_path,
+                  backdrop_path: tvDetails.backdrop_path,
+                  overview: tvDetails.overview,
+                  vote_average: tvDetails.vote_average,
+                  media_type: 'tv',
+                  genre_ids: tvDetails.genres.map(g => g.id)
+                },
+                0, // Initial position
+                duration,
+                parseInt(season, 10),
+                parseInt(episode, 10),
+                selectedSource
+              );
+            }
           }
         } else {
           navigate('/');
@@ -86,7 +154,7 @@ const Player = () => {
     };
     
     fetchMediaDetails();
-  }, [id, season, episode, navigate, toast]);
+  }, [id, season, episode, navigate, toast, user, addToWatchHistory, isInFavorites, isInWatchlist, selectedSource]);
   
   // Update iframe URL when selected source changes
   useEffect(() => {
@@ -152,6 +220,66 @@ const Player = () => {
       description: `Playing previous episode: ${prevEpisode.name}`
     });
   };
+
+  const toggleFavorite = () => {
+    if (!mediaDetails || !id) return;
+    
+    const mediaId = parseInt(id, 10);
+    
+    if (isFavorite) {
+      removeFromFavorites(mediaId, mediaType);
+      setIsFavorite(false);
+      toast({
+        title: "Removed from favorites",
+        description: `${title} has been removed from your favorites.`
+      });
+    } else {
+      addToFavorites({
+        media_id: mediaId,
+        media_type: mediaType,
+        title: (mediaDetails as MovieDetails).title || (mediaDetails as TVDetails).name || '',
+        poster_path: mediaDetails.poster_path,
+        backdrop_path: mediaDetails.backdrop_path,
+        overview: mediaDetails.overview,
+        rating: mediaDetails.vote_average
+      });
+      setIsFavorite(true);
+      toast({
+        title: "Added to favorites",
+        description: `${title} has been added to your favorites.`
+      });
+    }
+  };
+
+  const toggleWatchlist = () => {
+    if (!mediaDetails || !id) return;
+    
+    const mediaId = parseInt(id, 10);
+    
+    if (isInMyWatchlist) {
+      removeFromWatchlist(mediaId, mediaType);
+      setIsInMyWatchlist(false);
+      toast({
+        title: "Removed from watchlist",
+        description: `${title} has been removed from your watchlist.`
+      });
+    } else {
+      addToWatchlist({
+        media_id: mediaId,
+        media_type: mediaType,
+        title: (mediaDetails as MovieDetails).title || (mediaDetails as TVDetails).name || '',
+        poster_path: mediaDetails.poster_path,
+        backdrop_path: mediaDetails.backdrop_path,
+        overview: mediaDetails.overview,
+        rating: mediaDetails.vote_average
+      });
+      setIsInMyWatchlist(true);
+      toast({
+        title: "Added to watchlist",
+        description: `${title} has been added to your watchlist.`
+      });
+    }
+  };
   
   return (
     <div className="min-h-screen bg-background">
@@ -170,19 +298,45 @@ const Player = () => {
           
           <h1 className="text-xl font-medium text-white truncate flex-1">{title}</h1>
           
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={goToDetails} 
-            className="border-white/20 bg-black/50 text-white hover:bg-black/70"
-          >
-            {mediaType === 'movie' ? (
-              <Film className="h-4 w-4 mr-2" />
-            ) : (
-              <Tv className="h-4 w-4 mr-2" />
+          <div className="flex gap-2">
+            {user && (
+              <>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={toggleFavorite}
+                  className={`border-white/20 ${isFavorite ? 'bg-accent text-white' : 'bg-black/50 text-white hover:bg-black/70'}`}
+                >
+                  <Heart className={`h-4 w-4 ${isFavorite ? 'fill-white' : ''}`} />
+                  {!isMobile && <span>{isFavorite ? 'Favorited' : 'Add to Favorites'}</span>}
+                </Button>
+                
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={toggleWatchlist}
+                  className={`border-white/20 ${isInMyWatchlist ? 'bg-accent text-white' : 'bg-black/50 text-white hover:bg-black/70'}`}
+                >
+                  <Bookmark className={`h-4 w-4 ${isInMyWatchlist ? 'fill-white' : ''}`} />
+                  {!isMobile && <span>{isInMyWatchlist ? 'In Watchlist' : 'Add to Watchlist'}</span>}
+                </Button>
+              </>
             )}
-            View Details
-          </Button>
+            
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={goToDetails} 
+              className="border-white/20 bg-black/50 text-white hover:bg-black/70"
+            >
+              {mediaType === 'movie' ? (
+                <Film className="h-4 w-4 mr-2" />
+              ) : (
+                <Tv className="h-4 w-4 mr-2" />
+              )}
+              {!isMobile && 'View Details'}
+            </Button>
+          </div>
         </div>
         
         {isLoading ? (

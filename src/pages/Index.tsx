@@ -53,7 +53,7 @@ const Index = () => {
         <Navbar />
         
         {/* Hero Section */}
-        {heroItem && <Hero media={heroItem} />}
+        {heroItem && <Hero media={[heroItem]} />}
         
         {/* Main Content */}
         <div className="relative z-10 pt-8">

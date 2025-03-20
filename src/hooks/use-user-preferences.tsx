@@ -1,7 +1,7 @@
 
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { useAuth } from './use-auth';
-import { supabase } from '@/utils/supabase';
+import { getLocalData, saveLocalData, generateId } from '@/utils/supabase';
 import { toast } from './use-toast';
 
 interface UserPreferences {
@@ -27,9 +27,9 @@ export const UserPreferencesProvider = ({ children }: { children: ReactNode }) =
   const [userPreferences, setUserPreferences] = useState<UserPreferences | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   
-  // Fetch user preferences when user changes
+  // Fetch user preferences from localStorage when user changes
   useEffect(() => {
-    const fetchUserPreferences = async () => {
+    const fetchUserPreferences = () => {
       if (!user) {
         setUserPreferences(null);
         setIsLoading(false);
@@ -38,17 +38,11 @@ export const UserPreferencesProvider = ({ children }: { children: ReactNode }) =
       
       try {
         setIsLoading(true);
-        const { data, error } = await supabase
-          .from('user_preferences')
-          .select('*')
-          .eq('user_id', user.id)
-          .single();
-          
-        if (error && error.code !== 'PGRST116') { // PGRST116 means no rows returned
-          throw error;
-        }
+        // Get preferences from localStorage
+        const key = `flicker-preferences-${user.id}`;
+        const storedPreferences = getLocalData<UserPreferences | null>(key, null);
         
-        setUserPreferences(data || { user_id: user.id });
+        setUserPreferences(storedPreferences || { user_id: user.id });
       } catch (error) {
         console.error('Error fetching user preferences:', error);
         toast({
@@ -64,47 +58,36 @@ export const UserPreferencesProvider = ({ children }: { children: ReactNode }) =
     fetchUserPreferences();
   }, [user]);
   
-  // Update user preferences
+  // Update user preferences in localStorage
   const updatePreferences = async (preferences: Partial<UserPreferences>) => {
     if (!user) return;
     
     try {
       const currentTime = new Date().toISOString();
+      const key = `flicker-preferences-${user.id}`;
       
       if (userPreferences?.id) {
         // Update existing preferences
-        const { error } = await supabase
-          .from('user_preferences')
-          .update({
-            ...preferences,
-            updated_at: currentTime
-          })
-          .eq('id', userPreferences.id);
-          
-        if (error) {
-          throw error;
-        }
+        const updatedPreferences = {
+          ...userPreferences,
+          ...preferences,
+          updated_at: currentTime
+        };
         
-        setUserPreferences(prev => prev ? { ...prev, ...preferences, updated_at: currentTime } : null);
+        saveLocalData(key, updatedPreferences);
+        setUserPreferences(updatedPreferences);
       } else {
-        // Insert new preferences
-        const { data, error } = await supabase
-          .from('user_preferences')
-          .insert([{
-            user_id: user.id,
-            ...preferences,
-            created_at: currentTime,
-            updated_at: currentTime
-          }])
-          .select();
-          
-        if (error) {
-          throw error;
-        }
+        // Create new preferences
+        const newPreferences = {
+          id: generateId(),
+          user_id: user.id,
+          ...preferences,
+          created_at: currentTime,
+          updated_at: currentTime
+        };
         
-        if (data && data.length > 0) {
-          setUserPreferences(data[0]);
-        }
+        saveLocalData(key, newPreferences);
+        setUserPreferences(newPreferences);
       }
       
       toast({

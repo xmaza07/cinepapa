@@ -1,67 +1,85 @@
-
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
-import { supabase } from '@/utils/supabase';
-import { User, AuthResponse } from '@supabase/supabase-js';
 import { toast } from './use-toast';
+
+interface User {
+  id: string;
+  email: string;
+  user_metadata?: {
+    name?: string;
+  };
+}
 
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
-  signIn: (email: string, password: string) => Promise<AuthResponse>;
-  signUp: (email: string, password: string) => Promise<AuthResponse>;
+  signIn: (email: string, password: string) => Promise<any>;
+  signUp: (email: string, password: string) => Promise<any>;
   signOut: () => Promise<void>;
-  resetPassword: (email: string) => Promise<{ data: any; error: any }>;
+  resetPassword: (email: string) => Promise<any>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+const createGuestAccount = (): User => {
+  return {
+    id: `guest-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+    email: 'guest@example.com',
+    user_metadata: {
+      name: 'Guest'
+    }
+  };
+};
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Check for user session on mount
   useEffect(() => {
-    const checkSession = async () => {
+    const checkUser = () => {
       try {
         setIsLoading(true);
         
-        // Get session data
-        const { data: { session } } = await supabase.auth.getSession();
-        setUser(session?.user || null);
+        const storedUser = localStorage.getItem('flicker-user');
         
-        // Listen for auth state changes
-        const { data: { subscription } } = await supabase.auth.onAuthStateChange(
-          (_event, session) => {
-            setUser(session?.user || null);
-          }
-        );
-        
-        return () => {
-          subscription.unsubscribe();
-        };
+        if (storedUser) {
+          setUser(JSON.parse(storedUser));
+        } else {
+          const guestUser = createGuestAccount();
+          localStorage.setItem('flicker-user', JSON.stringify(guestUser));
+          setUser(guestUser);
+        }
       } catch (error) {
-        console.error('Error checking auth session:', error);
+        console.error('Error checking user:', error);
+        const guestUser = createGuestAccount();
+        localStorage.setItem('flicker-user', JSON.stringify(guestUser));
+        setUser(guestUser);
       } finally {
         setIsLoading(false);
       }
     };
     
-    checkSession();
+    checkUser();
   }, []);
 
-  // Sign in with email and password
   const signIn = async (email: string, password: string) => {
     try {
-      const response = await supabase.auth.signInWithPassword({
+      const newUser = {
+        id: `user-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
         email,
-        password,
+        user_metadata: {
+          name: email.split('@')[0]
+        }
+      };
+      
+      localStorage.setItem('flicker-user', JSON.stringify(newUser));
+      setUser(newUser);
+      
+      toast({
+        title: "Signed in",
+        description: `Welcome ${newUser.user_metadata?.name || 'User'}!`
       });
       
-      if (response.error) {
-        throw response.error;
-      }
-      
-      return response;
+      return { data: { user: newUser }, error: null };
     } catch (error) {
       console.error('Error signing in:', error);
       toast({
@@ -73,37 +91,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // Sign up with email and password
   const signUp = async (email: string, password: string) => {
-    try {
-      const response = await supabase.auth.signUp({
-        email,
-        password,
-      });
-      
-      if (response.error) {
-        throw response.error;
-      }
-      
-      return response;
-    } catch (error) {
-      console.error('Error signing up:', error);
-      toast({
-        title: "Sign up failed",
-        description: error instanceof Error ? error.message : "An error occurred during sign up",
-        variant: "destructive"
-      });
-      throw error;
-    }
+    return signIn(email, password);
   };
 
-  // Sign out
   const signOut = async () => {
     try {
-      await supabase.auth.signOut();
+      const guestUser = createGuestAccount();
+      localStorage.setItem('flicker-user', JSON.stringify(guestUser));
+      setUser(guestUser);
+      
       toast({
         title: "Signed out",
-        description: "You have been successfully signed out"
+        description: "You are now browsing as a guest"
       });
     } catch (error) {
       console.error('Error signing out:', error);
@@ -115,32 +115,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // Reset password
   const resetPassword = async (email: string) => {
-    try {
-      const response = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
-      });
-      
-      if (response.error) {
-        throw response.error;
-      }
-      
-      toast({
-        title: "Password reset email sent",
-        description: "Check your email for a password reset link"
-      });
-      
-      return response;
-    } catch (error) {
-      console.error('Error resetting password:', error);
-      toast({
-        title: "Password reset failed",
-        description: error instanceof Error ? error.message : "An error occurred during password reset",
-        variant: "destructive"
-      });
-      throw error;
-    }
+    toast({
+      title: "Password reset",
+      description: "This is a guest account, no password reset needed"
+    });
+    
+    return { data: {}, error: null };
   };
 
   return (

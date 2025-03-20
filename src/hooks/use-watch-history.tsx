@@ -1,7 +1,7 @@
 
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { useAuth } from './use-auth';
-import { supabase } from '@/utils/supabase';
+import { getLocalData, saveLocalData, generateId } from '@/utils/supabase';
 import { Media } from '@/utils/types';
 import { toast } from './use-toast';
 
@@ -39,9 +39,9 @@ export const WatchHistoryProvider = ({ children }: { children: ReactNode }) => {
   const [watchHistory, setWatchHistory] = useState<WatchHistoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
-  // Fetch watch history when user changes
+  // Fetch watch history from localStorage when user changes
   useEffect(() => {
-    const fetchWatchHistory = async () => {
+    const fetchWatchHistory = () => {
       if (!user) {
         setWatchHistory([]);
         setIsLoading(false);
@@ -50,23 +50,11 @@ export const WatchHistoryProvider = ({ children }: { children: ReactNode }) => {
       
       try {
         setIsLoading(true);
-        const { data, error } = await supabase
-          .from('watch_history')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('last_watched', { ascending: false });
-          
-        if (error) {
-          throw error;
-        }
+        // Get watch history from localStorage
+        const key = `flicker-watch-history-${user.id}`;
+        const storedHistory = getLocalData<WatchHistoryItem[]>(key, []);
         
-        // Type assertion to ensure media_type is 'movie' | 'tv'
-        const typedData = data.map(item => ({
-          ...item,
-          media_type: item.media_type as 'movie' | 'tv'
-        }));
-        
-        setWatchHistory(typedData);
+        setWatchHistory(storedHistory);
       } catch (error) {
         console.error('Error fetching watch history:', error);
         toast({
@@ -97,6 +85,7 @@ export const WatchHistoryProvider = ({ children }: { children: ReactNode }) => {
       const mediaType = media.media_type;
       const mediaId = media.id;
       const title = media.title || media.name || '';
+      const key = `flicker-watch-history-${user.id}`;
       
       // Check if this media already exists in watch history
       const existingItem = watchHistory.find(item => 
@@ -110,40 +99,31 @@ export const WatchHistoryProvider = ({ children }: { children: ReactNode }) => {
         await updateWatchPosition(mediaId, mediaType, position, season, episode, preferredSource);
       } else {
         // Add new item
-        const { data, error } = await supabase
-          .from('watch_history')
-          .insert([{
-            user_id: user.id,
-            media_id: mediaId,
-            media_type: mediaType,
-            title,
-            poster_path: media.poster_path,
-            backdrop_path: media.backdrop_path,
-            overview: media.overview,
-            rating: media.vote_average,
-            season,
-            episode,
-            watch_position: position,
-            duration,
-            preferred_source: preferredSource || null,
-            last_watched: new Date().toISOString()
-          }])
-          .select();
-          
-        if (error) {
-          throw error;
-        }
+        const newItem: WatchHistoryItem = {
+          id: generateId(),
+          user_id: user.id,
+          media_id: mediaId,
+          media_type: mediaType,
+          title,
+          poster_path: media.poster_path,
+          backdrop_path: media.backdrop_path,
+          overview: media.overview,
+          rating: media.vote_average,
+          season,
+          episode,
+          watch_position: position,
+          duration,
+          preferred_source: preferredSource || '',
+          last_watched: new Date().toISOString(),
+          created_at: new Date().toISOString()
+        };
         
         // Add to local state
-        if (data && data.length > 0) {
-          // Type assertion to ensure media_type is 'movie' | 'tv'
-          const newItem = {
-            ...data[0],
-            media_type: data[0].media_type as 'movie' | 'tv'
-          };
-          
-          setWatchHistory(prev => [newItem, ...prev]);
-        }
+        const updatedHistory = [newItem, ...watchHistory];
+        setWatchHistory(updatedHistory);
+        
+        // Save to localStorage
+        saveLocalData(key, updatedHistory);
       }
     } catch (error) {
       console.error('Error adding to watch history:', error);
@@ -162,31 +142,10 @@ export const WatchHistoryProvider = ({ children }: { children: ReactNode }) => {
     if (!user) return;
     
     try {
-      // Build the query
-      let query = supabase
-        .from('watch_history')
-        .update({ 
-          watch_position: position,
-          last_watched: new Date().toISOString(),
-          ...(preferredSource ? { preferred_source: preferredSource } : {})
-        })
-        .eq('user_id', user.id)
-        .eq('media_id', mediaId)
-        .eq('media_type', mediaType);
-      
-      // Add season/episode filters for TV shows
-      if (mediaType === 'tv' && season !== undefined && episode !== undefined) {
-        query = query.eq('season', season).eq('episode', episode);
-      }
-      
-      const { error } = await query.select();
-      
-      if (error) {
-        throw error;
-      }
+      const key = `flicker-watch-history-${user.id}`;
       
       // Update local state
-      setWatchHistory(prev => prev.map(item => {
+      const updatedHistory = watchHistory.map(item => {
         if (
           item.media_id === mediaId && 
           item.media_type === mediaType && 
@@ -200,7 +159,17 @@ export const WatchHistoryProvider = ({ children }: { children: ReactNode }) => {
           };
         }
         return item;
-      }));
+      });
+      
+      // Sort by last_watched (most recent first)
+      updatedHistory.sort((a, b) => 
+        new Date(b.last_watched).getTime() - new Date(a.last_watched).getTime()
+      );
+      
+      setWatchHistory(updatedHistory);
+      
+      // Save to localStorage
+      saveLocalData(key, updatedHistory);
     } catch (error) {
       console.error('Error updating watch position:', error);
     }
@@ -211,16 +180,18 @@ export const WatchHistoryProvider = ({ children }: { children: ReactNode }) => {
     if (!user) return;
     
     try {
-      const { error } = await supabase
-        .from('watch_history')
-        .delete()
-        .eq('user_id', user.id);
-        
-      if (error) {
-        throw error;
-      }
+      const key = `flicker-watch-history-${user.id}`;
       
+      // Clear local state
       setWatchHistory([]);
+      
+      // Clear from localStorage
+      saveLocalData(key, []);
+      
+      toast({
+        title: "Watch history cleared",
+        description: "Your watch history has been successfully cleared."
+      });
     } catch (error) {
       console.error('Error clearing watch history:', error);
       toast({

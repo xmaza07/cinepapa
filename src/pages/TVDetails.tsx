@@ -7,10 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Navbar from '@/components/Navbar';
 import ReviewSection from '@/components/ReviewSection';
-import { Play, Calendar, Star, ArrowLeft, List, Shield, History } from 'lucide-react';
+import { Play, Calendar, Star, ArrowLeft, List, Shield } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { useWatchHistory } from '@/hooks/use-watch-history';
-import { useAuth } from '@/hooks/use-auth';
 
 const TVDetailsPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -22,9 +20,6 @@ const TVDetailsPage = () => {
   const [activeTab, setActiveTab] = useState<'episodes' | 'about' | 'reviews'>('episodes');
   const navigate = useNavigate();
   const isMobile = useIsMobile();
-  const { getWatchHistoryItem } = useWatchHistory();
-  const { user } = useAuth();
-  const [watchHistory, setWatchHistory] = useState<Record<string, number>>({});
   
   // Fetch TV show details
   useEffect(() => {
@@ -64,39 +59,13 @@ const TVDetailsPage = () => {
       try {
         const episodesData = await getSeasonDetails(tvShow.id, selectedSeason);
         setEpisodes(episodesData);
-        
-        // If user is logged in, fetch watch history for episodes
-        if (user && id) {
-          const tvId = parseInt(id, 10);
-          const historyMap: Record<string, number> = {};
-          
-          for (const episode of episodesData) {
-            const historyItem = await getWatchHistoryItem(
-              tvId, 
-              'tv', 
-              selectedSeason, 
-              episode.episode_number
-            );
-            
-            if (historyItem) {
-              // Store watching progress as percentage
-              const progress = historyItem.duration > 0 
-                ? (historyItem.watch_position / historyItem.duration) * 100 
-                : 0;
-              
-              historyMap[`${selectedSeason}-${episode.episode_number}`] = progress;
-            }
-          }
-          
-          setWatchHistory(historyMap);
-        }
       } catch (error) {
         console.error('Error fetching episodes:', error);
       }
     };
     
     fetchEpisodes();
-  }, [tvShow, selectedSeason, user, id, getWatchHistoryItem]);
+  }, [tvShow, selectedSeason]);
   
   const handlePlayEpisode = (seasonNumber: number, episodeNumber: number) => {
     if (tvShow) {
@@ -300,66 +269,46 @@ const TVDetailsPage = () => {
             {/* Episodes list */}
             <div className="space-y-4">
               {episodes.length > 0 ? (
-                episodes.map(episode => {
-                  const episodeKey = `${selectedSeason}-${episode.episode_number}`;
-                  const hasWatched = watchHistory[episodeKey] !== undefined;
-                  const watchProgress = watchHistory[episodeKey] || 0;
-                  const isCompleted = watchProgress > 90; // Consider completed if watched more than 90%
-                  
-                  return (
-                    <div key={episode.id} className="glass p-4 rounded-lg">
-                      <div className="flex flex-col md:flex-row gap-4">
-                        <div className="flex-shrink-0 w-full md:w-48 relative">
-                          {episode.still_path && (
-                            <img 
-                              src={`${backdropSizes.small}${episode.still_path}`} 
-                              alt={`${episode.name} still`}
-                              className="w-full h-auto rounded-lg"
-                            />
-                          )}
-                          
-                          {/* Watch progress indicator */}
-                          {hasWatched && (
-                            <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/20">
-                              <div 
-                                className={`h-full ${isCompleted ? 'bg-green-500' : 'bg-accent'}`}
-                                style={{ width: `${watchProgress}%` }}
-                              />
+                episodes.map(episode => (
+                  <div key={episode.id} className="glass p-4 rounded-lg">
+                    <div className="flex flex-col md:flex-row gap-4">
+                      {episode.still_path && (
+                        <div className="flex-shrink-0 w-full md:w-48">
+                          <img 
+                            src={`${backdropSizes.small}${episode.still_path}`} 
+                            alt={`${episode.name} still`}
+                            className="w-full h-auto rounded-lg"
+                          />
+                        </div>
+                      )}
+                      
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between mb-2">
+                          <h3 className="text-white font-medium">
+                            {episode.episode_number}. {episode.name}
+                          </h3>
+                          {episode.vote_average > 0 && (
+                            <div className="flex items-center text-amber-400 text-sm">
+                              <Star className="h-3 w-3 mr-1 fill-amber-400" />
+                              {episode.vote_average.toFixed(1)}
                             </div>
                           )}
                         </div>
                         
-                        <div className="flex-1">
-                          <div className="flex items-center justify-between mb-2">
-                            <h3 className="text-white font-medium flex items-center">
-                              {episode.episode_number}. {episode.name}
-                              {hasWatched && (
-                                <History className="h-4 w-4 ml-2 text-accent" />
-                              )}
-                            </h3>
-                            {episode.vote_average > 0 && (
-                              <div className="flex items-center text-amber-400 text-sm">
-                                <Star className="h-3 w-3 mr-1 fill-amber-400" />
-                                {episode.vote_average.toFixed(1)}
-                              </div>
-                            )}
-                          </div>
-                          
-                          <p className="text-white/70 text-sm mb-3 line-clamp-2">{episode.overview}</p>
-                          
-                          <Button 
-                            onClick={() => handlePlayEpisode(episode.season_number, episode.episode_number)}
-                            size="sm"
-                            className="bg-accent hover:bg-accent/80 text-white flex items-center"
-                          >
-                            <Play className="h-3 w-3 mr-1" />
-                            {hasWatched && !isCompleted ? 'Resume' : 'Play'}
-                          </Button>
-                        </div>
+                        <p className="text-white/70 text-sm mb-3 line-clamp-2">{episode.overview}</p>
+                        
+                        <Button 
+                          onClick={() => handlePlayEpisode(episode.season_number, episode.episode_number)}
+                          size="sm"
+                          className="bg-accent hover:bg-accent/80 text-white flex items-center"
+                        >
+                          <Play className="h-3 w-3 mr-1" />
+                          Play
+                        </Button>
                       </div>
                     </div>
-                  );
-                })
+                  </div>
+                ))
               ) : (
                 <div className="text-center py-8 text-white/70">
                   No episodes available for this season.

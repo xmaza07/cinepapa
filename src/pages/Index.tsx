@@ -1,92 +1,93 @@
 
 import { useState, useEffect } from 'react';
-import { getTrending, getPopularMovies, getPopularTVShows } from '@/utils/api';
+import { 
+  getTrending, 
+  getPopularMovies, 
+  getPopularTVShows,
+  getTopRatedMovies,
+  getTopRatedTVShows
+} from '@/utils/api';
 import { Media } from '@/utils/types';
 import Navbar from '@/components/Navbar';
-import Footer from '@/components/Footer';
 import Hero from '@/components/Hero';
 import ContentRow from '@/components/ContentRow';
-import PageTransition from '@/components/PageTransition';
-import ContinueWatching from '@/components/ContinueWatching';
-import { useAuth } from '@/hooks/use-auth';
+import Footer from '@/components/Footer';
 
 const Index = () => {
   const [trendingMedia, setTrendingMedia] = useState<Media[]>([]);
   const [popularMovies, setPopularMovies] = useState<Media[]>([]);
   const [popularTVShows, setPopularTVShows] = useState<Media[]>([]);
+  const [topRatedMovies, setTopRatedMovies] = useState<Media[]>([]);
+  const [topRatedTVShows, setTopRatedTVShows] = useState<Media[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const { user } = useAuth();
-
+  const [contentVisible, setContentVisible] = useState(false);
+  
+  // Fetch data on component mount
   useEffect(() => {
     const fetchData = async () => {
       try {
-        setIsLoading(true);
-        
         // Fetch all data in parallel
-        const [trendingData, moviesData, tvShowsData] = await Promise.all([
+        const [
+          trendingData,
+          popularMoviesData,
+          popularTVData,
+          topMoviesData,
+          topTVData
+        ] = await Promise.all([
           getTrending(),
           getPopularMovies(),
-          getPopularTVShows()
+          getPopularTVShows(),
+          getTopRatedMovies(),
+          getTopRatedTVShows()
         ]);
         
-        setTrendingMedia(trendingData);
-        setPopularMovies(moviesData);
-        setPopularTVShows(tvShowsData);
+        // Update state with fetched data
+        setTrendingMedia(trendingData.filter(item => item.backdrop_path));
+        setPopularMovies(popularMoviesData);
+        setPopularTVShows(popularTVData);
+        setTopRatedMovies(topMoviesData);
+        setTopRatedTVShows(topTVData);
       } catch (error) {
-        console.error('Error fetching home page data:', error);
+        console.error('Error fetching homepage data:', error);
       } finally {
         setIsLoading(false);
+        
+        // Delay showing content for a smoother animation
+        setTimeout(() => {
+          setContentVisible(true);
+        }, 300);
       }
     };
     
     fetchData();
   }, []);
   
-  // Select a random item from trending for the hero
-  const heroItem = trendingMedia.length > 0 
-    ? trendingMedia[Math.floor(Math.random() * trendingMedia.length)]
-    : null;
-
   return (
-    <PageTransition>
-      <div className="min-h-screen bg-background">
-        <Navbar />
-        
-        {/* Hero Section */}
-        {heroItem && <Hero media={[heroItem]} />}
-        
-        {/* Main Content */}
-        <div className="relative z-10 pt-8">
-          {/* Continue Watching (only for logged in users) */}
-          {user && <ContinueWatching />}
-          
-          {/* Trending Content */}
-          <ContentRow 
-            title="Trending Now" 
-            items={trendingMedia} 
-            isLoading={isLoading}
-          />
-          
-          {/* Popular Movies */}
-          <ContentRow 
-            title="Popular Movies" 
-            items={popularMovies} 
-            isLoading={isLoading}
-            mediaType="movie"
-          />
-          
-          {/* Popular TV Shows */}
-          <ContentRow 
-            title="Popular TV Shows" 
-            items={popularTVShows} 
-            isLoading={isLoading}
-            mediaType="tv"
-          />
+    <main className="min-h-screen bg-background pb-16">
+      <Navbar />
+      
+      {isLoading ? (
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="animate-pulse-slow text-white font-medium">Loading...</div>
         </div>
-        
-        <Footer />
-      </div>
-    </PageTransition>
+      ) : (
+        <>
+          {/* Hero section with featured content */}
+          {trendingMedia.length > 0 && <Hero media={trendingMedia.slice(0, 5)} />}
+          
+          {/* Content rows with staggered animations */}
+          <div className={`mt-8 md:mt-12 transition-opacity duration-500 ${contentVisible ? 'opacity-100' : 'opacity-0'}`}>
+            <ContentRow title="Trending Now" media={trendingMedia} featured />
+            <ContentRow title="Popular Movies" media={popularMovies} />
+            <ContentRow title="Popular TV Shows" media={popularTVShows} />
+            <ContentRow title="Top Rated Movies" media={topRatedMovies} />
+            <ContentRow title="Top Rated TV Shows" media={topRatedTVShows} />
+          </div>
+        </>
+      )}
+      
+      <Footer />
+    </main>
   );
 };
 

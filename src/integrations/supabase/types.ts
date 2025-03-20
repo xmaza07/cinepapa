@@ -60,6 +60,54 @@ export type Database = {
         }
         Relationships: []
       }
+      user_preferences: {
+        Row: {
+          created_at: string
+          id: string
+          preferred_video_source: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          preferred_video_source?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          preferred_video_source?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          full_name: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          full_name?: string | null
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       UserProfile: {
         Row: {
           id: string
@@ -75,6 +123,60 @@ export type Database = {
           id?: string
           name?: string
           setting?: Json | null
+        }
+        Relationships: []
+      }
+      watch_history: {
+        Row: {
+          backdrop_path: string | null
+          created_at: string
+          duration: number | null
+          episode: number | null
+          id: string
+          last_watched: string
+          media_id: number
+          media_type: string
+          poster_path: string | null
+          preferred_source: string | null
+          season: number | null
+          title: string
+          updated_at: string
+          user_id: string
+          watch_position: number | null
+        }
+        Insert: {
+          backdrop_path?: string | null
+          created_at?: string
+          duration?: number | null
+          episode?: number | null
+          id?: string
+          last_watched?: string
+          media_id: number
+          media_type: string
+          poster_path?: string | null
+          preferred_source?: string | null
+          season?: number | null
+          title: string
+          updated_at?: string
+          user_id: string
+          watch_position?: number | null
+        }
+        Update: {
+          backdrop_path?: string | null
+          created_at?: string
+          duration?: number | null
+          episode?: number | null
+          id?: string
+          last_watched?: string
+          media_id?: number
+          media_type?: string
+          poster_path?: string | null
+          preferred_source?: string | null
+          season?: number | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+          watch_position?: number | null
         }
         Relationships: []
       }

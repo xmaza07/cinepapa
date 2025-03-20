@@ -1,10 +1,20 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Home, Film, Tv, TrendingUp, Menu, X, Keyboard, ArrowRight } from 'lucide-react';
+import { Search, Home, Film, Tv, TrendingUp, Menu, X, Keyboard, ArrowRight, User, LogOut } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
 import InstallPWAButton from './InstallPWAButton';
+import { useAuth } from '@/hooks/use-auth';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface NavItem {
   title: string;
@@ -20,6 +30,7 @@ const Navbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
+  const { user, signOut } = useAuth();
   
   const navItems: NavItem[] = [
     { title: 'Home', path: '/', icon: <Home className="h-4 w-4 mr-2" /> },
@@ -73,6 +84,15 @@ const Navbar = () => {
       duration: 5000,
     });
     setShowKeyboardHint(false);
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
+    toast({
+      title: "Signed out",
+      description: "You have been successfully signed out",
+    });
+    navigate('/');
   };
 
   return (
@@ -141,8 +161,40 @@ const Navbar = () => {
           </Button>
         </form>
         
-        <div className="hidden md:block ml-2">
+        <div className="hidden md:flex items-center gap-2 ml-2">
           <InstallPWAButton />
+          
+          {user ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="border-white/20 bg-white/10 text-white hover:bg-white/20">
+                  <User className="h-4 w-4 mr-2" />
+                  Account
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="bg-background border-white/10">
+                <DropdownMenuLabel className="text-white">My Account</DropdownMenuLabel>
+                <DropdownMenuSeparator className="bg-white/10" />
+                <DropdownMenuItem 
+                  className="text-white hover:bg-white/10 cursor-pointer"
+                  onClick={handleSignOut}
+                >
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Sign Out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <Button 
+              variant="outline"
+              size="sm"
+              onClick={() => navigate('/auth')}
+              className="border-white/20 bg-white/10 text-white hover:bg-white/20"
+            >
+              <User className="h-4 w-4 mr-2" />
+              Sign In
+            </Button>
+          )}
         </div>
         
         <button
@@ -197,8 +249,31 @@ const Navbar = () => {
               </div>
             </form>
             
-            <div className="pt-2">
+            <div className="pt-2 flex flex-col space-y-2">
               <InstallPWAButton />
+              
+              {user ? (
+                <Button
+                  variant="outline"
+                  onClick={handleSignOut}
+                  className="border-white/20 bg-white/10 text-white hover:bg-white/20 w-full justify-start"
+                >
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Sign Out
+                </Button>
+              ) : (
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    navigate('/auth');
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="border-white/20 bg-white/10 text-white hover:bg-white/20 w-full justify-start"
+                >
+                  <User className="h-4 w-4 mr-2" />
+                  Sign In
+                </Button>
+              )}
             </div>
           </div>
         </div>

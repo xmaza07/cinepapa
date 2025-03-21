@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { getMovieDetails, getTVDetails, videoSources, getSeasonDetails } from '@/utils/api';
 import { MovieDetails, TVDetails, VideoSource, Episode } from '@/utils/types';
@@ -32,6 +32,7 @@ const Player = () => {
   const [mediaDetails, setMediaDetails] = useState<MovieDetails | TVDetails | null>(null);
   const [episodes, setEpisodes] = useState<Episode[]>([]);
   const [currentEpisodeIndex, setCurrentEpisodeIndex] = useState<number>(0);
+  const [hasInitialized, setHasInitialized] = useState(false);
 
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -50,12 +51,30 @@ const Player = () => {
   const [isFavorite, setIsFavorite] = useState(false);
   const [isInMyWatchlist, setIsInMyWatchlist] = useState(false);
 
+  // Memoized function to update the iframe URL
+  const updateIframeUrl = useCallback((mediaId: number, seasonNum?: number, episodeNum?: number) => {
+    const source = videoSources.find(src => src.key === selectedSource);
+    if (!source) return;
+    
+    if (mediaType === 'movie') {
+      setIframeUrl(source.getMovieUrl(mediaId));
+    } else if (mediaType === 'tv' && seasonNum && episodeNum) {
+      setIframeUrl(source.getTVUrl(mediaId, seasonNum, episodeNum));
+    }
+  }, [selectedSource, mediaType]);
+
   useEffect(() => {
+    // Reset state when navigating to a different media
+    setIsLoading(true);
+    setHasInitialized(false);
+    setMediaDetails(null);
+    setEpisodes([]);
+    setIframeUrl('');
+    
     const fetchMediaDetails = async () => {
       if (!id) return;
       
       try {
-        setIsLoading(true);
         const mediaId = parseInt(id, 10);
         
         // Determine media type from URL
@@ -63,6 +82,7 @@ const Player = () => {
         setMediaType(isTV ? 'tv' : 'movie');
         
         if (!isTV) {
+          // Movie handling
           const movieDetails = await getMovieDetails(mediaId);
           if (movieDetails) {
             setTitle(movieDetails.title || 'Untitled Movie');
@@ -96,6 +116,7 @@ const Player = () => {
             }
           }
         } else if (isTV && season && episode) {
+          // TV show handling
           const tvDetails = await getTVDetails(mediaId);
           if (tvDetails) {
             // Fetch episodes for the current season
@@ -141,6 +162,8 @@ const Player = () => {
         } else {
           navigate('/');
         }
+        
+        setHasInitialized(true);
       } catch (error) {
         console.error('Error fetching media details:', error);
         toast({
@@ -154,30 +177,19 @@ const Player = () => {
     };
     
     fetchMediaDetails();
-  }, [id, season, episode, navigate, toast, user, addToWatchHistory, isInFavorites, isInWatchlist, selectedSource]);
+  }, [id, season, episode, navigate, toast, user, addToWatchHistory, isInFavorites, isInWatchlist, updateIframeUrl]);
   
-  // Update iframe URL when selected source changes
+  // Update iframe URL when selected source changes, but only after initial load
   useEffect(() => {
-    if (id) {
-      const mediaId = parseInt(id, 10);
-      if (mediaType === 'movie') {
-        updateIframeUrl(mediaId);
-      } else if (mediaType === 'tv' && season && episode) {
-        updateIframeUrl(mediaId, parseInt(season, 10), parseInt(episode, 10));
-      }
-    }
-  }, [selectedSource, id, mediaType, season, episode]);
-  
-  const updateIframeUrl = (mediaId: number, seasonNum?: number, episodeNum?: number) => {
-    const source = videoSources.find(src => src.key === selectedSource);
-    if (!source) return;
+    if (!hasInitialized || !id) return;
     
+    const mediaId = parseInt(id, 10);
     if (mediaType === 'movie') {
-      setIframeUrl(source.getMovieUrl(mediaId));
-    } else if (mediaType === 'tv' && seasonNum && episodeNum) {
-      setIframeUrl(source.getTVUrl(mediaId, seasonNum, episodeNum));
+      updateIframeUrl(mediaId);
+    } else if (mediaType === 'tv' && season && episode) {
+      updateIframeUrl(mediaId, parseInt(season, 10), parseInt(episode, 10));
     }
-  };
+  }, [selectedSource, hasInitialized, id, mediaType, season, episode, updateIframeUrl]);
   
   const handleSourceChange = (sourceKey: string) => {
     setSelectedSource(sourceKey);

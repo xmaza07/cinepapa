@@ -63,10 +63,10 @@ const Player = () => {
     }
   }, [selectedSource, mediaType]);
 
+  // Fetch media details only when id, season, or episode changes
   useEffect(() => {
     // Reset state when navigating to a different media
     setIsLoading(true);
-    setHasInitialized(false);
     setMediaDetails(null);
     setEpisodes([]);
     setIframeUrl('');
@@ -87,14 +87,13 @@ const Player = () => {
           if (movieDetails) {
             setTitle(movieDetails.title || 'Untitled Movie');
             setMediaDetails(movieDetails);
-            updateIframeUrl(mediaId);
-
-            // Check if the movie is in favorites or watchlist
-            setIsFavorite(isInFavorites(mediaId, 'movie'));
-            setIsInMyWatchlist(isInWatchlist(mediaId, 'movie'));
             
-            // Automatically add to watch history
+            // Check if the movie is in favorites or watchlist
             if (user) {
+              setIsFavorite(isInFavorites(mediaId, 'movie'));
+              setIsInMyWatchlist(isInWatchlist(mediaId, 'movie'));
+              
+              // Automatically add to watch history
               const duration = movieDetails.runtime * 60; // convert minutes to seconds
               addToWatchHistory(
                 {
@@ -114,6 +113,9 @@ const Player = () => {
                 selectedSource
               );
             }
+            
+            // Set iframe URL after setting media details
+            updateIframeUrl(mediaId);
           }
         } else if (isTV && season && episode) {
           // TV show handling
@@ -131,14 +133,13 @@ const Player = () => {
             const episodeTitle = seasonData.find(ep => ep.episode_number === currentEpisodeNumber)?.name || '';
             setTitle(`${tvDetails.name || 'Untitled Show'} - Season ${season} Episode ${episode}${episodeTitle ? ': ' + episodeTitle : ''}`);
             setMediaDetails(tvDetails);
-            updateIframeUrl(mediaId, parseInt(season, 10), parseInt(episode, 10));
-
-            // Check if the TV show is in favorites or watchlist
-            setIsFavorite(isInFavorites(mediaId, 'tv'));
-            setIsInMyWatchlist(isInWatchlist(mediaId, 'tv'));
             
-            // Automatically add to watch history
+            // Check if the TV show is in favorites or watchlist
             if (user) {
+              setIsFavorite(isInFavorites(mediaId, 'tv'));
+              setIsInMyWatchlist(isInWatchlist(mediaId, 'tv'));
+              
+              // Automatically add to watch history
               const duration = tvDetails.episode_run_time[0] ? tvDetails.episode_run_time[0] * 60 : 1800; // Default to 30 minutes if not provided
               addToWatchHistory(
                 {
@@ -158,6 +159,9 @@ const Player = () => {
                 selectedSource
               );
             }
+            
+            // Set iframe URL after setting media details
+            updateIframeUrl(mediaId, parseInt(season, 10), parseInt(episode, 10));
           }
         } else {
           navigate('/');
@@ -177,11 +181,11 @@ const Player = () => {
     };
     
     fetchMediaDetails();
-  }, [id, season, episode, navigate, toast, user, addToWatchHistory, isInFavorites, isInWatchlist, updateIframeUrl]);
+  }, [id, season, episode, navigate, toast, user, addToWatchHistory, isInFavorites, isInWatchlist]);
   
-  // Update iframe URL when selected source changes, but only after initial load
+  // Update iframe URL when selected source changes
   useEffect(() => {
-    if (!hasInitialized || !id) return;
+    if (!id || !hasInitialized) return;
     
     const mediaId = parseInt(id, 10);
     if (mediaType === 'movie') {
@@ -189,7 +193,7 @@ const Player = () => {
     } else if (mediaType === 'tv' && season && episode) {
       updateIframeUrl(mediaId, parseInt(season, 10), parseInt(episode, 10));
     }
-  }, [selectedSource, hasInitialized, id, mediaType, season, episode, updateIframeUrl]);
+  }, [selectedSource, id, mediaType, season, episode, hasInitialized, updateIframeUrl]);
   
   const handleSourceChange = (sourceKey: string) => {
     setSelectedSource(sourceKey);

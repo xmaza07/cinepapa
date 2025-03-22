@@ -15,7 +15,6 @@ export interface WatchHistoryItem {
   episode?: number;
   watch_position: number;
   duration: number;
-  last_watched: string;
   created_at: string;
   preferred_source: string;
 }

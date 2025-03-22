@@ -27,8 +27,8 @@ const WatchHistory = () => {
 
   // Sort watch history based on selected option
   const sortedWatchHistory = [...watchHistory].sort((a, b) => {
-    const dateA = new Date(a.last_watched).getTime();
-    const dateB = new Date(b.last_watched).getTime();
+    const dateA = new Date(a.created_at).getTime();
+    const dateB = new Date(b.created_at).getTime();
     return sortOrder === 'newest' ? dateB - dateA : dateA - dateB;
   });
 
@@ -46,7 +46,7 @@ const WatchHistory = () => {
     // Additional watch info to display
     watch_position: item.watch_position,
     duration: item.duration,
-    last_watched: item.last_watched
+    created_at: item.created_at
   }));
 
   // Convert favorites to Media format

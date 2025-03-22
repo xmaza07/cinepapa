@@ -83,9 +83,9 @@ const TVDetailsPage = () => {
 
     if (!tvWatchHistory.length) return null;
 
-    // Get the most recently watched episode
+    // Get the most recently watched episode based on created_at
     const lastWatched = tvWatchHistory.reduce((latest, current) => {
-      return new Date(current.last_watched) > new Date(latest.last_watched) ? current : latest;
+      return new Date(current.created_at) > new Date(latest.created_at) ? current : latest;
     });
 
     return {

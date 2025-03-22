@@ -1,10 +1,10 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Home, Film, Tv, TrendingUp, Menu, X, Keyboard, ArrowRight, History } from 'lucide-react';
+import { Search, Home, Film, Tv, TrendingUp, Menu, X, Keyboard, ArrowRight, History, UserCircle, LogIn, UserPlus } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
+import { useAuth } from '@/hooks';
 import InstallPWAButton from './InstallPWAButton';
 
 interface NavItem {
@@ -21,6 +21,7 @@ const Navbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
+  const { user } = useAuth();
   
   const navItems: NavItem[] = [
     { title: 'Home', path: '/', icon: <Home className="h-4 w-4 mr-2" /> },
@@ -28,6 +29,13 @@ const Navbar = () => {
     { title: 'TV Shows', path: '/tv', icon: <Tv className="h-4 w-4 mr-2" /> },
     { title: 'Trending', path: '/trending', icon: <TrendingUp className="h-4 w-4 mr-2" /> },
     { title: 'Watch History', path: '/watch-history', icon: <History className="h-4 w-4 mr-2" /> },
+  ];
+
+  const authItems: NavItem[] = user ? [
+    { title: 'Profile', path: '/profile', icon: <UserCircle className="h-4 w-4 mr-2" /> },
+  ] : [
+    { title: 'Login', path: '/login', icon: <LogIn className="h-4 w-4 mr-2" /> },
+    { title: 'Sign Up', path: '/signup', icon: <UserPlus className="h-4 w-4 mr-2" /> },
   ];
 
   useEffect(() => {
@@ -107,6 +115,20 @@ const Navbar = () => {
               {item.title}
             </Link>
           ))}
+          {authItems.map((item) => (
+            <Link
+              key={item.path}
+              to={item.path}
+              className={`px-3 py-2 rounded-md flex items-center text-sm font-medium transition-colors ${
+                location.pathname === item.path
+                  ? 'text-accent bg-white/10'
+                  : 'text-white/80 hover:text-white hover:bg-white/10'
+              }`}
+            >
+              {item.icon}
+              {item.title}
+            </Link>
+          ))}
         </nav>
         
         <form onSubmit={handleSearch} className="hidden md:flex items-center relative ml-4">
@@ -164,6 +186,21 @@ const Navbar = () => {
         <div className="md:hidden glass animate-fade-in">
           <div className="px-4 py-3 space-y-3">
             {navItems.map((item) => (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={`block px-3 py-2 rounded-md text-base font-medium flex items-center ${
+                  location.pathname === item.path
+                    ? 'text-accent bg-white/10'
+                    : 'text-white hover:text-accent hover:bg-white/5'
+                }`}
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                {item.icon}
+                {item.title}
+              </Link>
+            ))}
+            {authItems.map((item) => (
               <Link
                 key={item.path}
                 to={item.path}

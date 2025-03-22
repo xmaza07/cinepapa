@@ -12,11 +12,12 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
+import { Switch } from "@/components/ui/switch";
 
 const Profile = () => {
   const { user, logout } = useAuth();
   const { watchHistory, clearWatchHistory } = useWatchHistory();
-  const { userPreferences } = useUserPreferences();
+  const { userPreferences, toggleWatchHistory } = useUserPreferences();
   const [activeTab, setActiveTab] = useState('history');
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -67,7 +68,7 @@ const Profile = () => {
     // Additional watch info to display
     watch_position: item.watch_position,
     duration: item.duration,
-    last_watched: item.last_watched
+    created_at: item.created_at
   }));
 
   return (
@@ -156,7 +157,23 @@ const Profile = () => {
             <div className="glass p-6 rounded-lg">
               <h2 className="text-xl font-semibold text-white mb-4">Your Preferences</h2>
               
-              <div className="space-y-4">
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <h3 className="text-lg font-medium text-white">Watch History</h3>
+                    <p className="text-sm text-white/70">
+                      {userPreferences?.isWatchHistoryEnabled
+                        ? "Your watch history is being recorded"
+                        : "Your watch history is not being recorded"}
+                    </p>
+                  </div>
+                  <Switch
+                    checked={userPreferences?.isWatchHistoryEnabled}
+                    onCheckedChange={toggleWatchHistory}
+                    aria-label="Toggle watch history"
+                  />
+                </div>
+                
                 <div>
                   <h3 className="text-lg font-medium text-white mb-2">Preferred Source</h3>
                   <p className="text-white/70">

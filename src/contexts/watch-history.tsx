@@ -1,6 +1,9 @@
 import { useState, useEffect, ReactNode } from 'react';
 import { useAuth } from '@/hooks';
-import { getLocalData, saveLocalData, generateId } from '@/utils/supabase';
+import { useUserPreferences } from '@/hooks/user-preferences';
+import { getApp } from 'firebase/app';
+import { getFirestore, collection, doc, setDoc, getDocs, deleteDoc, query, where, deleteField } from 'firebase/firestore';
+import { generateId } from '@/utils/supabase';
 import { Media } from '@/utils/types';
 import { useToast } from '@/components/ui/use-toast';
 import { 
@@ -11,11 +14,20 @@ import {
   MediaBaseItem,
   WatchHistoryContextType 
 } from './types/watch-history';
+import RateLimiter from '@/utils/rate-limiter';
 
 export { WatchHistoryContext };
 
+// Initialize Firestore
+const app = getApp();
+const db = getFirestore(app);
+
+// Initialize rate limiter (5 minutes interval)
+const rateLimiter = new RateLimiter(300000);
+
 export function WatchHistoryProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
+  const { userPreferences } = useUserPreferences();
   const [watchHistory, setWatchHistory] = useState<WatchHistoryItem[]>([]);
   const [favorites, setFavorites] = useState<FavoriteItem[]>([]);
   const [watchlist, setWatchlist] = useState<WatchlistItem[]>([]);
@@ -23,7 +35,7 @@ export function WatchHistoryProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
   
   useEffect(() => {
-    const fetchData = () => {
+    const fetchData = async () => {
       if (!user) {
         setWatchHistory([]);
         setFavorites([]);
@@ -34,24 +46,95 @@ export function WatchHistoryProvider({ children }: { children: ReactNode }) {
       
       try {
         setIsLoading(true);
-        const historyKey = `flicker-watch-history-${user.uid}`;
-        const favoritesKey = `flicker-favorites-${user.uid}`;
-        const watchlistKey = `flicker-watchlist-${user.uid}`;
         
-        const storedHistory = getLocalData<WatchHistoryItem[]>(historyKey, []);
-        const storedFavorites = getLocalData<FavoriteItem[]>(favoritesKey, []);
-        const storedWatchlist = getLocalData<WatchlistItem[]>(watchlistKey, []);
+        // Fetch watch history from Firestore
+        const historyRef = collection(db, 'watchHistory');
+        const historyQuery = query(historyRef, where('user_id', '==', user.uid));
+        const historySnapshot = await getDocs(historyQuery);
+        const historyData = historySnapshot.docs.map(doc => {
+          const data = doc.data();
+          // Ensure created_at is a valid ISO string
+          if (!data.created_at || typeof data.created_at !== 'string') {
+            data.created_at = new Date().toISOString();
+          }
+          return {
+            id: doc.id,
+            ...data
+          };
+        }) as WatchHistoryItem[];
         
-        setWatchHistory(storedHistory);
-        setFavorites(storedFavorites);
-        setWatchlist(storedWatchlist);
+        // Fetch favorites and ensure added_at is valid
+        const favoritesRef = collection(db, 'favorites');
+        const favoritesQuery = query(favoritesRef, where('user_id', '==', user.uid));
+        const favoritesSnapshot = await getDocs(favoritesQuery);
+        const favoritesData = favoritesSnapshot.docs.map(doc => {
+          const data = doc.data();
+          if (!data.added_at || typeof data.added_at !== 'string') {
+            data.added_at = new Date().toISOString();
+          }
+          return {
+            id: doc.id,
+            ...data
+          };
+        }) as FavoriteItem[];
+        
+        // Fetch watchlist and ensure added_at is valid
+        const watchlistRef = collection(db, 'watchlist');
+        const watchlistQuery = query(watchlistRef, where('user_id', '==', user.uid));
+        const watchlistSnapshot = await getDocs(watchlistQuery);
+        const watchlistData = watchlistSnapshot.docs.map(doc => {
+          const data = doc.data();
+          if (!data.added_at || typeof data.added_at !== 'string') {
+            data.added_at = new Date().toISOString();
+          }
+          return {
+            id: doc.id,
+            ...data
+          };
+        }) as WatchlistItem[];
+
+        // Update any invalid timestamps in Firestore
+        const updatePromises = [
+          ...historySnapshot.docs.map(doc => {
+            const data = doc.data();
+            if (!data.created_at || typeof data.created_at !== 'string') {
+              return setDoc(doc.ref, { created_at: new Date().toISOString() }, { merge: true });
+            }
+            return Promise.resolve();
+          }),
+          ...favoritesSnapshot.docs.map(doc => {
+            const data = doc.data();
+            if (!data.added_at || typeof data.added_at !== 'string') {
+              return setDoc(doc.ref, { added_at: new Date().toISOString() }, { merge: true });
+            }
+            return Promise.resolve();
+          }),
+          ...watchlistSnapshot.docs.map(doc => {
+            const data = doc.data();
+            if (!data.added_at || typeof data.added_at !== 'string') {
+              return setDoc(doc.ref, { added_at: new Date().toISOString() }, { merge: true });
+            }
+            return Promise.resolve();
+          })
+        ];
+        
+        // Wait for all updates to complete
+        await Promise.all(updatePromises);
+        
+        setWatchHistory(historyData);
+        setFavorites(favoritesData);
+        setWatchlist(watchlistData);
       } catch (error) {
         console.error('Error fetching user data:', error);
         toast({
-          title: "Error loading data",
-          description: "There was a problem loading your data.",
+          title: "Error loading watch data",
+          description: "Please make sure you're signed in and try again. If the problem persists, try signing out and back in.",
           variant: "destructive"
         });
+        // Set empty arrays as fallback
+        setWatchHistory([]);
+        setFavorites([]);
+        setWatchlist([]);
       } finally {
         setIsLoading(false);
       }
@@ -59,6 +142,32 @@ export function WatchHistoryProvider({ children }: { children: ReactNode }) {
     
     fetchData();
   }, [user, toast]);
+
+  useEffect(() => {
+    const migrateWatchHistory = async () => {
+      if (!user) return;
+      
+      try {
+        const historyRef = collection(db, 'watchHistory');
+        const historyQuery = query(historyRef, where('user_id', '==', user.uid));
+        const historySnapshot = await getDocs(historyQuery);
+        
+        const migrationPromises = historySnapshot.docs.map(async (doc) => {
+          const data = doc.data();
+          if ('last_watched' in data) {
+            // Remove last_watched field using field delete
+            await setDoc(doc.ref, { last_watched: deleteField() }, { merge: true });
+          }
+        });
+        
+        await Promise.all(migrationPromises);
+      } catch (error) {
+        console.error('Error migrating watch history:', error);
+      }
+    };
+    
+    migrateWatchHistory();
+  }, [user]);
   
   const addToWatchHistory = async (
     media: Media, 
@@ -68,13 +177,12 @@ export function WatchHistoryProvider({ children }: { children: ReactNode }) {
     episode?: number,
     preferredSource?: string
   ) => {
-    if (!user) return;
+    if (!user || !userPreferences?.isWatchHistoryEnabled) return;
     
     try {
       const mediaType = media.media_type;
       const mediaId = media.id;
       const title = media.title || media.name || '';
-      const key = `flicker-watch-history-${user.uid}`;
       
       const existingItem = watchHistory.find(item => 
         item.media_id === mediaId && 
@@ -85,6 +193,7 @@ export function WatchHistoryProvider({ children }: { children: ReactNode }) {
       if (existingItem) {
         await updateWatchPosition(mediaId, mediaType, position, season, episode, preferredSource);
       } else {
+        // Create base item
         const newItem: WatchHistoryItem = {
           id: generateId(),
           user_id: user.uid,
@@ -93,23 +202,31 @@ export function WatchHistoryProvider({ children }: { children: ReactNode }) {
           title,
           poster_path: media.poster_path,
           backdrop_path: media.backdrop_path,
-          overview: media.overview,
-          rating: media.vote_average,
-          season,
-          episode,
+          overview: media.overview || null,
+          rating: media.vote_average || 0,
           watch_position: position,
           duration,
+          created_at: new Date().toISOString(),
           preferred_source: preferredSource || '',
-          last_watched: new Date().toISOString(),
-          created_at: new Date().toISOString()
+          // Only include season and episode if they are numbers
+          ...(typeof season === 'number' ? { season } : {}),
+          ...(typeof episode === 'number' ? { episode } : {})
         };
+        
+        // Save to Firestore
+        const historyRef = doc(db, 'watchHistory', newItem.id);
+        await setDoc(historyRef, newItem);
         
         const updatedHistory = [newItem, ...watchHistory];
         setWatchHistory(updatedHistory);
-        saveLocalData(key, updatedHistory);
       }
     } catch (error) {
       console.error('Error adding to watch history:', error);
+      toast({
+        title: "Error updating watch history",
+        description: "There was a problem updating your watch history.",
+        variant: "destructive"
+      });
     }
   };
   
@@ -124,32 +241,57 @@ export function WatchHistoryProvider({ children }: { children: ReactNode }) {
     if (!user) return;
     
     try {
-      const key = `flicker-watch-history-${user.uid}`;
-      
-      const updatedHistory = watchHistory.map(item => {
-        if (
-          item.media_id === mediaId && 
-          item.media_type === mediaType && 
-          (mediaType === 'movie' || (item.season === season && item.episode === episode))
-        ) {
-          return {
-            ...item,
-            watch_position: position,
-            last_watched: new Date().toISOString(),
-            ...(preferredSource ? { preferred_source: preferredSource } : {})
-          };
-        }
-        return item;
-      });
-      
-      updatedHistory.sort((a, b) => 
-        new Date(b.last_watched).getTime() - new Date(a.last_watched).getTime()
+      const item = watchHistory.find(item => 
+        item.media_id === mediaId && 
+        item.media_type === mediaType && 
+        (mediaType === 'movie' || (item.season === season && item.episode === episode))
       );
       
-      setWatchHistory(updatedHistory);
-      saveLocalData(key, updatedHistory);
+      if (item) {
+        // Only update if the position has changed by more than 20 minutes (1200 seconds)
+        const TWENTY_MINUTES = 1200;
+        if (Math.abs(item.watch_position - position) < TWENTY_MINUTES) {
+          return;
+        }
+
+        // Check rate limiter before updating Firestore
+        if (!rateLimiter.canExecute()) {
+          console.log('Rate limit exceeded. Skipping Firestore update.');
+          return;
+        }
+
+        const updatedItem = {
+          ...item,
+          watch_position: position,
+          // Only include these fields if they are valid numbers
+          ...(typeof season === 'number' ? { season } : {}),
+          ...(typeof episode === 'number' ? { episode } : {}),
+          ...(preferredSource && preferredSource !== item.preferred_source ? { preferred_source: preferredSource } : {})
+        };
+        
+        // Update in Firestore using merge to only update changed fields
+        const historyRef = doc(db, 'watchHistory', item.id);
+        await setDoc(historyRef, {
+          watch_position: position,
+          // Only include these fields if they are valid numbers
+          ...(typeof season === 'number' ? { season } : {}),
+          ...(typeof episode === 'number' ? { episode } : {}),
+          ...(preferredSource && preferredSource !== item.preferred_source ? { preferred_source: preferredSource } : {})
+        }, { merge: true });
+        
+        const updatedHistory = watchHistory.map(h => 
+          h.id === item.id ? updatedItem : h
+        );
+        
+        setWatchHistory(updatedHistory);
+      }
     } catch (error) {
       console.error('Error updating watch position:', error);
+      toast({
+        title: "Error updating progress",
+        description: "There was a problem updating your watch progress.",
+        variant: "destructive"
+      });
     }
   };
   
@@ -157,9 +299,17 @@ export function WatchHistoryProvider({ children }: { children: ReactNode }) {
     if (!user) return;
     
     try {
-      const key = `flicker-watch-history-${user.uid}`;
+      // Delete all watch history documents for the user
+      const historyRef = collection(db, 'watchHistory');
+      const historyQuery = query(historyRef, where('user_id', '==', user.uid));
+      const historySnapshot = await getDocs(historyQuery);
+      
+      const deletePromises = historySnapshot.docs.map(doc => 
+        deleteDoc(doc.ref)
+      );
+      
+      await Promise.all(deletePromises);
       setWatchHistory([]);
-      saveLocalData(key, []);
       
       toast({
         title: "Watch history cleared",
@@ -168,7 +318,7 @@ export function WatchHistoryProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error('Error clearing watch history:', error);
       toast({
-        title: "Error clearing watch history",
+        title: "Error clearing history",
         description: "There was a problem clearing your watch history.",
         variant: "destructive"
       });
@@ -179,8 +329,6 @@ export function WatchHistoryProvider({ children }: { children: ReactNode }) {
     if (!user) return;
     
     try {
-      const key = `flicker-favorites-${user.uid}`;
-      
       const existingItem = favorites.find(fav => 
         fav.media_id === item.media_id && fav.media_type === item.media_type
       );
@@ -200,9 +348,12 @@ export function WatchHistoryProvider({ children }: { children: ReactNode }) {
         added_at: new Date().toISOString()
       };
       
+      // Save to Firestore
+      const favoriteRef = doc(db, 'favorites', newItem.id);
+      await setDoc(favoriteRef, newItem);
+      
       const updatedFavorites = [newItem, ...favorites];
       setFavorites(updatedFavorites);
-      saveLocalData(key, updatedFavorites);
     } catch (error) {
       console.error('Error adding to favorites:', error);
       toast({
@@ -217,14 +368,20 @@ export function WatchHistoryProvider({ children }: { children: ReactNode }) {
     if (!user) return;
     
     try {
-      const key = `flicker-favorites-${user.uid}`;
-      
-      const updatedFavorites = favorites.filter(
-        item => !(item.media_id === mediaId && item.media_type === mediaType)
+      const itemToRemove = favorites.find(
+        item => item.media_id === mediaId && item.media_type === mediaType
       );
-      
-      setFavorites(updatedFavorites);
-      saveLocalData(key, updatedFavorites);
+
+      if (itemToRemove) {
+        // Remove from Firestore
+        const favoriteRef = doc(db, 'favorites', itemToRemove.id);
+        await deleteDoc(favoriteRef);
+        
+        const updatedFavorites = favorites.filter(
+          item => !(item.media_id === mediaId && item.media_type === mediaType)
+        );
+        setFavorites(updatedFavorites);
+      }
     } catch (error) {
       console.error('Error removing from favorites:', error);
       toast({
@@ -243,8 +400,6 @@ export function WatchHistoryProvider({ children }: { children: ReactNode }) {
     if (!user) return;
     
     try {
-      const key = `flicker-watchlist-${user.uid}`;
-      
       const existingItem = watchlist.find(watch => 
         watch.media_id === item.media_id && watch.media_type === item.media_type
       );
@@ -264,9 +419,12 @@ export function WatchHistoryProvider({ children }: { children: ReactNode }) {
         added_at: new Date().toISOString()
       };
       
+      // Save to Firestore
+      const watchlistRef = doc(db, 'watchlist', newItem.id);
+      await setDoc(watchlistRef, newItem);
+      
       const updatedWatchlist = [newItem, ...watchlist];
       setWatchlist(updatedWatchlist);
-      saveLocalData(key, updatedWatchlist);
     } catch (error) {
       console.error('Error adding to watchlist:', error);
       toast({
@@ -281,14 +439,20 @@ export function WatchHistoryProvider({ children }: { children: ReactNode }) {
     if (!user) return;
     
     try {
-      const key = `flicker-watchlist-${user.uid}`;
-      
-      const updatedWatchlist = watchlist.filter(
-        item => !(item.media_id === mediaId && item.media_type === mediaType)
+      const itemToRemove = watchlist.find(
+        item => item.media_id === mediaId && item.media_type === mediaType
       );
-      
-      setWatchlist(updatedWatchlist);
-      saveLocalData(key, updatedWatchlist);
+
+      if (itemToRemove) {
+        // Remove from Firestore
+        const watchlistRef = doc(db, 'watchlist', itemToRemove.id);
+        await deleteDoc(watchlistRef);
+        
+        const updatedWatchlist = watchlist.filter(
+          item => !(item.media_id === mediaId && item.media_type === mediaType)
+        );
+        setWatchlist(updatedWatchlist);
+      }
     } catch (error) {
       console.error('Error removing from watchlist:', error);
       toast({

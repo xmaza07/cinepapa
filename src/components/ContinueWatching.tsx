@@ -21,16 +21,49 @@ const ContinueWatching = ({ maxItems = 5 }: ContinueWatchingProps) => {
   
   useEffect(() => {
     if (watchHistory.length > 0) {
-      // Filter items that are not complete (less than 90% watched)
+      // Filter items that are not complete (less than 90% watched) and have valid dates
       const incomplete = watchHistory
-        .filter(item => (item.watch_position / item.duration) < 0.9)
-        .sort((a, b) => new Date(b.last_watched).getTime() - new Date(a.last_watched).getTime())
+        .filter(item => {
+          // Ensure item has valid created_at and progress values
+          if (!item.created_at || !item.duration || !item.watch_position) return false;
+          try {
+            const date = new Date(item.created_at);
+            if (isNaN(date.getTime())) return false;
+          } catch {
+            return false;
+          }
+          return (item.watch_position / item.duration) < 0.9;
+        })
+        .sort((a, b) => {
+          try {
+            const dateA = new Date(a.created_at);
+            const dateB = new Date(b.created_at);
+            return dateB.getTime() - dateA.getTime();
+          } catch {
+            return 0;
+          }
+        })
         .slice(0, maxItems);
       
       setContinuableItems(incomplete);
     }
   }, [watchHistory, maxItems]);
   
+  const formatLastWatched = (dateString: string) => {
+    if (!dateString) return 'Recently';
+    
+    try {
+      const date = new Date(dateString);
+      // Return 'Recently' for invalid dates or dates in the future
+      if (isNaN(date.getTime()) || date > new Date()) {
+        return 'Recently';
+      }
+      return formatDistanceToNow(date, { addSuffix: true });
+    } catch {
+      return 'Recently';
+    }
+  };
+
   if (!user || continuableItems.length === 0) {
     return null;
   }
@@ -48,52 +81,53 @@ const ContinueWatching = ({ maxItems = 5 }: ContinueWatchingProps) => {
       <h2 className="text-xl md:text-2xl font-bold text-white mb-4">Continue Watching</h2>
       
       <motion.div 
-        className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4"
+        className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ staggerChildren: 0.1 }}
       >
         {continuableItems.map((item) => (
           <motion.div
-            key={`${item.media_type}-${item.media_id}-${item.season}-${item.episode}`}
-            className="glass rounded-lg overflow-hidden hover:bg-white/10 transition-colors"
+            key={`${item.media_id}-${item.season}-${item.episode}`}
+            className="relative aspect-video bg-card rounded-lg overflow-hidden group cursor-pointer"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             whileHover={{ scale: 1.02 }}
+            onClick={() => handleContinueWatching(item)}
           >
-            <div 
-              className="w-full aspect-video bg-cover bg-center relative"
-              style={{ backgroundImage: `url(https://image.tmdb.org/t/p/w780${item.backdrop_path})` }}
-            >
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
-              
-              <div className="absolute bottom-4 left-4 right-4">
-                <h3 className="text-white font-medium line-clamp-1 mb-1">{item.title}</h3>
-                <div className="flex items-center justify-between text-xs text-white/70 mb-2">
-                  <span className="flex items-center">
-                    <Clock className="h-3 w-3 mr-1" />
-                    {formatDistanceToNow(new Date(item.last_watched), { addSuffix: true })}
-                  </span>
-                  
-                  {item.media_type === 'tv' && (
-                    <span>S{item.season} E{item.episode}</span>
-                  )}
-                </div>
+            <img
+              src={`https://image.tmdb.org/t/p/w500${item.backdrop_path}`}
+              alt={item.title}
+              className="w-full h-full object-cover transition-transform group-hover:scale-110"
+            />
+            
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
+            
+            <div className="absolute bottom-4 left-4 right-4">
+              <h3 className="text-white font-medium line-clamp-1 mb-1">{item.title}</h3>
+              <div className="flex items-center justify-between text-xs text-white/70 mb-2">
+                <span className="flex items-center">
+                  <Clock className="h-3 w-3 mr-1" />
+                  {formatLastWatched(item.created_at)}
+                </span>
                 
-                <Progress 
-                  value={(item.watch_position / item.duration) * 100} 
-                  className="h-1 mb-3" 
-                />
-                
-                <Button 
-                  onClick={() => handleContinueWatching(item)}
-                  className="w-full bg-accent hover:bg-accent/80 text-white flex items-center justify-center gap-1"
-                  size="sm"
-                >
-                  <Play className="h-4 w-4" />
-                  Continue
-                </Button>
+                {item.media_type === 'tv' && (
+                  <span>S{item.season} E{item.episode}</span>
+                )}
               </div>
+              
+              <Progress 
+                value={(item.watch_position / item.duration) * 100} 
+                className="h-1 mb-3" 
+              />
+              
+              <Button 
+                className="w-full bg-accent hover:bg-accent/80 text-white flex items-center justify-center gap-1"
+                size="sm"
+              >
+                <Play className="h-3 w-3" />
+                Continue
+              </Button>
             </div>
           </motion.div>
         ))}

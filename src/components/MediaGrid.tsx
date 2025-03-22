@@ -1,7 +1,8 @@
-
 import { Media } from '@/utils/types';
 import MediaCard from './MediaCard';
 import { motion, Variants } from 'framer-motion';
+import { formatDistanceToNow } from 'date-fns';
+import { Clock } from 'react-feather';
 
 interface MediaGridProps {
   media: Media[];
@@ -31,6 +32,17 @@ const MediaGrid = ({ media, title, listView = false }: MediaGridProps) => {
   const item: Variants = {
     hidden: { opacity: 0, y: 20 },
     show: { opacity: 1, y: 0 }
+  };
+
+  const renderTimestamp = (media: any) => {
+    if (!media.created_at) return null;
+    
+    return (
+      <div className="flex items-center text-xs text-white/70 mb-2">
+        <Clock className="h-3 w-3 mr-1" />
+        {formatDistanceToNow(new Date(media.created_at), { addSuffix: true })}
+      </div>
+    );
   };
   
   return (
@@ -68,6 +80,7 @@ const MediaGrid = ({ media, title, listView = false }: MediaGridProps) => {
                       </span>
                     )}
                   </div>
+                  {renderTimestamp(mediaItem)}
                   <p className="text-white/70 text-sm line-clamp-2">{mediaItem.overview}</p>
                 </div>
               </div>

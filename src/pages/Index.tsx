@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { 
   getTrending, 
@@ -8,7 +7,7 @@ import {
   getTopRatedTVShows
 } from '@/utils/api';
 import { Media } from '@/utils/types';
-import { useAuth } from '@/hooks/use-auth';
+import { useAuth } from '@/hooks';
 import Navbar from '@/components/Navbar';
 import Hero from '@/components/Hero';
 import ContentRow from '@/components/ContentRow';

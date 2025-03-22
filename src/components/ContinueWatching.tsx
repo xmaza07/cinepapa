@@ -1,9 +1,9 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { useAuth } from '@/hooks/use-auth';
-import { useWatchHistory, WatchHistoryItem } from '@/hooks/use-watch-history';
+import { useAuth } from '@/hooks';
+import { useWatchHistory } from '@/hooks/watch-history';
+import { WatchHistoryItem } from '@/contexts/types/watch-history';
 import { Play, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';

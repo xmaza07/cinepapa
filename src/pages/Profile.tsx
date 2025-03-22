@@ -1,10 +1,9 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { useAuth } from '@/hooks/use-auth';
-import { useWatchHistory } from '@/hooks/use-watch-history';
-import { useUserPreferences } from '@/hooks/use-user-preferences';
+import { useAuth } from '@/hooks';
+import { useWatchHistory } from '@/hooks/watch-history';
+import { useUserPreferences } from '@/hooks/user-preferences';
 import { User, History, Settings } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -15,7 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 
 const Profile = () => {
-  const { user, signOut } = useAuth();
+  const { user, logout } = useAuth();
   const { watchHistory, clearWatchHistory } = useWatchHistory();
   const { userPreferences } = useUserPreferences();
   const [activeTab, setActiveTab] = useState('history');
@@ -35,6 +34,15 @@ const Profile = () => {
       title: "Watch history cleared",
       description: "Your watch history has been successfully cleared."
     });
+  };
+
+  const handleSignOut = async () => {
+    try {
+      await logout();
+      navigate('/login');
+    } catch (error) {
+      // Error is handled in auth context
+    }
   };
 
   if (!user) {
@@ -75,8 +83,7 @@ const Profile = () => {
         <div className="glass p-6 rounded-lg mb-8">
           <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
             <Avatar className="h-24 w-24 bg-accent text-white text-2xl">
-              {/* Fix: Remove avatar_url which doesn't exist in the type */}
-              <AvatarImage src="" alt={user.email || 'User'} />
+              <AvatarImage src={user.photoURL || ""} alt={user.email || 'User'} />
               <AvatarFallback>
                 {user.email ? user.email.substring(0, 2).toUpperCase() : 'U'}
               </AvatarFallback>
@@ -84,15 +91,14 @@ const Profile = () => {
             
             <div className="flex-1">
               <h1 className="text-2xl font-bold text-white mb-1">
-                {/* Fix: Use name instead of full_name which doesn't exist in the type */}
-                {user.user_metadata?.name || user.email || 'User Profile'}
+                {user.displayName || user.email || 'User Profile'}
               </h1>
               <p className="text-white/70">{user.email}</p>
               <div className="mt-4 flex flex-wrap gap-3">
                 <Button 
                   variant="outline" 
                   size="sm" 
-                  onClick={signOut}
+                  onClick={handleSignOut}
                   className="border-white/20 bg-black/50 text-white hover:bg-black/70"
                 >
                   Sign Out

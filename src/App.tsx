@@ -1,13 +1,13 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
-import { AuthProvider } from "@/hooks/use-auth";
-import { WatchHistoryProvider } from "@/hooks/use-watch-history";
-import { UserPreferencesProvider } from "@/hooks/use-user-preferences";
+import { AuthProvider } from "@/hooks";
+import { WatchHistoryProvider } from "@/contexts/watch-history";
+import { UserPreferencesProvider } from "@/contexts/user-preferences";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 import Movies from "./pages/Movies";
 import TVShows from "./pages/TVShows";
@@ -19,6 +19,8 @@ import Search from "./pages/Search";
 import Profile from "./pages/Profile";
 import WatchHistory from "./pages/WatchHistory";
 import NotFound from "./pages/NotFound";
+import Login from "./pages/Login";
+import Signup from "./pages/Signup";
 
 const queryClient = new QueryClient();
 
@@ -29,6 +31,7 @@ const AnimatedRoutes = () => {
   return (
     <AnimatePresence mode="wait">
       <Routes location={location} key={location.pathname}>
+        {/* Public Routes */}
         <Route path="/" element={<Index />} />
         <Route path="/movies" element={<Movies />} />
         <Route path="/movie" element={<Movies />} />
@@ -36,11 +39,29 @@ const AnimatedRoutes = () => {
         <Route path="/trending" element={<Trending />} />
         <Route path="/movie/:id" element={<MovieDetails />} />
         <Route path="/tv/:id" element={<TVDetails />} />
-        <Route path="/player/movie/:id" element={<Player />} />
-        <Route path="/player/tv/:id/:season/:episode" element={<Player />} />
+        <Route path="/player/movie/:id" element={
+          <ProtectedRoute>
+            <Player />
+          </ProtectedRoute>
+        } />
+        <Route path="/player/tv/:id/:season/:episode" element={
+          <ProtectedRoute>
+            <Player />
+          </ProtectedRoute>
+        } />
         <Route path="/search" element={<Search />} />
-        <Route path="/profile" element={<Profile />} />
-        <Route path="/watch-history" element={<WatchHistory />} />
+        <Route path="/profile" element={
+          <ProtectedRoute>
+            <Profile />
+          </ProtectedRoute>
+        } />
+        <Route path="/watch-history" element={
+          <ProtectedRoute>
+            <WatchHistory />
+          </ProtectedRoute>
+        } />
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </AnimatePresence>
@@ -55,9 +76,9 @@ const App = () => (
           <WatchHistoryProvider>
             <Toaster />
             <Sonner />
-            <BrowserRouter>
+            <Router>
               <AnimatedRoutes />
-            </BrowserRouter>
+            </Router>
           </WatchHistoryProvider>
         </UserPreferencesProvider>
       </AuthProvider>

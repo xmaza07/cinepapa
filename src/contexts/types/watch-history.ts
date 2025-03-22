@@ -1,0 +1,75 @@
+import { createContext } from 'react';
+import { Media } from '@/utils/types';
+
+export interface WatchHistoryItem {
+  id: string;
+  user_id: string;
+  media_id: number;
+  media_type: 'movie' | 'tv';
+  title: string;
+  poster_path: string;
+  backdrop_path: string;
+  overview?: string;
+  rating?: number;
+  season?: number;
+  episode?: number;
+  watch_position: number;
+  duration: number;
+  last_watched: string;
+  created_at: string;
+  preferred_source: string;
+}
+
+export interface FavoriteItem {
+  id: string;
+  user_id: string;
+  media_id: number;
+  media_type: 'movie' | 'tv';
+  title: string;
+  poster_path: string;
+  backdrop_path: string;
+  overview?: string;
+  rating?: number;
+  added_at: string;
+}
+
+export interface WatchlistItem {
+  id: string;
+  user_id: string;
+  media_id: number;
+  media_type: 'movie' | 'tv';
+  title: string;
+  poster_path: string;
+  backdrop_path: string;
+  overview?: string;
+  rating?: number;
+  added_at: string;
+}
+
+export interface MediaBaseItem {
+  media_id: number;
+  media_type: 'movie' | 'tv';
+  title: string;
+  poster_path: string;
+  backdrop_path: string;
+  overview?: string;
+  rating?: number;
+}
+
+export interface WatchHistoryContextType {
+  watchHistory: WatchHistoryItem[];
+  favorites: FavoriteItem[];
+  watchlist: WatchlistItem[];
+  addToWatchHistory: (media: Media, position: number, duration: number, season?: number, episode?: number, preferredSource?: string) => Promise<void>;
+  updateWatchPosition: (mediaId: number, mediaType: 'movie' | 'tv', position: number, season?: number, episode?: number) => Promise<void>;
+  clearWatchHistory: () => Promise<void>;
+  addToFavorites: (item: MediaBaseItem) => Promise<void>;
+  removeFromFavorites: (mediaId: number, mediaType: 'movie' | 'tv') => Promise<void>;
+  isInFavorites: (mediaId: number, mediaType: 'movie' | 'tv') => boolean;
+  addToWatchlist: (item: MediaBaseItem) => Promise<void>;
+  removeFromWatchlist: (mediaId: number, mediaType: 'movie' | 'tv') => Promise<void>;
+  isInWatchlist: (mediaId: number, mediaType: 'movie' | 'tv') => boolean;
+  isLoading: boolean;
+}
+
+export const WatchHistoryContext = createContext<WatchHistoryContextType | undefined>(undefined);

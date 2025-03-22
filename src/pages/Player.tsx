@@ -14,8 +14,8 @@ import {
 import { ArrowLeft, ExternalLink, Film, Tv, Check, SkipBack, SkipForward, Heart, Bookmark } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { useWatchHistory } from '@/hooks/use-watch-history';
-import { useAuth } from '@/hooks/use-auth';
+import { useWatchHistory } from '@/hooks/watch-history';
+import { useAuth } from '@/hooks';
 
 const Player = () => {
   const { id, season, episode } = useParams<{

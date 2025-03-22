@@ -1,15 +1,14 @@
-
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { History, Clock, Trash2, Bookmark, Heart } from 'lucide-react';
-import { useWatchHistory } from '@/hooks/use-watch-history';
+import { useWatchHistory } from '@/hooks/watch-history';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import MediaGrid from '@/components/MediaGrid';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useAuth } from '@/hooks/use-auth';
+import { useAuth } from '@/hooks';
 
 const WatchHistory = () => {
   const { watchHistory, clearWatchHistory, favorites, watchlist, addToFavorites, addToWatchlist, removeFromFavorites, removeFromWatchlist } = useWatchHistory();

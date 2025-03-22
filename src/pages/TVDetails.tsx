@@ -8,7 +8,7 @@ import Navbar from '@/components/Navbar';
 import ReviewSection from '@/components/ReviewSection';
 import { Play, Calendar, Star, ArrowLeft, List, Shield, History } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { useWatchHistory } from '@/hooks/use-watch-history';
+import { useWatchHistory } from '@/hooks/watch-history';
 
 const TVDetailsPage = () => {
   const { id } = useParams<{ id: string }>();

@@ -1,7 +1,7 @@
 
 {
-  "name": "Flicker Dreams Factory",
-  "short_name": "MovieApp",
+  "name": "Let's Stream V2.0",
+  "short_name": "Let's Stream",
   "description": "Watch movies and TV shows online",
   "start_url": "/",
   "display": "standalone",

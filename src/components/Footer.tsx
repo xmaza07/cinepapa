@@ -64,20 +64,20 @@ const Footer = () => {
                 </Link>
               </li>
               <li>
-                <a 
-                  href="#" 
-                  className="text-white/70 hover:text-white transition-colors flex items-center"
-                >
-                  DMCA Notice <ExternalLink className="h-3 w-3 ml-1" />
-                </a>
+<Link
+  to="/dmca"
+  className="text-white/70 hover:text-white transition-colors"
+>
+  DMCA Notice
+</Link>
               </li>
               <li>
-                <a 
-                  href="#" 
-                  className="text-white/70 hover:text-white transition-colors flex items-center"
-                >
-                  Content Removal <ExternalLink className="h-3 w-3 ml-1" />
-                </a>
+<Link
+  to="/content-removal"
+  className="text-white/70 hover:text-white transition-colors"
+>
+  Content Removal
+</Link>
               </li>
             </ul>
           </div>

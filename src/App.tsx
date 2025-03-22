@@ -21,6 +21,10 @@ import WatchHistory from "./pages/WatchHistory";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
+import TermsOfService from "./pages/TermsOfService";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import DMCANotice from "./pages/DMCANotice";
+import ContentRemoval from "./pages/ContentRemoval";
 
 const queryClient = new QueryClient();
 
@@ -62,7 +66,11 @@ const AnimatedRoutes = () => {
         } />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
-        <Route path="*" element={<NotFound />} />
+<Route path="/terms" element={<TermsOfService />} />
+<Route path="/privacy" element={<PrivacyPolicy />} />
+<Route path="/dmca" element={<DMCANotice />} />
+<Route path="/content-removal" element={<ContentRemoval />} />
+<Route path="*" element={<NotFound />} />
       </Routes>
     </AnimatePresence>
   );

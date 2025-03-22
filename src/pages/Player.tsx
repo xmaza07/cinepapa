@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { getMovieDetails, getTVDetails, videoSources, getSeasonDetails } from '@/utils/api';
@@ -51,35 +50,70 @@ const Player = () => {
   const [isFavorite, setIsFavorite] = useState(false);
   const [isInMyWatchlist, setIsInMyWatchlist] = useState(false);
 
+  // Effect to check favorites and watchlist status
+  useEffect(() => {
+    if (user && id && mediaType) {
+      const mediaId = parseInt(id, 10);
+      setIsFavorite(isInFavorites(mediaId, mediaType));
+      setIsInMyWatchlist(isInWatchlist(mediaId, mediaType));
+    }
+  }, [user, id, mediaType, isInFavorites, isInWatchlist]);
+
   // Memoized function to update the iframe URL
   const updateIframeUrl = useCallback((mediaId: number, seasonNum?: number, episodeNum?: number) => {
     const source = videoSources.find(src => src.key === selectedSource);
     if (!source) return;
     
+    let url;
     if (mediaType === 'movie') {
-      setIframeUrl(source.getMovieUrl(mediaId));
+      url = source.getMovieUrl(mediaId);
     } else if (mediaType === 'tv' && seasonNum && episodeNum) {
-      setIframeUrl(source.getTVUrl(mediaId, seasonNum, episodeNum));
+      url = source.getTVUrl(mediaId, seasonNum, episodeNum);
     }
-  }, [selectedSource, mediaType]);
+    
+    if (url) {
+      setIframeUrl(url);
+      // Only add to watch history when the video URL is actually set
+      if (user && mediaDetails) {
+        const duration = mediaType === 'movie' 
+          ? (mediaDetails as MovieDetails).runtime * 60
+          : ((mediaDetails as TVDetails).episode_run_time[0] || 30) * 60;
+          
+        addToWatchHistory(
+          {
+            id: mediaId,
+            title: (mediaDetails as MovieDetails).title || (mediaDetails as TVDetails).name || '',
+            poster_path: mediaDetails.poster_path,
+            backdrop_path: mediaDetails.backdrop_path,
+            overview: mediaDetails.overview,
+            vote_average: mediaDetails.vote_average,
+            media_type: mediaType,
+            genre_ids: mediaDetails.genres.map(g => g.id)
+          },
+          0,
+          duration,
+          seasonNum,
+          episodeNum,
+          selectedSource
+        );
+      }
+    }
+  }, [selectedSource, mediaType, user, mediaDetails, addToWatchHistory]);
 
   // Primary effect: Fetch media details when route params change
   useEffect(() => {
-    let isMounted = true; // For cleanup
-    
-    // Reset state when navigating to a different media
-    setIsLoading(true);
-    setMediaDetails(null);
-    setEpisodes([]);
-    setIframeUrl('');
+    let isMounted = true;
     
     const fetchMediaDetails = async () => {
       if (!id) return;
       
+      setIsLoading(true);
+      setMediaDetails(null);
+      setEpisodes([]);
+      setIframeUrl('');
+      
       try {
         const mediaId = parseInt(id, 10);
-        
-        // Determine media type from URL
         const isTV = season !== undefined && episode !== undefined;
         setMediaType(isTV ? 'tv' : 'movie');
         
@@ -89,78 +123,23 @@ const Player = () => {
           if (movieDetails && isMounted) {
             setTitle(movieDetails.title || 'Untitled Movie');
             setMediaDetails(movieDetails);
-            
-            // Check if the movie is in favorites or watchlist
-            if (user) {
-              setIsFavorite(isInFavorites(mediaId, 'movie'));
-              setIsInMyWatchlist(isInWatchlist(mediaId, 'movie'));
-              
-              // Automatically add to watch history
-              const duration = movieDetails.runtime * 60; // convert minutes to seconds
-              addToWatchHistory(
-                {
-                  id: mediaId,
-                  title: movieDetails.title || 'Untitled Movie',
-                  poster_path: movieDetails.poster_path,
-                  backdrop_path: movieDetails.backdrop_path,
-                  overview: movieDetails.overview,
-                  vote_average: movieDetails.vote_average,
-                  media_type: 'movie',
-                  genre_ids: movieDetails.genres.map(g => g.id)
-                },
-                0, // Initial position
-                duration, 
-                undefined, 
-                undefined,
-                selectedSource
-              );
-            }
           }
         } else if (isTV && season && episode) {
           // TV show handling
           const tvDetails = await getTVDetails(mediaId);
           if (tvDetails && isMounted) {
-            // Fetch episodes for the current season
             const seasonData = await getSeasonDetails(mediaId, parseInt(season, 10));
-            setEpisodes(seasonData);
-            
-            // Find current episode index
-            const currentEpisodeNumber = parseInt(episode, 10);
-            const episodeIndex = seasonData.findIndex(ep => ep.episode_number === currentEpisodeNumber);
-            setCurrentEpisodeIndex(episodeIndex !== -1 ? episodeIndex : 0);
-            
-            const episodeTitle = seasonData.find(ep => ep.episode_number === currentEpisodeNumber)?.name || '';
-            setTitle(`${tvDetails.name || 'Untitled Show'} - Season ${season} Episode ${episode}${episodeTitle ? ': ' + episodeTitle : ''}`);
-            setMediaDetails(tvDetails);
-            
-            // Check if the TV show is in favorites or watchlist
-            if (user) {
-              setIsFavorite(isInFavorites(mediaId, 'tv'));
-              setIsInMyWatchlist(isInWatchlist(mediaId, 'tv'));
+            if (isMounted) {
+              setEpisodes(seasonData);
+              const currentEpisodeNumber = parseInt(episode, 10);
+              const episodeIndex = seasonData.findIndex(ep => ep.episode_number === currentEpisodeNumber);
+              setCurrentEpisodeIndex(episodeIndex !== -1 ? episodeIndex : 0);
               
-              // Automatically add to watch history
-              const duration = tvDetails.episode_run_time[0] ? tvDetails.episode_run_time[0] * 60 : 1800; // Default to 30 minutes if not provided
-              addToWatchHistory(
-                {
-                  id: mediaId,
-                  name: tvDetails.name || 'Untitled Show',
-                  poster_path: tvDetails.poster_path,
-                  backdrop_path: tvDetails.backdrop_path,
-                  overview: tvDetails.overview,
-                  vote_average: tvDetails.vote_average,
-                  media_type: 'tv',
-                  genre_ids: tvDetails.genres.map(g => g.id)
-                },
-                0, // Initial position
-                duration,
-                parseInt(season, 10),
-                parseInt(episode, 10),
-                selectedSource
-              );
+              const episodeTitle = seasonData.find(ep => ep.episode_number === currentEpisodeNumber)?.name || '';
+              setTitle(`${tvDetails.name || 'Untitled Show'} - Season ${season} Episode ${episode}${episodeTitle ? ': ' + episodeTitle : ''}`);
+              setMediaDetails(tvDetails);
             }
           }
-        } else {
-          if (isMounted) navigate('/');
         }
       } catch (error) {
         console.error('Error fetching media details:', error);
@@ -170,6 +149,7 @@ const Player = () => {
             description: "There was a problem loading the media. Please try again.",
             variant: "destructive"
           });
+          navigate('/');
         }
       } finally {
         if (isMounted) {
@@ -181,15 +161,13 @@ const Player = () => {
     
     fetchMediaDetails();
     
-    // Cleanup function
     return () => {
       isMounted = false;
     };
-  }, [id, season, episode, navigate, toast, user, addToWatchHistory, isInFavorites, isInWatchlist, selectedSource]);
+  }, [id, season, episode, navigate, toast]);
 
-  // Secondary effect: Update iframe URL after data is fetched and when source changes
+  // Secondary effect: Update iframe URL after data is fetched
   useEffect(() => {
-    // Only run this effect after the media details have been fetched and when we have an ID
     if (!id || !hasInitialized || !mediaDetails) return;
     
     const mediaId = parseInt(id, 10);

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getTVDetails, getSeasonDetails, backdropSizes, posterSizes } from '@/utils/api';
@@ -7,8 +6,9 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Navbar from '@/components/Navbar';
 import ReviewSection from '@/components/ReviewSection';
-import { Play, Calendar, Star, ArrowLeft, List, Shield } from 'lucide-react';
+import { Play, Calendar, Star, ArrowLeft, List, Shield, History } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useWatchHistory } from '@/hooks/use-watch-history';
 
 const TVDetailsPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -20,6 +20,7 @@ const TVDetailsPage = () => {
   const [activeTab, setActiveTab] = useState<'episodes' | 'about' | 'reviews'>('episodes');
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const { watchHistory } = useWatchHistory();
   
   // Fetch TV show details
   useEffect(() => {
@@ -71,6 +72,27 @@ const TVDetailsPage = () => {
     if (tvShow) {
       navigate(`/player/tv/${tvShow.id}/${seasonNumber}/${episodeNumber}`);
     }
+  };
+
+  const getLastWatchedEpisode = () => {
+    if (!tvShow || !watchHistory.length) return null;
+
+    const tvWatchHistory = watchHistory.filter(
+      item => item.media_id === tvShow.id && item.media_type === 'tv'
+    );
+
+    if (!tvWatchHistory.length) return null;
+
+    // Get the most recently watched episode
+    const lastWatched = tvWatchHistory.reduce((latest, current) => {
+      return new Date(current.last_watched) > new Date(latest.last_watched) ? current : latest;
+    });
+
+    return {
+      season: lastWatched.season,
+      episode: lastWatched.episode,
+      progress: Math.round((lastWatched.watch_position / lastWatched.duration) * 100)
+    };
   };
   
   if (isLoading) {
@@ -189,15 +211,33 @@ const TVDetailsPage = () => {
               
               <p className="text-white/80 mb-6">{tvShow.overview}</p>
               
-              {episodes.length > 0 && (
-                <Button 
-                  onClick={() => handlePlayEpisode(selectedSeason, 1)}
-                  className="bg-accent hover:bg-accent/80 text-white flex items-center"
-                >
-                  <Play className="h-4 w-4 mr-2" />
-                  Play Latest Episode
-                </Button>
-              )}
+              <div className="flex flex-wrap gap-3">
+                {episodes.length > 0 && (
+                  <Button 
+                    onClick={() => handlePlayEpisode(selectedSeason, 1)}
+                    className="bg-accent hover:bg-accent/80 text-white flex items-center"
+                  >
+                    <Play className="h-4 w-4 mr-2" />
+                    Play Latest Episode
+                  </Button>
+                )}
+
+                {getLastWatchedEpisode() && (
+                  <Button 
+                    onClick={() => {
+                      const lastWatched = getLastWatchedEpisode();
+                      if (lastWatched) {
+                        handlePlayEpisode(lastWatched.season, lastWatched.episode);
+                      }
+                    }}
+                    variant="outline"
+                    className="border-accent text-accent hover:bg-accent/10 flex items-center"
+                  >
+                    <History className="h-4 w-4 mr-2" />
+                    Continue S{getLastWatchedEpisode()?.season} E{getLastWatchedEpisode()?.episode} ({getLastWatchedEpisode()?.progress}%)
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
         </div>

@@ -11,7 +11,7 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* About Section */}
           <div>
-            <h3 className="text-white font-medium text-lg mb-4">Flicker Dreams Factory</h3>
+            <h3 className="text-white font-medium text-lg mb-4">Let's Stream V2.0</h3>
             <p className="text-white/70 text-sm">
               Discover and enjoy the best movies and TV shows all in one place. Flicker Dreams Factory helps you find, explore, and watch your favorite content online.
             </p>
@@ -129,7 +129,7 @@ const Footer = () => {
         </div>
         
         <div className="mt-8 pt-4 border-t border-white/10 text-center text-white/50 text-xs">
-          <p>© {currentYear} Flicker Dreams Factory. All rights reserved.</p>
+          <p>© {currentYear}Let's Stream V2.0 All rights reserved.</p>
           <p className="mt-1">
             This site does not store any files on its server. All contents are provided by non-affiliated third parties.
           </p>

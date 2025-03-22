@@ -2,12 +2,16 @@ import { Media } from '@/utils/types';
 import MediaCard from './MediaCard';
 import { motion, Variants } from 'framer-motion';
 import { formatDistanceToNow } from 'date-fns';
-import { Clock } from 'react-feather';
+import { Clock } from 'lucide-react';
 
 interface MediaGridProps {
   media: Media[];
   title?: string;
   listView?: boolean;
+}
+
+interface MediaWithTimestamp extends Media {
+  created_at?: string;
 }
 
 const MediaGrid = ({ media, title, listView = false }: MediaGridProps) => {
@@ -34,7 +38,7 @@ const MediaGrid = ({ media, title, listView = false }: MediaGridProps) => {
     show: { opacity: 1, y: 0 }
   };
 
-  const renderTimestamp = (media: any) => {
+  const renderTimestamp = (media: MediaWithTimestamp) => {
     if (!media.created_at) return null;
     
     return (

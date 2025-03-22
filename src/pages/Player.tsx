@@ -63,8 +63,10 @@ const Player = () => {
     }
   }, [selectedSource, mediaType]);
 
-  // Fetch media details only when id, season, or episode changes
+  // Primary effect: Fetch media details when route params change
   useEffect(() => {
+    let isMounted = true; // For cleanup
+    
     // Reset state when navigating to a different media
     setIsLoading(true);
     setMediaDetails(null);
@@ -84,7 +86,7 @@ const Player = () => {
         if (!isTV) {
           // Movie handling
           const movieDetails = await getMovieDetails(mediaId);
-          if (movieDetails) {
+          if (movieDetails && isMounted) {
             setTitle(movieDetails.title || 'Untitled Movie');
             setMediaDetails(movieDetails);
             
@@ -113,14 +115,11 @@ const Player = () => {
                 selectedSource
               );
             }
-            
-            // Set iframe URL after setting media details
-            updateIframeUrl(mediaId);
           }
         } else if (isTV && season && episode) {
           // TV show handling
           const tvDetails = await getTVDetails(mediaId);
-          if (tvDetails) {
+          if (tvDetails && isMounted) {
             // Fetch episodes for the current season
             const seasonData = await getSeasonDetails(mediaId, parseInt(season, 10));
             setEpisodes(seasonData);
@@ -159,33 +158,39 @@ const Player = () => {
                 selectedSource
               );
             }
-            
-            // Set iframe URL after setting media details
-            updateIframeUrl(mediaId, parseInt(season, 10), parseInt(episode, 10));
           }
         } else {
-          navigate('/');
+          if (isMounted) navigate('/');
         }
-        
-        setHasInitialized(true);
       } catch (error) {
         console.error('Error fetching media details:', error);
-        toast({
-          title: "Error loading content",
-          description: "There was a problem loading the media. Please try again.",
-          variant: "destructive"
-        });
+        if (isMounted) {
+          toast({
+            title: "Error loading content",
+            description: "There was a problem loading the media. Please try again.",
+            variant: "destructive"
+          });
+        }
       } finally {
-        setIsLoading(false);
+        if (isMounted) {
+          setIsLoading(false);
+          setHasInitialized(true);
+        }
       }
     };
     
     fetchMediaDetails();
-  }, [id, season, episode, navigate, toast, user, addToWatchHistory, isInFavorites, isInWatchlist]);
-  
-  // Update iframe URL when selected source changes
+    
+    // Cleanup function
+    return () => {
+      isMounted = false;
+    };
+  }, [id, season, episode, navigate, toast, user, addToWatchHistory, isInFavorites, isInWatchlist, selectedSource]);
+
+  // Secondary effect: Update iframe URL after data is fetched and when source changes
   useEffect(() => {
-    if (!id || !hasInitialized) return;
+    // Only run this effect after the media details have been fetched and when we have an ID
+    if (!id || !hasInitialized || !mediaDetails) return;
     
     const mediaId = parseInt(id, 10);
     if (mediaType === 'movie') {
@@ -193,7 +198,7 @@ const Player = () => {
     } else if (mediaType === 'tv' && season && episode) {
       updateIframeUrl(mediaId, parseInt(season, 10), parseInt(episode, 10));
     }
-  }, [selectedSource, id, mediaType, season, episode, hasInitialized, updateIframeUrl]);
+  }, [id, mediaType, season, episode, hasInitialized, mediaDetails, updateIframeUrl]);
   
   const handleSourceChange = (sourceKey: string) => {
     setSelectedSource(sourceKey);

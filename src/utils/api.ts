@@ -1,5 +1,76 @@
 
-import { Media, MovieDetails, TVDetails, Episode, Review } from './types';
+import { Media, MovieDetails, TVDetails, Episode, Review, Genre, Company } from './types';
+
+interface TMDBMovieResult {
+  id: number;
+  title: string;
+  name?: string;
+  poster_path: string | null;
+  backdrop_path: string | null;
+  overview: string;
+  vote_average: number;
+  release_date?: string;
+  first_air_date?: string;
+  media_type?: 'movie' | 'tv';
+  genre_ids: number[];
+}
+
+interface TMDBTVResult {
+  id: number;
+  name: string;
+  title?: string;
+  poster_path: string | null;
+  backdrop_path: string | null;
+  overview: string;
+  vote_average: number;
+  first_air_date: string;
+  release_date?: string;
+  media_type?: 'movie' | 'tv';
+  genre_ids: number[];
+}
+
+interface TMDBMovieDetailsResult extends TMDBMovieResult {
+  runtime: number;
+  genres: Genre[];
+  status: string;
+  tagline: string;
+  budget: number;
+  revenue: number;
+  production_companies: Company[];
+  release_dates?: {
+    results: Array<{
+      iso_3166_1: string;
+      release_dates: Array<{
+        certification: string;
+      }>;
+    }>;
+  };
+}
+
+interface TMDBTVDetailsResult extends TMDBTVResult {
+  episode_run_time: number[];
+  genres: Genre[];
+  status: string;
+  tagline: string;
+  number_of_episodes: number;
+  number_of_seasons: number;
+  seasons: Array<{
+    id: number;
+    name: string;
+    overview: string;
+    poster_path: string | null;
+    season_number: number;
+    episode_count: number;
+  }>;
+  production_companies: Company[];
+  content_ratings?: {
+    results: Array<{
+      iso_3166_1: string;
+      rating: string;
+    }>;
+  };
+}
+
 
 const API_KEY = '297f1b91919bae59d50ed815f8d2e14c';
 const BASE_URL = 'https://api.themoviedb.org/3';
@@ -172,7 +243,7 @@ export const videoSources = [
 ];
 
 // Helper function to format API responses to Media type
-const formatMediaItem = (item: any): Media => {
+const formatMediaItem = (item: TMDBMovieResult | TMDBTVResult): Media => {
   const mediaType = item.media_type || (item.title ? 'movie' : 'tv');
   
   return {
@@ -211,7 +282,7 @@ export const getPopularMovies = async (): Promise<Media[]> => {
       `${BASE_URL}/movie/popular?api_key=${API_KEY}&language=en-US`
     );
     const data = await response.json();
-    return data.results.map((item: any) => formatMediaItem({...item, media_type: 'movie'}));
+  return data.results.map((item: TMDBMovieResult) => formatMediaItem({...item, media_type: 'movie'}));
   } catch (error) {
     console.error('Error fetching popular movies:', error);
     return [];
@@ -225,7 +296,7 @@ export const getPopularTVShows = async (): Promise<Media[]> => {
       `${BASE_URL}/tv/popular?api_key=${API_KEY}&language=en-US`
     );
     const data = await response.json();
-    return data.results.map((item: any) => formatMediaItem({...item, media_type: 'tv'}));
+  return data.results.map((item: TMDBTVResult) => formatMediaItem({...item, media_type: 'tv'}));
   } catch (error) {
     console.error('Error fetching popular TV shows:', error);
     return [];
@@ -239,7 +310,7 @@ export const getTopRatedMovies = async (): Promise<Media[]> => {
       `${BASE_URL}/movie/top_rated?api_key=${API_KEY}&language=en-US`
     );
     const data = await response.json();
-    return data.results.map((item: any) => formatMediaItem({...item, media_type: 'movie'}));
+  return data.results.map((item: TMDBMovieResult) => formatMediaItem({...item, media_type: 'movie'}));
   } catch (error) {
     console.error('Error fetching top rated movies:', error);
     return [];
@@ -253,7 +324,7 @@ export const getTopRatedTVShows = async (): Promise<Media[]> => {
       `${BASE_URL}/tv/top_rated?api_key=${API_KEY}&language=en-US`
     );
     const data = await response.json();
-    return data.results.map((item: any) => formatMediaItem({...item, media_type: 'tv'}));
+  return data.results.map((item: TMDBTVResult) => formatMediaItem({...item, media_type: 'tv'}));
   } catch (error) {
     console.error('Error fetching top rated TV shows:', error);
     return [];
@@ -277,7 +348,7 @@ export const getMovieDetails = async (id: number): Promise<MovieDetails | null> 
     // Get the US certification
     let certification = "";
     if (data.release_dates && data.release_dates.results) {
-      const usReleases = data.release_dates.results.find((country: any) => country.iso_3166_1 === "US");
+    const usReleases = data.release_dates?.results.find((country) => country.iso_3166_1 === "US");
       if (usReleases && usReleases.release_dates && usReleases.release_dates.length > 0) {
         certification = usReleases.release_dates[0].certification || "";
       }
@@ -319,7 +390,7 @@ export const getTVDetails = async (id: number): Promise<TVDetails | null> => {
     // Get the US certification
     let certification = "";
     if (data.content_ratings && data.content_ratings.results) {
-      const usRating = data.content_ratings.results.find((country: any) => country.iso_3166_1 === "US");
+    const usRating = data.content_ratings?.results.find((country) => country.iso_3166_1 === "US");
       if (usRating) {
         certification = usRating.rating || "";
       }
@@ -383,6 +454,34 @@ export const getReviews = async (
   }
 };
 
+// Get movie recommendations
+export const getMovieRecommendations = async (id: number): Promise<Media[]> => {
+  try {
+    const response = await fetch(
+      `${BASE_URL}/movie/${id}/recommendations?api_key=${API_KEY}&language=en-US`
+    );
+    const data = await response.json();
+  return data.results.map((item: TMDBMovieResult) => formatMediaItem({...item, media_type: 'movie'}));
+  } catch (error) {
+    console.error('Error fetching movie recommendations:', error);
+    return [];
+  }
+};
+
+// Get TV show recommendations
+export const getTVRecommendations = async (id: number): Promise<Media[]> => {
+  try {
+    const response = await fetch(
+      `${BASE_URL}/tv/${id}/recommendations?api_key=${API_KEY}&language=en-US`
+    );
+    const data = await response.json();
+  return data.results.map((item: TMDBTVResult) => formatMediaItem({...item, media_type: 'tv'}));
+  } catch (error) {
+    console.error('Error fetching TV recommendations:', error);
+    return [];
+  }
+};
+
 // Search for movies and TV shows
 export const searchMedia = async (query: string, page: number = 1): Promise<Media[]> => {
   try {
@@ -393,7 +492,7 @@ export const searchMedia = async (query: string, page: number = 1): Promise<Medi
     );
     const data = await response.json();
     return data.results
-      .filter((item: any) => item.media_type === 'movie' || item.media_type === 'tv')
+    .filter((item: TMDBMovieResult | TMDBTVResult) => item.media_type === 'movie' || item.media_type === 'tv')
       .map(formatMediaItem);
   } catch (error) {
     console.error('Error searching media:', error);

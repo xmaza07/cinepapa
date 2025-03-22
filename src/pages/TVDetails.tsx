@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getTVDetails, getSeasonDetails, backdropSizes, posterSizes } from '@/utils/api';
-import { TVDetails, Episode } from '@/utils/types';
+import { getTVDetails, getTVRecommendations, getSeasonDetails, backdropSizes, posterSizes } from '@/utils/api';
+import { TVDetails, Episode, Media } from '@/utils/types';
 import { Button } from '@/components/ui/button';
+import ContentRow from '@/components/ContentRow';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Navbar from '@/components/Navbar';
 import ReviewSection from '@/components/ReviewSection';
@@ -18,38 +19,42 @@ const TVDetailsPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [backdropLoaded, setBackdropLoaded] = useState(false);
   const [activeTab, setActiveTab] = useState<'episodes' | 'about' | 'reviews'>('episodes');
+  const [recommendations, setRecommendations] = useState<Media[]>([]);
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { watchHistory } = useWatchHistory();
   
-  // Fetch TV show details
+  // Fetch TV show details and recommendations
   useEffect(() => {
-    const fetchTVDetails = async () => {
+    const fetchTVData = async () => {
       if (!id) return;
       
       try {
         setIsLoading(true);
         const tvId = parseInt(id, 10);
-        console.log("Fetching TV details for ID:", tvId); // Debug log
-        const data = await getTVDetails(tvId);
-        console.log("TV details data:", data); // Debug log
-        setTVShow(data);
+        const [tvData, recommendationsData] = await Promise.all([
+          getTVDetails(tvId),
+          getTVRecommendations(tvId)
+        ]);
         
-        if (data && data.seasons && data.seasons.length > 0) {
+        setTVShow(tvData);
+        setRecommendations(recommendationsData);
+        
+        if (tvData && tvData.seasons && tvData.seasons.length > 0) {
           // Set default season to the first one
-          const firstSeason = data.seasons.find(s => s.season_number > 0);
+          const firstSeason = tvData.seasons.find(s => s.season_number > 0);
           if (firstSeason) {
             setSelectedSeason(firstSeason.season_number);
           }
         }
       } catch (error) {
-        console.error('Error fetching TV show details:', error);
+        console.error('Error fetching TV show data:', error);
       } finally {
         setIsLoading(false);
       }
     };
     
-    fetchTVDetails();
+    fetchTVData();
   }, [id]);
   
   // Fetch episodes when selected season changes
@@ -417,6 +422,14 @@ const TVDetailsPage = () => {
           </div>
         )}
       </div>
+      
+      {/* Recommendations Section */}
+      {recommendations.length > 0 && (
+        <ContentRow
+          title="More Like This"
+          media={recommendations}
+        />
+      )}
     </div>
   );
 };

@@ -1,8 +1,8 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getMovieDetails, backdropSizes, posterSizes } from '@/utils/api';
-import { MovieDetails } from '@/utils/types';
+import { getMovieDetails, getMovieRecommendations, backdropSizes, posterSizes } from '@/utils/api';
+import { MovieDetails, Media } from '@/utils/types';
 import { Button } from '@/components/ui/button';
 import Navbar from '@/components/Navbar';
 import ContentRow from '@/components/ContentRow';
@@ -16,26 +16,31 @@ const MovieDetailsPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [backdropLoaded, setBackdropLoaded] = useState(false);
   const [activeTab, setActiveTab] = useState<'about' | 'reviews'>('about');
+  const [recommendations, setRecommendations] = useState<Media[]>([]);
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   
   useEffect(() => {
-    const fetchMovieDetails = async () => {
+    const fetchMovieData = async () => {
       if (!id) return;
       
       try {
         setIsLoading(true);
         const movieId = parseInt(id, 10);
-        const data = await getMovieDetails(movieId);
-        setMovie(data);
+        const [movieData, recommendationsData] = await Promise.all([
+          getMovieDetails(movieId),
+          getMovieRecommendations(movieId),
+        ]);
+        setMovie(movieData);
+        setRecommendations(recommendationsData);
       } catch (error) {
-        console.error('Error fetching movie details:', error);
+        console.error('Error fetching movie data:', error);
       } finally {
         setIsLoading(false);
       }
     };
     
-    fetchMovieDetails();
+    fetchMovieData();
   }, [id]);
   
   const handlePlayMovie = () => {
@@ -264,6 +269,14 @@ const MovieDetailsPage = () => {
           </div>
         )}
       </div>
+      
+      {/* Recommendations Section */}
+      {recommendations.length > 0 && (
+        <ContentRow
+          title="More Like This"
+          media={recommendations}
+        />
+      )}
     </div>
   );
 };

@@ -13,6 +13,23 @@ export interface Media {
   genre_ids: number[];
 }
 
+export interface MovieImage {
+  aspect_ratio: number;
+  height: number;
+  iso_639_1: string | null;
+  file_path: string;
+  vote_average: number;
+  vote_count: number;
+  width: number;
+}
+
+export interface MovieImagesResponse {
+  id: number;
+  backdrops: MovieImage[];
+  logos: MovieImage[];
+  posters: MovieImage[];
+}
+
 export interface MovieDetails extends Media {
   runtime: number;
   genres: Genre[];
@@ -22,6 +39,7 @@ export interface MovieDetails extends Media {
   revenue: number;
   production_companies: Company[];
   certification?: string;
+  logo_path: string | null;
 }
 
 export interface TVDetails extends Media {
@@ -34,6 +52,7 @@ export interface TVDetails extends Media {
   seasons: Season[];
   production_companies: Company[];
   certification?: string;
+  logo_path: string | null;
 }
 
 export interface Genre {

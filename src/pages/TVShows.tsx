@@ -79,12 +79,12 @@ const TVShows = () => {
         <main className="flex-1 animate-fade-in" style={{ animationDuration: '0.5s' }}>
           <div className="container px-4 py-8">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 pt-10">
                 <Tv className="h-8 w-8 text-accent animate-pulse-slow" />
                 <h1 className="text-3xl font-bold text-white">TV Shows</h1>
               </div>
               
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-4 pt-6">
                 <Button
                   variant="outline"
                   size="sm"

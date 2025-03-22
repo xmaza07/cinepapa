@@ -1,5 +1,5 @@
 
-import { Media, MovieDetails, TVDetails, Episode, Review, Genre, Company } from './types';
+import { Media, MovieDetails, TVDetails, Episode, Review, Genre, Company, MovieImagesResponse } from './types';
 
 interface TMDBMovieResult {
   id: number;
@@ -334,37 +334,53 @@ export const getTopRatedTVShows = async (): Promise<Media[]> => {
 // Get movie details
 export const getMovieDetails = async (id: number): Promise<MovieDetails | null> => {
   try {
-    const response = await fetch(
-      `${BASE_URL}/movie/${id}?api_key=${API_KEY}&language=en-US&append_to_response=release_dates`
-    );
+    const [detailsResponse, imagesResponse] = await Promise.all([
+      fetch(`${BASE_URL}/movie/${id}?api_key=${API_KEY}&language=en-US&append_to_response=release_dates`),
+      fetch(`${BASE_URL}/movie/${id}/images?api_key=${API_KEY}`)
+    ]);
     
-    if (!response.ok) {
-      console.error(`API error: ${response.status} ${response.statusText}`);
+    if (!detailsResponse.ok || !imagesResponse.ok) {
+      console.error(`API error: Details ${detailsResponse.status}, Images ${imagesResponse.status}`);
       return null;
     }
-    
-    const data = await response.json();
+
+    const [detailsData, imagesData] = await Promise.all([
+      detailsResponse.json(),
+      imagesResponse.json() as Promise<MovieImagesResponse>
+    ]);
     
     // Get the US certification
     let certification = "";
-    if (data.release_dates && data.release_dates.results) {
-    const usReleases = data.release_dates?.results.find((country) => country.iso_3166_1 === "US");
+    if (detailsData.release_dates && detailsData.release_dates.results) {
+      const usReleases = detailsData.release_dates?.results.find((country) => country.iso_3166_1 === "US");
       if (usReleases && usReleases.release_dates && usReleases.release_dates.length > 0) {
         certification = usReleases.release_dates[0].certification || "";
       }
     }
+
+    // Get the best logo (English logos with highest vote average)
+    let bestLogo = null;
+    if (imagesData.logos && imagesData.logos.length > 0) {
+      const englishLogos = imagesData.logos.filter(logo => logo.iso_639_1 === "en");
+      if (englishLogos.length > 0) {
+        bestLogo = englishLogos.reduce((prev, current) => 
+          (prev.vote_average > current.vote_average) ? prev : current
+        );
+      }
+    }
     
     return {
-      ...formatMediaItem({...data, media_type: 'movie'}),
-      runtime: data.runtime,
-      genres: data.genres,
-      status: data.status,
-      tagline: data.tagline,
-      budget: data.budget,
-      revenue: data.revenue,
-      production_companies: data.production_companies,
+      ...formatMediaItem({...detailsData, media_type: 'movie'}),
+      runtime: detailsData.runtime,
+      genres: detailsData.genres,
+      status: detailsData.status,
+      tagline: detailsData.tagline,
+      budget: detailsData.budget,
+      revenue: detailsData.revenue,
+      production_companies: detailsData.production_companies,
       certification: certification,
-    } as MovieDetails;
+      logo_path: bestLogo ? bestLogo.file_path : null,
+    };
   } catch (error) {
     console.error(`Error fetching movie details for id ${id}:`, error);
     return null;
@@ -374,40 +390,54 @@ export const getMovieDetails = async (id: number): Promise<MovieDetails | null> 
 // Get TV show details
 export const getTVDetails = async (id: number): Promise<TVDetails | null> => {
   try {
-    console.log(`Fetching TV details from: ${BASE_URL}/tv/${id}?api_key=${API_KEY}&language=en-US&append_to_response=content_ratings`); // Debug log
-    const response = await fetch(
-      `${BASE_URL}/tv/${id}?api_key=${API_KEY}&language=en-US&append_to_response=content_ratings`
-    );
+    const [detailsResponse, imagesResponse] = await Promise.all([
+      fetch(`${BASE_URL}/tv/${id}?api_key=${API_KEY}&language=en-US&append_to_response=content_ratings`),
+      fetch(`${BASE_URL}/tv/${id}/images?api_key=${API_KEY}`)
+    ]);
     
-    if (!response.ok) {
-      console.error(`API error: ${response.status} ${response.statusText}`);
+    if (!detailsResponse.ok || !imagesResponse.ok) {
+      console.error(`API error: Details ${detailsResponse.status}, Images ${imagesResponse.status}`);
       return null;
     }
     
-    const data = await response.json();
-    console.log("Raw TV details data:", data); // Debug log
+    const [detailsData, imagesData] = await Promise.all([
+      detailsResponse.json(),
+      imagesResponse.json() as Promise<MovieImagesResponse>
+    ]);
     
     // Get the US certification
     let certification = "";
-    if (data.content_ratings && data.content_ratings.results) {
-    const usRating = data.content_ratings?.results.find((country) => country.iso_3166_1 === "US");
+    if (detailsData.content_ratings && detailsData.content_ratings.results) {
+      const usRating = detailsData.content_ratings?.results.find((country) => country.iso_3166_1 === "US");
       if (usRating) {
         certification = usRating.rating || "";
       }
     }
+
+    // Get the best logo (English logos with highest vote average)
+    let bestLogo = null;
+    if (imagesData.logos && imagesData.logos.length > 0) {
+      const englishLogos = imagesData.logos.filter(logo => logo.iso_639_1 === "en");
+      if (englishLogos.length > 0) {
+        bestLogo = englishLogos.reduce((prev, current) => 
+          (prev.vote_average > current.vote_average) ? prev : current
+        );
+      }
+    }
     
     return {
-      ...formatMediaItem({...data, media_type: 'tv'}),
-      episode_run_time: data.episode_run_time,
-      genres: data.genres,
-      status: data.status,
-      tagline: data.tagline,
-      number_of_episodes: data.number_of_episodes,
-      number_of_seasons: data.number_of_seasons,
-      seasons: data.seasons,
-      production_companies: data.production_companies,
+      ...formatMediaItem({...detailsData, media_type: 'tv'}),
+      episode_run_time: detailsData.episode_run_time,
+      genres: detailsData.genres,
+      status: detailsData.status,
+      tagline: detailsData.tagline,
+      number_of_episodes: detailsData.number_of_episodes,
+      number_of_seasons: detailsData.number_of_seasons,
+      seasons: detailsData.seasons,
+      production_companies: detailsData.production_companies,
       certification: certification,
-    } as TVDetails;
+      logo_path: bestLogo ? bestLogo.file_path : null,
+    };
   } catch (error) {
     console.error(`Error fetching TV details for id ${id}:`, error);
     return null;

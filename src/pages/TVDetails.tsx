@@ -17,7 +17,8 @@ const TVDetailsPage = () => {
   const [episodes, setEpisodes] = useState<Episode[]>([]);
   const [selectedSeason, setSelectedSeason] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
-  const [backdropLoaded, setBackdropLoaded] = useState(false);
+const [backdropLoaded, setBackdropLoaded] = useState(false);
+const [logoLoaded, setLogoLoaded] = useState(false);
   const [activeTab, setActiveTab] = useState<'episodes' | 'about' | 'reviews'>('episodes');
   const [recommendations, setRecommendations] = useState<Media[]>([]);
   const navigate = useNavigate();
@@ -167,9 +168,29 @@ const TVDetailsPage = () => {
             </div>
             
             <div className="flex-1 animate-slide-up">
-              <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-2 text-balance">
-                {tvShow.name}
-              </h1>
+              {tvShow.logo_path ? (
+                <div className="relative w-full max-w-[300px] md:max-w-[400px] lg:max-w-[500px] mx-auto mb-4 
+                              transition-all duration-300 ease-in-out hover:scale-105">
+                  {/* Loading skeleton */}
+                  {!logoLoaded && (
+                    <div className="absolute inset-0 bg-background image-skeleton rounded-lg" />
+                  )}
+                  
+                  <img
+                    src={`${backdropSizes.original}${tvShow.logo_path}`}
+                    alt={tvShow.name}
+                    className={`w-full h-auto object-contain filter drop-shadow-lg
+                              transition-opacity duration-700 ease-in-out
+                              ${logoLoaded ? 'opacity-100' : 'opacity-0'}`}
+                    onLoad={() => setLogoLoaded(true)}
+                  />
+                </div>
+              ) : (
+                <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-2 text-balance
+                             animate-fade-in">
+                  {tvShow.name}
+                </h1>
+              )}
               
               {tvShow.tagline && (
                 <p className="text-white/70 mb-4 italic text-lg">{tvShow.tagline}</p>

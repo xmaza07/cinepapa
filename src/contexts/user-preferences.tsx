@@ -1,3 +1,4 @@
+
 import { useState, useEffect, ReactNode } from 'react';
 import { useAuth } from '@/hooks';
 import { useToast } from '@/components/ui/use-toast';
@@ -27,12 +28,19 @@ export function UserPreferencesProvider({ children }: { children: ReactNode }) {
         const userPrefsDoc = await getDoc(userPrefsRef);
 
         if (userPrefsDoc.exists()) {
-          setUserPreferences(userPrefsDoc.data() as UserPreferences);
+          const prefs = userPrefsDoc.data() as UserPreferences;
+          setUserPreferences(prefs);
+          
+          // Apply accent color if it exists
+          if (prefs.accentColor) {
+            applyAccentColor(prefs.accentColor);
+          }
         } else {
           // Initialize with default preferences
           const defaultPreferences: UserPreferences = {
             user_id: user.uid,
             isWatchHistoryEnabled: true,
+            accentColor: '#E63462', // Default accent color
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
           };
@@ -40,6 +48,9 @@ export function UserPreferencesProvider({ children }: { children: ReactNode }) {
           try {
             await setDoc(userPrefsRef, defaultPreferences);
             setUserPreferences(defaultPreferences);
+            
+            // Apply default accent color
+            applyAccentColor(defaultPreferences.accentColor);
           } catch (error) {
             console.error('Error creating default preferences:', error);
             toast({
@@ -60,6 +71,7 @@ export function UserPreferencesProvider({ children }: { children: ReactNode }) {
         setUserPreferences({
           user_id: user.uid,
           isWatchHistoryEnabled: true,
+          accentColor: '#E63462',
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         });
@@ -70,6 +82,28 @@ export function UserPreferencesProvider({ children }: { children: ReactNode }) {
 
     fetchPreferences();
   }, [user, toast]);
+
+  // Function to map hex color to HSL
+  const getHSLFromHex = (hex: string): string => {
+    // Default HSL values for common accent colors
+    const colorMap: Record<string, string> = {
+      '#E63462': '347 80% 55%',  // Pink
+      '#9b87f5': '250 85% 75%',  // Purple
+      '#0EA5E9': '199 89% 48%',  // Blue
+      '#10B981': '160 84% 39%',  // Green
+      '#F59E0B': '38 92% 50%',   // Yellow
+      '#F97316': '24 94% 53%',   // Orange
+      '#EF4444': '0 84% 60%',    // Red
+    };
+    
+    return colorMap[hex] || '347 80% 55%'; // Default to pink if unknown
+  };
+
+  // Apply accent color to CSS variables
+  const applyAccentColor = (colorHex: string) => {
+    const hsl = getHSLFromHex(colorHex);
+    document.documentElement.style.setProperty('--accent', hsl);
+  };
 
   const updatePreferences = async (preferences: Partial<UserPreferences>) => {
     if (!user || !userPreferences) return;
@@ -118,12 +152,33 @@ export function UserPreferencesProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const setAccentColor = async (color: string) => {
+    if (!user || !userPreferences) return;
+
+    try {
+      await updatePreferences({
+        accentColor: color
+      });
+
+      // Apply the color
+      applyAccentColor(color);
+
+      toast({
+        title: "Accent Color Updated",
+        description: "Your accent color preference has been saved."
+      });
+    } catch (error) {
+      console.error('Error setting accent color:', error);
+    }
+  };
+
   return (
     <UserPreferencesContext.Provider value={{
       userPreferences,
       updatePreferences,
       isLoading,
-      toggleWatchHistory
+      toggleWatchHistory,
+      setAccentColor
     }}>
       {children}
     </UserPreferencesContext.Provider>

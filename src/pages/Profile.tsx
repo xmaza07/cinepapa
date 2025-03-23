@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -13,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { Switch } from "@/components/ui/switch";
+import AccentColorPicker from '@/components/AccentColorPicker';
 
 const Profile = () => {
   const { user, logout } = useAuth();
@@ -174,6 +176,9 @@ const Profile = () => {
                   />
                 </div>
                 
+                {/* Accent Color Picker */}
+                <AccentColorPicker />
+                
                 <div>
                   <h3 className="text-lg font-medium text-white mb-2">Preferred Source</h3>
                   <p className="text-white/70">
@@ -182,8 +187,6 @@ const Profile = () => {
                       'No preferred video source set.'}
                   </p>
                 </div>
-                
-                {/* More preference options can be added here */}
               </div>
             </div>
           </TabsContent>

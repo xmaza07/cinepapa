@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { 
-  getTrending, 
-  getPopularMovies, 
+import {
+  getTrending,
+  getPopularMovies,
   getPopularTVShows,
   getTopRatedMovies,
   getTopRatedTVShows
@@ -24,7 +24,7 @@ const Index = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [contentVisible, setContentVisible] = useState(false);
   const [heroItem, setHeroItem] = useState<Media | null>(null);
-  
+
   // Fetch data on component mount
   useEffect(() => {
     const fetchData = async () => {
@@ -43,16 +43,16 @@ const Index = () => {
           getTopRatedMovies(),
           getTopRatedTVShows()
         ]);
-        
+
         // Filter content with backdrop images
         const filteredTrendingData = trendingData.filter(item => item.backdrop_path);
-        
+
         // Set a random trending item for hero
         if (filteredTrendingData.length > 0) {
           const randomIndex = Math.floor(Math.random() * Math.min(5, filteredTrendingData.length));
           setHeroItem(filteredTrendingData[randomIndex]);
         }
-        
+
         // Update state with fetched data
         setTrendingMedia(filteredTrendingData);
         setPopularMovies(popularMoviesData);
@@ -63,21 +63,35 @@ const Index = () => {
         console.error('Error fetching homepage data:', error);
       } finally {
         setIsLoading(false);
-        
+
         // Delay showing content for a smoother animation
         setTimeout(() => {
           setContentVisible(true);
         }, 300);
       }
     };
-    
+
     fetchData();
   }, []);
-  
+
+  // Smooth scrolling for Hero section
+  useEffect(() => {
+    const handleScroll = () => {
+const hero = document.querySelector('.hero') as HTMLElement;
+      if (hero) {
+        const scrollTop = window.scrollY;
+        hero.style.transform = `translateY(${scrollTop * 0.5}px)`;
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   return (
     <main className="min-h-screen bg-background pb-16">
       <Navbar />
-      
+
       {isLoading ? (
         <div className="flex items-center justify-center min-h-screen">
           <div className="animate-pulse-slow text-white font-medium">Loading...</div>
@@ -85,13 +99,13 @@ const Index = () => {
       ) : (
         <>
           {/* Hero section with featured content */}
-          {heroItem && <Hero media={[heroItem]} />}
-          
+          {heroItem && <Hero media={[heroItem]} className="hero" />}
+
           {/* Content rows with staggered animations */}
           <div className={`mt-8 md:mt-12 transition-opacity duration-500 ${contentVisible ? 'opacity-100' : 'opacity-0'}`}>
             {/* Continue watching section - only appears for logged in users with watch history */}
             {user && <ContinueWatching />}
-            
+
             <ContentRow title="Trending Now" media={trendingMedia} featured />
             <ContentRow title="Popular Movies" media={popularMovies} />
             <ContentRow title="Popular TV Shows" media={popularTVShows} />
@@ -100,7 +114,7 @@ const Index = () => {
           </div>
         </>
       )}
-      
+
       <Footer />
     </main>
   );

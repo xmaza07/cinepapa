@@ -5,7 +5,6 @@ import { Input } from "@/components/ui/input";
 import { Search, Home, Film, Tv, TrendingUp, Menu, X, Keyboard, ArrowRight, History, UserCircle, LogIn, UserPlus } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from '@/hooks';
-import InstallPWAButton from './InstallPWAButton';
 
 interface NavItem {
   title: string;
@@ -22,7 +21,7 @@ const Navbar = () => {
   const location = useLocation();
   const { toast } = useToast();
   const { user } = useAuth();
-  
+
   const navItems: NavItem[] = [
     { title: 'Home', path: '/', icon: <Home className="h-4 w-4 mr-2" /> },
     { title: 'Movies', path: '/movies', icon: <Film className="h-4 w-4 mr-2" /> },
@@ -67,7 +66,7 @@ const Navbar = () => {
       navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
       setSearchQuery('');
       setIsMobileMenuOpen(false);
-      
+
       toast({
         title: "Searching...",
         description: `Finding results for "${searchQuery.trim()}"`,
@@ -92,14 +91,14 @@ const Navbar = () => {
       }`}
     >
       <div className="container mx-auto px-4 md:px-6 flex items-center justify-between">
-        <Link 
-          to="/" 
+        <Link
+          to="/"
           className="flex items-center text-white text-xl font-bold transition-transform hover:scale-105"
         >
           <span className="text-accent">Let's</span>
           <span className="ml-1">Stream</span>
         </Link>
-        
+
         <nav className="hidden md:flex items-center space-x-1">
           {navItems.map((item) => (
             <Link
@@ -130,7 +129,7 @@ const Navbar = () => {
             </Link>
           ))}
         </nav>
-        
+
         <form onSubmit={handleSearch} className="hidden md:flex items-center relative ml-4">
           <div className="relative group">
             <Search className="h-4 w-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
@@ -141,9 +140,9 @@ const Navbar = () => {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
-            
+
             {showKeyboardHint && (
-              <div 
+              <div
                 className="absolute right-0 top-full mt-2 bg-background border border-white/10 p-2 rounded text-xs text-white animate-fade-in z-50"
                 onClick={showKeyboardShortcutToast}
               >
@@ -154,21 +153,18 @@ const Navbar = () => {
               </div>
             )}
           </div>
-          <Button 
-            type="submit" 
-            size="sm" 
-            variant="ghost" 
+          <Button
+            type="submit"
+            size="sm"
+            variant="ghost"
             className="ml-2 bg-white/10 hover:bg-white/20 text-white transition-colors"
           >
             <ArrowRight className="h-4 w-4" />
             <span className="sr-only">Search</span>
           </Button>
         </form>
-        
-        <div className="hidden md:block ml-2">
-          <InstallPWAButton />
-        </div>
-        
+
+
         <button
           className="md:hidden text-white p-2"
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -181,7 +177,7 @@ const Navbar = () => {
           )}
         </button>
       </div>
-      
+
       {isMobileMenuOpen && (
         <div className="md:hidden glass animate-fade-in">
           <div className="px-4 py-3 space-y-3">
@@ -225,20 +221,17 @@ const Navbar = () => {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
-                <Button 
-                  type="submit" 
-                  size="sm" 
-                  variant="ghost" 
+                <Button
+                  type="submit"
+                  size="sm"
+                  variant="ghost"
                   className="ml-2 bg-white/10 hover:bg-white/20 text-white"
                 >
                   <ArrowRight className="h-4 w-4" />
                 </Button>
               </div>
             </form>
-            
-            <div className="pt-2">
-              <InstallPWAButton />
-            </div>
+
           </div>
         </div>
       )}

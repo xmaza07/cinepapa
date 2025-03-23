@@ -7,5 +7,6 @@ export function useUserPreferences() {
   if (context === undefined) {
     throw new Error('useUserPreferences must be used within a UserPreferencesProvider');
   }
+  
   return context;
 }

@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -25,6 +26,8 @@ import TermsOfService from "./pages/TermsOfService";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import DMCANotice from "./pages/DMCANotice";
 import ContentRemoval from "./pages/ContentRemoval";
+import Sports from "./pages/Sports";
+import SportMatch from "./pages/SportMatch";
 
 const queryClient = new QueryClient();
 
@@ -41,6 +44,8 @@ const AnimatedRoutes = () => {
         <Route path="/movie" element={<Movies />} />
         <Route path="/tv" element={<TVShows />} />
         <Route path="/trending" element={<Trending />} />
+        <Route path="/sports" element={<Sports />} />
+        <Route path="/sports/match/:source/:id" element={<SportMatch />} />
         <Route path="/movie/:id" element={<MovieDetails />} />
         <Route path="/tv/:id" element={<TVDetails />} />
         <Route path="/player/movie/:id" element={
@@ -66,11 +71,11 @@ const AnimatedRoutes = () => {
         } />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
-<Route path="/terms" element={<TermsOfService />} />
-<Route path="/privacy" element={<PrivacyPolicy />} />
-<Route path="/dmca" element={<DMCANotice />} />
-<Route path="/content-removal" element={<ContentRemoval />} />
-<Route path="*" element={<NotFound />} />
+        <Route path="/terms" element={<TermsOfService />} />
+        <Route path="/privacy" element={<PrivacyPolicy />} />
+        <Route path="/dmca" element={<DMCANotice />} />
+        <Route path="/content-removal" element={<ContentRemoval />} />
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </AnimatePresence>
   );

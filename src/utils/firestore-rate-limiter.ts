@@ -1,4 +1,5 @@
-import { RateLimiter } from '@/utils/rate-limiter';
+
+import RateLimiter from '@/utils/rate-limiter';
 
 // Create rate limiters for different Firestore operations
 const READ_LIMIT = 50000;
@@ -49,3 +50,5 @@ class FirestoreRateLimiter {
     return this.deleteLimiter.getRemaining();
   }
 }
+
+export default FirestoreRateLimiter;

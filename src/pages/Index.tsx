@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import {
   getTrending,
@@ -14,6 +13,7 @@ import Hero from '@/components/Hero';
 import ContentRow from '@/components/ContentRow';
 import ContinueWatching from '@/components/ContinueWatching';
 import Footer from '@/components/Footer';
+import Spinner from '@/components/ui/spinner';
 
 const Index = () => {
   const { user } = useAuth();
@@ -25,11 +25,9 @@ const Index = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [contentVisible, setContentVisible] = useState(false);
 
-  // Fetch data on component mount
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch all data in parallel
         const [
           trendingData,
           popularMoviesData,
@@ -44,10 +42,8 @@ const Index = () => {
           getTopRatedTVShows()
         ]);
 
-        // Filter content with backdrop images
         const filteredTrendingData = trendingData.filter(item => item.backdrop_path);
 
-        // Update state with fetched data
         setTrendingMedia(filteredTrendingData);
         setPopularMovies(popularMoviesData);
         setPopularTVShows(popularTVData);
@@ -58,7 +54,6 @@ const Index = () => {
       } finally {
         setIsLoading(false);
 
-        // Delay showing content for a smoother animation
         setTimeout(() => {
           setContentVisible(true);
         }, 300);
@@ -78,12 +73,9 @@ const Index = () => {
         </div>
       ) : (
         <>
-          {/* Hero section with all trending media items for rotation */}
           {trendingMedia.length > 0 && <Hero media={trendingMedia.slice(0, 5)} className="hero" />}
 
-          {/* Content rows with staggered animations */}
           <div className={`mt-8 md:mt-12 transition-opacity duration-500 ${contentVisible ? 'opacity-100' : 'opacity-0'}`}>
-            {/* Continue watching section - only appears for logged in users with watch history */}
             {user && <ContinueWatching />}
 
             <ContentRow title="Trending Now" media={trendingMedia} featured />

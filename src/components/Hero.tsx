@@ -1,10 +1,9 @@
-
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Media } from '@/utils/types';
 import { backdropSizes } from '@/utils/api';
 import { Button } from '@/components/ui/button';
-import { Play, Info, Star, Calendar, Clock } from 'lucide-react';
+import { Play, Info, Star, Calendar } from 'lucide-react';
 import Spinner from '@/components/ui/spinner';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -20,7 +19,6 @@ const Hero = ({ media, className }: HeroProps) => {
   const navigate = useNavigate();
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   
-  // Filter media to only include items with backdrop paths
   const filteredMedia = useMemo(() => 
     media.filter(item => item.backdrop_path), 
     [media]
@@ -28,7 +26,6 @@ const Hero = ({ media, className }: HeroProps) => {
   
   const featuredMedia = filteredMedia[currentIndex];
 
-  // Auto-change featured media with proper cleanup
   useEffect(() => {
     if (filteredMedia.length <= 1) return;
     
@@ -51,21 +48,18 @@ const Hero = ({ media, className }: HeroProps) => {
     };
   }, [filteredMedia]);
 
-  // Reset transitioning state when new image is loaded
   useEffect(() => {
     if (isLoaded) {
       setIsTransitioning(false);
     }
   }, [isLoaded]);
 
-  // Pause the rotation when user hovers over the hero section
   const handleMouseEnter = () => {
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
     }
   };
 
-  // Resume the rotation when user leaves the hero section
   const handleMouseLeave = () => {
     if (filteredMedia.length <= 1) return;
     
@@ -87,7 +81,6 @@ const Hero = ({ media, className }: HeroProps) => {
   const title = featuredMedia.title || featuredMedia.name || 'Untitled';
   const releaseDate = featuredMedia.release_date || featuredMedia.first_air_date;
   const releaseYear = releaseDate ? new Date(releaseDate).getFullYear() : '';
-  const runtime = featuredMedia.runtime ? `${Math.floor(featuredMedia.runtime / 60)}h ${featuredMedia.runtime % 60}m` : '';
 
   const handlePlay = () => {
     const mediaType = featuredMedia.media_type;
@@ -113,7 +106,6 @@ const Hero = ({ media, className }: HeroProps) => {
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      {/* Loading spinner */}
       <AnimatePresence>
         {!isLoaded && (
           <motion.div 
@@ -126,7 +118,6 @@ const Hero = ({ media, className }: HeroProps) => {
         )}
       </AnimatePresence>
 
-      {/* Background image with animations */}
       <AnimatePresence>
         <motion.div
           key={currentIndex}
@@ -147,13 +138,11 @@ const Hero = ({ media, className }: HeroProps) => {
             onLoad={() => setIsLoaded(true)}
           />
 
-          {/* Enhanced gradient overlays */}
           <div className="absolute inset-0 hero-gradient-enhanced" />
           <div className="absolute inset-0 md:w-1/2 hero-side-gradient" />
         </motion.div>
       </AnimatePresence>
 
-      {/* Content */}
       <AnimatePresence mode="wait">
         <motion.div 
           key={currentIndex}
@@ -166,7 +155,6 @@ const Hero = ({ media, className }: HeroProps) => {
           transition={{ duration: 0.6, ease: "easeOut", delay: 0.2 }}
           className="absolute bottom-0 left-0 right-0 p-6 md:p-12 lg:p-16 flex flex-col items-start max-w-3xl"
         >
-          {/* Media badges */}
           <motion.div 
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -184,13 +172,6 @@ const Hero = ({ media, className }: HeroProps) => {
               </span>
             )}
             
-            {runtime && (
-              <span className="flex items-center px-3 py-1 rounded-full bg-white/10 backdrop-blur-sm text-xs font-medium text-white">
-                <Clock className="w-3 h-3 mr-1" />
-                {runtime}
-              </span>
-            )}
-            
             {featuredMedia.vote_average > 0 && (
               <span className="flex items-center px-3 py-1 rounded-full bg-white/10 backdrop-blur-sm text-xs font-medium text-white">
                 <Star className="w-3 h-3 mr-1 fill-amber-400 text-amber-400" />
@@ -199,7 +180,6 @@ const Hero = ({ media, className }: HeroProps) => {
             )}
           </motion.div>
 
-          {/* Title with special effects */}
           <motion.h1 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -209,7 +189,6 @@ const Hero = ({ media, className }: HeroProps) => {
             {title}
           </motion.h1>
 
-          {/* Overview with staggered animation */}
           <motion.p 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -219,7 +198,6 @@ const Hero = ({ media, className }: HeroProps) => {
             {featuredMedia.overview}
           </motion.p>
 
-          {/* Action buttons with hover effects */}
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -248,7 +226,6 @@ const Hero = ({ media, className }: HeroProps) => {
         </motion.div>
       </AnimatePresence>
 
-      {/* Enhanced pagination indicators */}
       {filteredMedia.length > 1 && (
         <div className="absolute bottom-6 right-6 md:bottom-12 md:right-12 flex space-x-2 z-10">
           {filteredMedia.slice(0, 5).map((_, index) => (

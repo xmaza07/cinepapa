@@ -17,6 +17,8 @@ import {
 } from './types/watch-history';
 import RateLimiter from '@/utils/rate-limiter';
 
+const LOCAL_STORAGE_HISTORY_KEY = 'fdf_watch_history';
+
 export { WatchHistoryContext };
 
 // Initialize Firestore
@@ -26,10 +28,28 @@ const db = getFirestore(app);
 // Initialize rate limiter (5 minutes interval in milliseconds)
 const rateLimiter = new RateLimiter(100, 300000); // 100 requests per 5 minutes
 
+const loadLocalWatchHistory = (): WatchHistoryItem[] => {
+  try {
+    const storedHistory = localStorage.getItem(LOCAL_STORAGE_HISTORY_KEY);
+    return storedHistory ? JSON.parse(storedHistory) : [];
+  } catch (error) {
+    console.error('Error loading local watch history:', error);
+    return [];
+  }
+};
+
+const saveLocalWatchHistory = (history: WatchHistoryItem[]) => {
+  try {
+    localStorage.setItem(LOCAL_STORAGE_HISTORY_KEY, JSON.stringify(history));
+  } catch (error) {
+    console.error('Error saving local watch history:', error);
+  }
+};
+
 export function WatchHistoryProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const { userPreferences } = useUserPreferences();
-  const [watchHistory, setWatchHistory] = useState<WatchHistoryItem[]>([]);
+  const [watchHistory, setWatchHistory] = useState<WatchHistoryItem[]>(loadLocalWatchHistory()); // Initialize from local storage
   const [favorites, setFavorites] = useState<FavoriteItem[]>([]);
   const [watchlist, setWatchlist] = useState<WatchlistItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -38,13 +58,19 @@ export function WatchHistoryProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const fetchData = async () => {
       if (!user) {
-        setWatchHistory([]);
+        setWatchHistory(loadLocalWatchHistory()); // Load from local storage if no user
         setFavorites([]);
         setWatchlist([]);
         setIsLoading(false);
         return;
       }
       
+      if (!navigator.onLine) {
+        setWatchHistory(loadLocalWatchHistory()); // Load from local storage if offline
+        setIsLoading(false);
+        return;
+      }
+
       try {
         setIsLoading(true);
         
@@ -180,11 +206,38 @@ export function WatchHistoryProvider({ children }: { children: ReactNode }) {
   ) => {
     if (!user || !userPreferences?.isWatchHistoryEnabled) return;
     
+    const mediaType = media.media_type;
+    const mediaId = media.id;
+    const title = media.title || media.name || '';
+    const newItem: WatchHistoryItem = {
+      id: generateId(),
+      user_id: user.uid || 'offline_user', // Use a default user ID for offline mode
+      media_id: mediaId,
+      media_type: mediaType,
+      title,
+      poster_path: media.poster_path,
+      backdrop_path: media.backdrop_path,
+      overview: media.overview || null,
+      rating: media.vote_average || 0,
+      watch_position: position,
+      duration,
+      created_at: new Date().toISOString(),
+      preferred_source: preferredSource || '',
+      // Only include season and episode if they are numbers
+      ...(typeof season === 'number' ? { season } : {}),
+      ...(typeof episode === 'number' ? { episode } : {})
+    };
+
+    if (!navigator.onLine) {
+      // Offline mode: Save to local storage
+      const currentHistory = loadLocalWatchHistory();
+      const updatedHistory = [newItem, ...currentHistory];
+      setWatchHistory(updatedHistory);
+      saveLocalWatchHistory(updatedHistory);
+      return;
+    }
+
     try {
-      const mediaType = media.media_type;
-      const mediaId = media.id;
-      const title = media.title || media.name || '';
-      
       const existingItem = watchHistory.find(item => 
         item.media_id === mediaId && 
         item.media_type === mediaType && 
@@ -194,25 +247,6 @@ export function WatchHistoryProvider({ children }: { children: ReactNode }) {
       if (existingItem) {
         await updateWatchPosition(mediaId, mediaType, position, season, episode, preferredSource);
       } else {
-        // Create base item
-        const newItem: WatchHistoryItem = {
-          id: generateId(),
-          user_id: user.uid,
-          media_id: mediaId,
-          media_type: mediaType,
-          title,
-          poster_path: media.poster_path,
-          backdrop_path: media.backdrop_path,
-          overview: media.overview || null,
-          rating: media.vote_average || 0,
-          watch_position: position,
-          duration,
-          created_at: new Date().toISOString(),
-          preferred_source: preferredSource || '',
-          // Only include season and episode if they are numbers
-          ...(typeof season === 'number' ? { season } : {}),
-          ...(typeof episode === 'number' ? { episode } : {})
-        };
         
         // Save to Firestore
         const historyRef = doc(db, 'watchHistory', newItem.id);
@@ -220,6 +254,7 @@ export function WatchHistoryProvider({ children }: { children: ReactNode }) {
         
         const updatedHistory = [newItem, ...watchHistory];
         setWatchHistory(updatedHistory);
+        saveLocalWatchHistory(updatedHistory); // Also save to local storage for offline access
       }
     } catch (error) {
       console.error('Error adding to watch history:', error);
@@ -240,6 +275,31 @@ export function WatchHistoryProvider({ children }: { children: ReactNode }) {
     preferredSource?: string
   ) => {
     if (!user) return;
+
+    const updatedItemData = {
+      watch_position: position,
+      // Only include these fields if they are valid numbers
+      ...(typeof season === 'number' ? { season } : {}),
+      ...(typeof episode === 'number' ? { episode } : {}),
+      ...(preferredSource && preferredSource !== preferredSource ? { preferred_source: preferredSource } : {})
+    };
+    
+    if (!navigator.onLine) {
+      // Offline mode: Update in local storage
+      const currentHistory = loadLocalWatchHistory();
+      const itemIndex = currentHistory.findIndex(item => 
+        item.media_id === mediaId && 
+        item.media_type === mediaType && 
+        (mediaType === 'movie' || (item.season === season && item.episode === episode))
+      );
+      if (itemIndex > -1) {
+        const updatedHistory = [...currentHistory];
+        updatedHistory[itemIndex] = { ...updatedHistory[itemIndex], ...updatedItemData };
+        setWatchHistory(updatedHistory);
+        saveLocalWatchHistory(updatedHistory);
+      }
+      return;
+    }
     
     try {
       const item = watchHistory.find(item => 
@@ -260,31 +320,17 @@ export function WatchHistoryProvider({ children }: { children: ReactNode }) {
           console.log('Rate limit exceeded. Skipping Firestore update.');
           return;
         }
-
-        const updatedItem = {
-          ...item,
-          watch_position: position,
-          // Only include these fields if they are valid numbers
-          ...(typeof season === 'number' ? { season } : {}),
-          ...(typeof episode === 'number' ? { episode } : {}),
-          ...(preferredSource && preferredSource !== item.preferred_source ? { preferred_source: preferredSource } : {})
-        };
         
         // Update in Firestore using merge to only update changed fields
         const historyRef = doc(db, 'watchHistory', item.id);
-        await setDoc(historyRef, {
-          watch_position: position,
-          // Only include these fields if they are valid numbers
-          ...(typeof season === 'number' ? { season } : {}),
-          ...(typeof episode === 'number' ? { episode } : {}),
-          ...(preferredSource && preferredSource !== item.preferred_source ? { preferred_source: preferredSource } : {})
-        }, { merge: true });
+        await setDoc(historyRef, updatedItemData, { merge: true });
         
         const updatedHistory = watchHistory.map(h => 
-          h.id === item.id ? updatedItem : h
+          h.id === item.id ? { ...h, ...updatedItemData } : h
         );
         
         setWatchHistory(updatedHistory);
+        saveLocalWatchHistory(updatedHistory); // Also update local storage
       }
     } catch (error) {
       console.error('Error updating watch position:', error);
@@ -299,6 +345,17 @@ export function WatchHistoryProvider({ children }: { children: ReactNode }) {
   const clearWatchHistory = async () => {
     if (!user) return;
     
+    if (!navigator.onLine) {
+      // Offline mode: Clear local storage
+      setWatchHistory([]);
+      saveLocalWatchHistory([]);
+      toast({
+        title: "Watch history cleared",
+        description: "Your watch history has been successfully cleared."
+      });
+      return;
+    }
+
     try {
       // Delete all watch history documents for the user
       const historyRef = collection(db, 'watchHistory');
@@ -311,6 +368,7 @@ export function WatchHistoryProvider({ children }: { children: ReactNode }) {
       
       await Promise.all(deletePromises);
       setWatchHistory([]);
+      saveLocalWatchHistory([]); // Clear local storage as well
       
       toast({
         title: "Watch history cleared",

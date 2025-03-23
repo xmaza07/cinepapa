@@ -10,6 +10,7 @@ import ReviewSection from '@/components/ReviewSection';
 import { Play, Calendar, Star, ArrowLeft, List, Shield, History } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useWatchHistory } from '@/hooks/watch-history';
+import { format } from 'date-fns';
 
 const TVDetailsPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -17,15 +18,14 @@ const TVDetailsPage = () => {
   const [episodes, setEpisodes] = useState<Episode[]>([]);
   const [selectedSeason, setSelectedSeason] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
-const [backdropLoaded, setBackdropLoaded] = useState(false);
-const [logoLoaded, setLogoLoaded] = useState(false);
+  const [backdropLoaded, setBackdropLoaded] = useState(false);
+  const [logoLoaded, setLogoLoaded] = useState(false);
   const [activeTab, setActiveTab] = useState<'episodes' | 'about' | 'reviews'>('episodes');
   const [recommendations, setRecommendations] = useState<Media[]>([]);
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { watchHistory } = useWatchHistory();
   
-  // Fetch TV show details and recommendations
   useEffect(() => {
     const fetchTVData = async () => {
       if (!id) return;
@@ -42,7 +42,6 @@ const [logoLoaded, setLogoLoaded] = useState(false);
         setRecommendations(recommendationsData);
         
         if (tvData && tvData.seasons && tvData.seasons.length > 0) {
-          // Set default season to the first one
           const firstSeason = tvData.seasons.find(s => s.season_number > 0);
           if (firstSeason) {
             setSelectedSeason(firstSeason.season_number);
@@ -58,7 +57,6 @@ const [logoLoaded, setLogoLoaded] = useState(false);
     fetchTVData();
   }, [id]);
   
-  // Fetch episodes when selected season changes
   useEffect(() => {
     const fetchEpisodes = async () => {
       if (!tvShow || !selectedSeason) return;
@@ -89,7 +87,6 @@ const [logoLoaded, setLogoLoaded] = useState(false);
 
     if (!tvWatchHistory.length) return null;
 
-    // Get the most recently watched episode based on created_at
     const lastWatched = tvWatchHistory.reduce((latest, current) => {
       return new Date(current.created_at) > new Date(latest.created_at) ? current : latest;
     });
@@ -99,6 +96,19 @@ const [logoLoaded, setLogoLoaded] = useState(false);
       episode: lastWatched.episode,
       progress: Math.round((lastWatched.watch_position / lastWatched.duration) * 100)
     };
+  };
+  
+  const formatSeasonEpisodeCount = (count: number) => {
+    return `${count} ${count === 1 ? 'Episode' : 'Episodes'}`;
+  };
+  
+  const formatDate = (dateString: string) => {
+    if (!dateString) return 'TBA';
+    try {
+      return format(new Date(dateString), 'MMM d, yyyy');
+    } catch (error) {
+      return 'Invalid date';
+    }
   };
   
   if (isLoading) {
@@ -120,22 +130,15 @@ const [logoLoaded, setLogoLoaded] = useState(false);
     );
   }
   
-  const formatSeasonEpisodeCount = (count: number) => {
-    return `${count} ${count === 1 ? 'Episode' : 'Episodes'}`;
-  };
-  
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
       
-      {/* Backdrop Image */}
       <div className="relative w-full h-[70vh]">
-        {/* Loading skeleton */}
         {!backdropLoaded && (
           <div className="absolute inset-0 bg-background image-skeleton" />
         )}
         
-        {/* Back button */}
         <button 
           onClick={() => navigate(-1)}
           className="absolute top-20 left-6 z-10 text-white p-2 rounded-full bg-black/30 hover:bg-black/50 transition-colors"
@@ -153,10 +156,8 @@ const [logoLoaded, setLogoLoaded] = useState(false);
           onLoad={() => setBackdropLoaded(true)}
         />
         
-        {/* Gradient overlay */}
         <div className="absolute inset-0 details-gradient" />
         
-        {/* TV show info overlay */}
         <div className="absolute bottom-0 left-0 right-0 p-6 md:p-12 lg:p-16">
           <div className="flex flex-col md:flex-row items-start gap-6 max-w-6xl mx-auto">
             <div className="hidden md:block flex-shrink-0 w-48 xl:w-64 rounded-lg overflow-hidden shadow-lg">
@@ -171,7 +172,6 @@ const [logoLoaded, setLogoLoaded] = useState(false);
               {tvShow.logo_path ? (
                 <div className="relative w-full max-w-[300px] md:max-w-[400px] lg:max-w-[500px] mx-auto mb-4 
                               transition-all duration-300 ease-in-out hover:scale-105">
-                  {/* Loading skeleton */}
                   {!logoLoaded && (
                     <div className="absolute inset-0 bg-background image-skeleton rounded-lg" />
                   )}
@@ -207,7 +207,7 @@ const [logoLoaded, setLogoLoaded] = useState(false);
                 {tvShow.first_air_date && (
                   <div className="flex items-center text-white/80">
                     <Calendar className="h-4 w-4 mr-2" />
-                    {new Date(tvShow.first_air_date).getFullYear()}
+                    {formatDate(tvShow.first_air_date)}
                   </div>
                 )}
                 
@@ -269,7 +269,6 @@ const [logoLoaded, setLogoLoaded] = useState(false);
         </div>
       </div>
       
-      {/* Content Tabs */}
       <div className="max-w-6xl mx-auto px-4 py-8">
         <div className="flex border-b border-white/10 mb-6 overflow-x-auto pb-1 hide-scrollbar">
           <button
@@ -304,12 +303,10 @@ const [logoLoaded, setLogoLoaded] = useState(false);
           </button>
         </div>
         
-        {/* Episodes Tab */}
         {activeTab === 'episodes' && (
           <>
             <h2 className="text-2xl font-bold text-white mb-6">Seasons & Episodes</h2>
             
-            {/* Season selector - wrapped in Tabs component */}
             <Tabs 
               defaultValue={selectedSeason.toString()} 
               onValueChange={(value) => setSelectedSeason(parseInt(value, 10))}
@@ -328,11 +325,8 @@ const [logoLoaded, setLogoLoaded] = useState(false);
                     </TabsTrigger>
                   ))}
               </TabsList>
-              
-              {/* We don't need separate TabsContent components since we're managing the episodes state with our own state */}
             </Tabs>
             
-            {/* Episodes list */}
             <div className="space-y-4">
               {episodes.length > 0 ? (
                 episodes.map(episode => (
@@ -350,9 +344,17 @@ const [logoLoaded, setLogoLoaded] = useState(false);
                       
                       <div className="flex-1">
                         <div className="flex items-center justify-between mb-2">
-                          <h3 className="text-white font-medium">
-                            {episode.episode_number}. {episode.name}
-                          </h3>
+                          <div>
+                            <h3 className="text-white font-medium">
+                              {episode.episode_number}. {episode.name}
+                            </h3>
+                            {episode.air_date && (
+                              <div className="flex items-center text-white/60 text-sm mt-1">
+                                <Calendar className="h-3 w-3 mr-1" />
+                                {formatDate(episode.air_date)}
+                              </div>
+                            )}
+                          </div>
                           {episode.vote_average > 0 && (
                             <div className="flex items-center text-amber-400 text-sm">
                               <Star className="h-3 w-3 mr-1 fill-amber-400" />
@@ -384,7 +386,6 @@ const [logoLoaded, setLogoLoaded] = useState(false);
           </>
         )}
         
-        {/* About Tab */}
         {activeTab === 'about' && (
           <div className="mb-8">
             <h2 className="text-2xl font-bold text-white mb-6">About the Show</h2>
@@ -406,7 +407,6 @@ const [logoLoaded, setLogoLoaded] = useState(false);
               </div>
             </div>
             
-            {/* Production companies */}
             {tvShow.production_companies.length > 0 && (
               <div className="mb-8">
                 <h3 className="text-xl font-semibold text-white mb-4">Production Companies</h3>
@@ -435,7 +435,6 @@ const [logoLoaded, setLogoLoaded] = useState(false);
           </div>
         )}
         
-        {/* Reviews Tab */}
         {activeTab === 'reviews' && (
           <div className="mb-8">
             <h2 className="text-2xl font-bold text-white mb-6">User Reviews</h2>
@@ -444,7 +443,6 @@ const [logoLoaded, setLogoLoaded] = useState(false);
         )}
       </div>
       
-      {/* Recommendations Section */}
       {recommendations.length > 0 && (
         <ContentRow
           title="More Like This"

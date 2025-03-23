@@ -23,8 +23,8 @@ const SportMatchCard = ({ match, className }: SportMatchCardProps) => {
   const matchTime = new Date(match.date);
   
   return (
-    <Link 
-      to={`/sports/match/${match.sources[0]?.source}/${match.sources[0]?.id}`} 
+    <Link
+      to={`/sports/player/${match.id}`}
       className={cn(
         "block transform transition-all duration-300 hover:-translate-y-1",
         className
@@ -44,11 +44,11 @@ const SportMatchCard = ({ match, className }: SportMatchCardProps) => {
               <span className="text-white text-lg">{match.category}</span>
             </div>
           )}
-          
+
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none" />
-          
+
           {isLive && (
-            <Badge 
+            <Badge
               className="absolute top-2 right-2 bg-red-600 hover:bg-red-700"
               style={{ background: accentColor }}
             >
@@ -58,7 +58,7 @@ const SportMatchCard = ({ match, className }: SportMatchCardProps) => {
           )}
 
           {match.popular && !isLive && (
-            <Badge 
+            <Badge
               className="absolute top-2 right-2"
               style={{ background: accentColor }}
             >
@@ -66,30 +66,30 @@ const SportMatchCard = ({ match, className }: SportMatchCardProps) => {
             </Badge>
           )}
         </div>
-        
+
         <CardContent className="p-4">
           <h3 className="font-semibold text-white mb-2 line-clamp-2">{match.title}</h3>
-          
+
           {match.teams ? (
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center">
-                <img 
-                  src={getTeamBadgeUrl(match.teams.home.badge)} 
-                  alt={match.teams.home.name} 
+                <img
+                  src={getTeamBadgeUrl(match.teams.home.badge)}
+                  alt={match.teams.home.name}
                   className="w-6 h-6 object-contain mr-2"
                   loading="lazy"
                 />
                 <span className="text-sm text-white/80 truncate max-w-[80px]">{match.teams.home.name}</span>
               </div>
-              
+
               <div className="text-white/50 text-xs">VS</div>
-              
+
               <div className="flex items-center">
                 <span className="text-sm text-white/80 truncate max-w-[80px]">{match.teams.away.name}</span>
-                <img 
-                  src={getTeamBadgeUrl(match.teams.away.badge)} 
-                  alt={match.teams.away.name} 
-                  className="w-6 h-6 object-contain ml-2" 
+                <img
+                  src={getTeamBadgeUrl(match.teams.away.badge)}
+                  alt={match.teams.away.name}
+                  className="w-6 h-6 object-contain ml-2"
                   loading="lazy"
                 />
               </div>
@@ -97,7 +97,7 @@ const SportMatchCard = ({ match, className }: SportMatchCardProps) => {
           ) : (
             <div className="mb-3 text-sm text-white/80">{match.category}</div>
           )}
-          
+
           <div className="flex justify-between items-center text-xs text-white/60">
             <div className="flex items-center">
               <Clock className="h-3 w-3 mr-1" />
@@ -107,7 +107,7 @@ const SportMatchCard = ({ match, className }: SportMatchCardProps) => {
                 <span>{format(matchTime, 'MMM d, yyyy - h:mm a')}</span>
               )}
             </div>
-            
+
             <div className="flex items-center">
               <Tv className="h-3 w-3 mr-1" />
               <span>{match.sources.length} {match.sources.length === 1 ? 'source' : 'sources'}</span>

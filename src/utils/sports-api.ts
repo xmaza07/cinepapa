@@ -1,7 +1,7 @@
 
 import { APIMatch, Sport, Stream } from './sports-types';
 
-const API_BASE_URL = 'https://api.streamed.cx';
+const API_BASE_URL = 'https://streamed.su';
 
 export const getSportsList = async (): Promise<Sport[]> => {
   try {
@@ -111,7 +111,12 @@ export const getTeamBadgeUrl = (badgeId: string) => {
   return `${API_BASE_URL}/api/images/badge/${badgeId}.webp`;
 };
 
+const DEFAULT_POSTER_URL = '/placeholder.svg'; // Using placeholder.svg from public directory
+
 export const getMatchPosterUrl = (posterId: string) => {
+  if (!posterId) {
+    return DEFAULT_POSTER_URL;
+  }
   if (posterId.startsWith('http')) {
     return `${API_BASE_URL}/api/images/proxy/${encodeURIComponent(posterId)}.webp`;
   }

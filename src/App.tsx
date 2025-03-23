@@ -27,7 +27,7 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import DMCANotice from "./pages/DMCANotice";
 import ContentRemoval from "./pages/ContentRemoval";
 import Sports from "./pages/Sports";
-import SportMatch from "./pages/SportMatch";
+import SportMatchPlayer from "./pages/SportMatchPlayer";
 
 const queryClient = new QueryClient();
 
@@ -45,7 +45,7 @@ const AnimatedRoutes = () => {
         <Route path="/tv" element={<TVShows />} />
         <Route path="/trending" element={<Trending />} />
         <Route path="/sports" element={<Sports />} />
-        <Route path="/sports/match/:source/:id" element={<SportMatch />} />
+        <Route path="/sports/player/:matchId" element={<SportMatchPlayer />} />
         <Route path="/movie/:id" element={<MovieDetails />} />
         <Route path="/tv/:id" element={<TVDetails />} />
         <Route path="/player/movie/:id" element={

@@ -1,18 +1,32 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import PageTransition from '@/components/PageTransition';
 import { getMatchStreams } from '@/utils/sports-api';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 
 const SportMatchPlayer = () => {
   const { matchId } = useParams();
-  const source = 'alpha'; // Assuming source is alpha for now
+  const [selectedSource, setSelectedSource] = useState<string | null>(null);
   const { data: streams, isLoading, error } = useQuery({
-    queryKey: ['match-streams', source, matchId],
-    queryFn: () => getMatchStreams(source, matchId),
+    queryKey: ['match-streams', matchId],
+    queryFn: () => getMatchStreams(null, matchId), // Fetch all sources
   });
+
+  useEffect(() => {
+    if (streams && streams.length > 0) {
+      const initialSource = streams[0]?.source || null;
+      setSelectedSource(initialSource);
+    }
+  }, [streams]);
+
+  const handleSourceChange = (source) => {
+    setSelectedSource(source);
+  };
+
+  const embedUrl = streams && selectedSource ? streams.find(s => s.source === selectedSource)?.embedUrl : '';
 
   if (isLoading) {
     return <div>Loading video player...</div>;
@@ -21,8 +35,6 @@ const SportMatchPlayer = () => {
   if (error) {
     return <div>Error loading video player.</div>;
   }
-
-  const embedUrl = streams && streams.length > 0 ? streams[0].embedUrl : '';
 
   return (
     <PageTransition>
@@ -36,7 +48,23 @@ const SportMatchPlayer = () => {
               <p className="text-white/70">Watch the match: {matchId}</p>
             </div>
 
-            {/* Video Player will be here */}
+            {/* Source Selection Dropdown */}
+            {streams && streams.length > 1 && (
+              <DropdownMenu>
+                <DropdownMenuTrigger className="bg-white/10 text-white rounded-md px-4 py-2 inline-flex items-center justify-center">
+                  {selectedSource ? `Source: ${selectedSource}` : 'Select Source'}
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="bg-background border border-white/20">
+                  {streams.map((stream) => (
+                    <DropdownMenuItem key={stream.source} onSelect={() => handleSourceChange(stream.source)}>
+                      {stream.source}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+
+            {/* Video Player */}
             <div className="aspect-video bg-black rounded-lg">
               {embedUrl ? (
                 <iframe

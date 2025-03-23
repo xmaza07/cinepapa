@@ -94,16 +94,36 @@ export const getLiveMatches = async (): Promise<APIMatch[]> => {
   }
 };
 
-export const getMatchStreams = async (source: string, id: string): Promise<Stream[]> => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/api/stream/${source}/${id}`);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch streams for match: ${id} from source: ${source}`);
+const SOURCES = ['alpha', 'bravo', 'charlie', 'delta', 'echo', 'foxtrot'];
+
+export const getMatchStreams = async (source: string | null, id: string): Promise<Stream[]> => {
+  if (source) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/stream/${source}/${id}`);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch streams for match: ${id} from source: ${source}`);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error(`Error fetching streams for match ${id} from source ${source}:`, error);
+      return [];
     }
-    return await response.json();
-  } catch (error) {
-    console.error(`Error fetching streams for match ${id} from source ${source}:`, error);
-    return [];
+  } else {
+    const allStreams = [];
+    for (const src of SOURCES) {
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/stream/${src}/${id}`);
+        if (response.ok) {
+          const streams = await response.json();
+          allStreams.push(...streams);
+        } else {
+          console.warn(`No streams found for source ${src} and match ${id}`);
+        }
+      } catch (error) {
+        console.error(`Error fetching streams for match ${id} from source ${src}:`, error);
+      }
+    }
+    return allStreams;
   }
 };
 

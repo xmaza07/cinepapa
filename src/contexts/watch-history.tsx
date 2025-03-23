@@ -1,3 +1,4 @@
+
 import { useState, useEffect, ReactNode } from 'react';
 import { useAuth } from '@/hooks';
 import { useUserPreferences } from '@/hooks/user-preferences';
@@ -22,8 +23,8 @@ export { WatchHistoryContext };
 const app = getApp();
 const db = getFirestore(app);
 
-// Initialize rate limiter (5 minutes interval)
-const rateLimiter = new RateLimiter(300000);
+// Initialize rate limiter (5 minutes interval in milliseconds)
+const rateLimiter = new RateLimiter(100, 300000); // 100 requests per 5 minutes
 
 export function WatchHistoryProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();

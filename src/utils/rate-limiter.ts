@@ -23,6 +23,11 @@ class RateLimiter {
     return false;
   }
 
+  public canExecute(): boolean {
+    this.resetIfNeeded();
+    return this.requestCount < this.maxRequests;
+  }
+
   public getRemaining(): number {
     this.resetIfNeeded();
     return Math.max(0, this.maxRequests - this.requestCount);

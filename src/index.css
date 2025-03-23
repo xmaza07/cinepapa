@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -122,6 +123,26 @@
   background: linear-gradient(to top, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.8) 20%, rgba(0, 0, 0, 0) 100%);
 }
 
+/* Enhanced hero gradient with more depth */
+.hero-gradient-enhanced {
+  background: linear-gradient(to top, 
+    rgba(0, 0, 0, 1) 0%, 
+    rgba(0, 0, 0, 0.95) 15%, 
+    rgba(0, 0, 0, 0.85) 30%,
+    rgba(0, 0, 0, 0.5) 50%, 
+    rgba(0, 0, 0, 0.1) 80%, 
+    rgba(0, 0, 0, 0) 100%);
+}
+
+/* Side gradient for hero */
+.hero-side-gradient {
+  background: linear-gradient(to right,
+    rgba(0, 0, 0, 0.8) 0%,
+    rgba(0, 0, 0, 0.5) 30%,
+    rgba(0, 0, 0, 0) 60%
+  );
+}
+
 .image-skeleton {
   background: linear-gradient(
     90deg,
@@ -161,26 +182,94 @@
   );
 }
 
+/* Hero text shadow */
+.hero-text-shadow {
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+}
+
+/* Hero title shimmer effect */
+@keyframes titleShimmer {
+  0% {
+    background-position: -100% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.hero-title-shimmer {
+  background: linear-gradient(to right, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.2) 20%, rgba(255,255,255,0.1) 40%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  animation: titleShimmer 3s linear infinite;
+}
+
+/* Spinner styles with better animation */
 .spinner {
   display: inline-block;
   position: relative;
-  width: 80px;
-  height: 80px;
+  width: 40px;
+  height: 40px;
 }
 
 .spinner-inner {
   box-sizing: border-box;
+  display: block;
   position: absolute;
   width: 100%;
   height: 100%;
-  border: 3px solid #fff;
-  border-top-color: #000;
+  border: 3px solid transparent;
+  border-top-color: currentColor;
   border-radius: 50%;
-  animation: spin 1s linear infinite;
+  animation: spin 1s cubic-bezier(0.55, 0.15, 0.45, 0.85) infinite;
 }
 
 @keyframes spin {
-  to {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
     transform: rotate(360deg);
   }
+}
+
+/* Pagination indicator animations */
+@keyframes paginationPulse {
+  0%, 100% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.pagination-indicator {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.pagination-indicator-active {
+  animation: paginationPulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Hero buttons hover effect */
+.hero-button {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.4s ease;
+}
+
+.hero-button::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateX(-100%);
+  transition: transform 0.4s ease;
+}
+
+.hero-button:hover::after {
+  transform: translateX(0);
 }

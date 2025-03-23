@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import {
   getTrending,
@@ -23,7 +24,6 @@ const Index = () => {
   const [topRatedTVShows, setTopRatedTVShows] = useState<Media[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [contentVisible, setContentVisible] = useState(false);
-  const [heroItem, setHeroItem] = useState<Media | null>(null);
 
   // Fetch data on component mount
   useEffect(() => {
@@ -47,12 +47,6 @@ const Index = () => {
         // Filter content with backdrop images
         const filteredTrendingData = trendingData.filter(item => item.backdrop_path);
 
-        // Set a random trending item for hero
-        if (filteredTrendingData.length > 0) {
-          const randomIndex = Math.floor(Math.random() * Math.min(5, filteredTrendingData.length));
-          setHeroItem(filteredTrendingData[randomIndex]);
-        }
-
         // Update state with fetched data
         setTrendingMedia(filteredTrendingData);
         setPopularMovies(popularMoviesData);
@@ -74,32 +68,18 @@ const Index = () => {
     fetchData();
   }, []);
 
-  // Smooth scrolling for Hero section
-  useEffect(() => {
-    const handleScroll = () => {
-const hero = document.querySelector('.hero') as HTMLElement;
-      if (hero) {
-        const scrollTop = window.scrollY;
-        hero.style.transform = `translateY(${scrollTop * 0.5}px)`;
-      }
-    };
-
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
   return (
     <main className="min-h-screen bg-background pb-16">
       <Navbar />
 
       {isLoading ? (
         <div className="flex items-center justify-center min-h-screen">
-          <div className="animate-pulse-slow text-white font-medium">Loading...</div>
+          <Spinner size="lg" className="text-accent" />
         </div>
       ) : (
         <>
-          {/* Hero section with featured content */}
-          {heroItem && <Hero media={[heroItem]} className="hero" />}
+          {/* Hero section with all trending media items for rotation */}
+          {trendingMedia.length > 0 && <Hero media={trendingMedia.slice(0, 5)} className="hero" />}
 
           {/* Content rows with staggered animations */}
           <div className={`mt-8 md:mt-12 transition-opacity duration-500 ${contentVisible ? 'opacity-100' : 'opacity-0'}`}>

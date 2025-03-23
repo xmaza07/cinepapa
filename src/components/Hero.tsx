@@ -1,14 +1,16 @@
-import { useState, useEffect } from 'react';
+
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Media } from '@/utils/types';
 import { backdropSizes } from '@/utils/api';
 import { Button } from '@/components/ui/button';
-import { Play, Info } from 'lucide-react';
-import Spinner from '@/components/ui/spinner'; // Correct import statement
+import { Play, Info, Star, Calendar, Clock } from 'lucide-react';
+import Spinner from '@/components/ui/spinner';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface HeroProps {
   media: Media[];
-  className?: string; // Add className prop
+  className?: string;
 }
 
 const Hero = ({ media, className }: HeroProps) => {
@@ -16,22 +18,38 @@ const Hero = ({ media, className }: HeroProps) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const navigate = useNavigate();
-  const featuredMedia = media[currentIndex];
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Filter media to only include items with backdrop paths
+  const filteredMedia = useMemo(() => 
+    media.filter(item => item.backdrop_path), 
+    [media]
+  );
+  
+  const featuredMedia = filteredMedia[currentIndex];
 
-  // Auto-change featured media
+  // Auto-change featured media with proper cleanup
   useEffect(() => {
-    if (media.length === 0) return;
-
-    const interval = setInterval(() => {
-      setIsTransitioning(true);
-      setTimeout(() => {
-        setIsLoaded(false);
-        setCurrentIndex((prevIndex) => (prevIndex + 1) % media.length);
-      }, 500);
-    }, 10000);
-
-    return () => clearInterval(interval);
-  }, [media]);
+    if (filteredMedia.length <= 1) return;
+    
+    const startInterval = () => {
+      intervalRef.current = setInterval(() => {
+        setIsTransitioning(true);
+        setTimeout(() => {
+          setIsLoaded(false);
+          setCurrentIndex((prevIndex) => (prevIndex + 1) % filteredMedia.length);
+        }, 500);
+      }, 10000);
+    };
+    
+    startInterval();
+    
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
+  }, [filteredMedia]);
 
   // Reset transitioning state when new image is loaded
   useEffect(() => {
@@ -40,17 +58,46 @@ const Hero = ({ media, className }: HeroProps) => {
     }
   }, [isLoaded]);
 
+  // Pause the rotation when user hovers over the hero section
+  const handleMouseEnter = () => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+    }
+  };
+
+  // Resume the rotation when user leaves the hero section
+  const handleMouseLeave = () => {
+    if (filteredMedia.length <= 1) return;
+    
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+    }
+    
+    intervalRef.current = setInterval(() => {
+      setIsTransitioning(true);
+      setTimeout(() => {
+        setIsLoaded(false);
+        setCurrentIndex((prevIndex) => (prevIndex + 1) % filteredMedia.length);
+      }, 500);
+    }, 10000);
+  };
+
   if (!featuredMedia) return null;
 
   const title = featuredMedia.title || featuredMedia.name || 'Untitled';
   const releaseDate = featuredMedia.release_date || featuredMedia.first_air_date;
   const releaseYear = releaseDate ? new Date(releaseDate).getFullYear() : '';
+  const runtime = featuredMedia.runtime ? `${Math.floor(featuredMedia.runtime / 60)}h ${featuredMedia.runtime % 60}m` : '';
 
   const handlePlay = () => {
     const mediaType = featuredMedia.media_type;
     const id = featuredMedia.id;
 
-    navigate(`/player/${mediaType}/${id}`);
+    if (mediaType === 'tv') {
+      navigate(`/player/tv/${id}/1/1`);
+    } else {
+      navigate(`/player/${mediaType}/${id}`);
+    }
   };
 
   const handleMoreInfo = () => {
@@ -61,92 +108,169 @@ const Hero = ({ media, className }: HeroProps) => {
   };
 
   return (
-    <div className={`relative w-full h-[70vh] md:h-[80vh] overflow-hidden ${className}`}>
-      {/* Loading skeleton */}
-      {!isLoaded && (
-        <div className="absolute inset-0 bg-background flex items-center justify-center">
-          <Spinner className="w-12 h-12 text-accent" />
-        </div>
-      )}
+    <div 
+      className={`relative w-full h-[75vh] md:h-[85vh] overflow-hidden ${className}`}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+    >
+      {/* Loading spinner */}
+      <AnimatePresence>
+        {!isLoaded && (
+          <motion.div 
+            initial={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 bg-background flex items-center justify-center z-10"
+          >
+            <Spinner size="lg" className="text-accent" />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      {/* Background image */}
-      <img
-        src={`${backdropSizes.original}${featuredMedia.backdrop_path}`}
-        alt={title}
-        className={`w-full h-full object-cover transition-all duration-1000 ${
-          isLoaded ? 'opacity-100 scale-100' : 'opacity-0 scale-105'
-        } ${isTransitioning ? 'opacity-50' : ''}`}
-        onLoad={() => setIsLoaded(true)}
-      />
+      {/* Background image with animations */}
+      <AnimatePresence>
+        <motion.div
+          key={currentIndex}
+          initial={{ opacity: 0, scale: 1.05 }}
+          animate={{ 
+            opacity: isLoaded ? 1 : 0, 
+            scale: isLoaded ? 1 : 1.05,
+            filter: isTransitioning ? 'blur(8px)' : 'blur(0px)'
+          }}
+          exit={{ opacity: 0, scale: 1.05 }}
+          transition={{ duration: 0.8, ease: "easeInOut" }}
+          className="absolute inset-0"
+        >
+          <img
+            src={`${backdropSizes.original}${featuredMedia.backdrop_path}`}
+            alt={title}
+            className="w-full h-full object-cover"
+            onLoad={() => setIsLoaded(true)}
+          />
 
-      {/* Gradient overlay */}
-      <div className="absolute inset-0 hero-gradient animate-fade-in" />
+          {/* Enhanced gradient overlays */}
+          <div className="absolute inset-0 hero-gradient-enhanced" />
+          <div className="absolute inset-0 md:w-1/2 hero-side-gradient" />
+        </motion.div>
+      </AnimatePresence>
 
       {/* Content */}
-      <div className={`absolute bottom-0 left-0 right-0 p-6 md:p-12 lg:p-16 flex flex-col items-start max-w-3xl transition-all duration-1000 ${
-        isLoaded && !isTransitioning ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'
-      }`}>
-        <div className="flex items-center space-x-3 mb-2 animate-fade-in">
-          <span className="px-2 py-1 rounded bg-accent text-xs font-medium text-white uppercase tracking-wider">
-            {featuredMedia.media_type === 'movie' ? 'Movie' : 'TV Series'}
-          </span>
-          {releaseYear && (
-            <span className="text-white/80 text-sm">{releaseYear}</span>
-          )}
-          <span className="flex items-center text-amber-400 text-sm">
-            <span className="mr-1">★</span>
-            {featuredMedia.vote_average.toFixed(1)}
-          </span>
-        </div>
-
-        <h1 className="text-3xl md:text-5xl font-bold text-white mb-2 text-balance">
-          {title}
-        </h1>
-
-        <p className="text-white/80 mb-6 line-clamp-2 md:line-clamp-3 text-sm md:text-base">
-          {featuredMedia.overview}
-        </p>
-
-        <div className="flex space-x-4">
-          <Button
-            onClick={handlePlay}
-            className="bg-accent hover:bg-accent/80 text-white flex items-center transition-transform hover:scale-105"
+      <AnimatePresence mode="wait">
+        <motion.div 
+          key={currentIndex}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ 
+            opacity: isLoaded && !isTransitioning ? 1 : 0, 
+            y: isLoaded && !isTransitioning ? 0 : 20
+          }}
+          exit={{ opacity: 0, y: -20 }}
+          transition={{ duration: 0.6, ease: "easeOut", delay: 0.2 }}
+          className="absolute bottom-0 left-0 right-0 p-6 md:p-12 lg:p-16 flex flex-col items-start max-w-3xl"
+        >
+          {/* Media badges */}
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.3 }}
+            className="flex flex-wrap items-center gap-3 mb-4"
           >
-            <Play className="h-4 w-4 mr-2" />
-            Play
-          </Button>
-          <Button
-            onClick={handleMoreInfo}
-            variant="outline"
-            className="border-white/20 bg-black/50 text-white hover:bg-black/70 flex items-center transition-transform hover:scale-105"
-          >
-            <Info className="h-4 w-4 mr-2" />
-            More Info
-          </Button>
-        </div>
-      </div>
+            <span className="px-3 py-1 rounded-full bg-accent/90 backdrop-blur-sm text-xs font-medium text-white uppercase tracking-wider">
+              {featuredMedia.media_type === 'movie' ? 'Movie' : 'TV Series'}
+            </span>
+            
+            {releaseYear && (
+              <span className="flex items-center px-3 py-1 rounded-full bg-white/10 backdrop-blur-sm text-xs font-medium text-white">
+                <Calendar className="w-3 h-3 mr-1" />
+                {releaseYear}
+              </span>
+            )}
+            
+            {runtime && (
+              <span className="flex items-center px-3 py-1 rounded-full bg-white/10 backdrop-blur-sm text-xs font-medium text-white">
+                <Clock className="w-3 h-3 mr-1" />
+                {runtime}
+              </span>
+            )}
+            
+            {featuredMedia.vote_average > 0 && (
+              <span className="flex items-center px-3 py-1 rounded-full bg-white/10 backdrop-blur-sm text-xs font-medium text-white">
+                <Star className="w-3 h-3 mr-1 fill-amber-400 text-amber-400" />
+                {featuredMedia.vote_average.toFixed(1)}
+              </span>
+            )}
+          </motion.div>
 
-      {/* Pagination indicators */}
-      <div className="absolute bottom-4 right-4 md:bottom-8 md:right-8 flex space-x-2">
-        {media.slice(0, 5).map((_, index) => (
-          <button
-            key={index}
-            className={`w-2 h-2 rounded-full transition-all ${
-              index === currentIndex
-                ? 'bg-accent w-6'
-                : 'bg-white/40 hover:bg-white/60'
-            }`}
-            onClick={() => {
-              setIsTransitioning(true);
-              setTimeout(() => {
-                setIsLoaded(false);
-                setCurrentIndex(index);
-              }, 300);
-            }}
-            aria-label={`View featured item ${index + 1}`}
-          />
-        ))}
-      </div>
+          {/* Title with special effects */}
+          <motion.h1 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.4 }}
+            className="text-4xl md:text-6xl font-bold text-white mb-3 hero-text-shadow text-balance"
+          >
+            {title}
+          </motion.h1>
+
+          {/* Overview with staggered animation */}
+          <motion.p 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.5 }}
+            className="text-white/90 mb-8 line-clamp-3 md:line-clamp-3 text-sm md:text-base max-w-2xl hero-text-shadow"
+          >
+            {featuredMedia.overview}
+          </motion.p>
+
+          {/* Action buttons with hover effects */}
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.6 }}
+            className="flex flex-wrap gap-4"
+          >
+            <Button
+              onClick={handlePlay}
+              className="hero-button bg-accent hover:bg-accent/90 text-white flex items-center transition-all hover:scale-105 shadow-lg shadow-accent/20"
+              size="lg"
+            >
+              <Play className="h-4 w-4 mr-2" />
+              Play Now
+            </Button>
+            
+            <Button
+              onClick={handleMoreInfo}
+              variant="outline"
+              size="lg"
+              className="hero-button border-white/30 bg-black/40 text-white hover:bg-black/60 hover:border-white/50 flex items-center transition-all hover:scale-105"
+            >
+              <Info className="h-4 w-4 mr-2" />
+              More Info
+            </Button>
+          </motion.div>
+        </motion.div>
+      </AnimatePresence>
+
+      {/* Enhanced pagination indicators */}
+      {filteredMedia.length > 1 && (
+        <div className="absolute bottom-6 right-6 md:bottom-12 md:right-12 flex space-x-2 z-10">
+          {filteredMedia.slice(0, 5).map((_, index) => (
+            <button
+              key={index}
+              className={`pagination-indicator h-2 rounded-full transition-all ${
+                index === currentIndex
+                  ? 'bg-accent w-8 pagination-indicator-active'
+                  : 'bg-white/30 w-2 hover:bg-white/50'
+              }`}
+              onClick={() => {
+                setIsTransitioning(true);
+                setTimeout(() => {
+                  setIsLoaded(false);
+                  setCurrentIndex(index);
+                }, 300);
+              }}
+              aria-label={`View featured item ${index + 1}`}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 };

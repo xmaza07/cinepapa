@@ -1,5 +1,4 @@
-
-import { useState, useEffect, ReactNode } from 'react';
+import { useState, useEffect, ReactNode, useCallback } from 'react';
 import { useAuth } from '@/hooks';
 import { useToast } from '@/components/ui/use-toast';
 import { UserPreferencesContext, UserPreferences, UserPreferencesContextType } from './types/user-preferences';
@@ -13,6 +12,48 @@ export function UserPreferencesProvider({ children }: { children: ReactNode }) {
   const [userPreferences, setUserPreferences] = useState<UserPreferences | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+
+  // Function to map hex color to HSL
+  const getHSLFromHex = useCallback((hex: string): string => {
+    // Default HSL values for common accent colors
+    const colorMap: Record<string, string> = {
+      '#E63462': '347 80% 55%',  // Pink
+      '#9b87f5': '250 85% 75%',  // Purple
+      '#0EA5E9': '199 89% 48%',  // Blue
+      '#10B981': '160 84% 39%',  // Green
+      '#F59E0B': '38 92% 50%',   // Yellow
+      '#F97316': '24 94% 53%',   // Orange
+      '#EF4444': '0 84% 60%',    // Red
+    };
+    
+    return colorMap[hex] || '347 80% 55%'; // Default to pink if unknown
+  }, []);
+
+  // Apply accent color to CSS variables and update PWA theme
+  const applyAccentColor = useCallback((colorHex: string) => {
+    // Update CSS variable
+    const hsl = getHSLFromHex(colorHex);
+    document.documentElement.style.setProperty('--accent', hsl);
+
+    // Update theme-color meta tag
+    const themeColorMeta = document.querySelector('meta[name="theme-color"]');
+    if (themeColorMeta) {
+      themeColorMeta.setAttribute('content', colorHex);
+    }
+
+    // Update manifest.json theme-color if running as PWA
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      fetch('/manifest.json')
+        .then(response => response.json())
+        .then(manifest => {
+          manifest.theme_color = colorHex;
+          console.log('PWA theme color updated:', colorHex);
+        })
+        .catch(error => {
+          console.error('Error updating manifest theme color:', error);
+        });
+    }
+  }, [getHSLFromHex]);
 
   useEffect(() => {
     const fetchPreferences = async () => {
@@ -81,29 +122,7 @@ export function UserPreferencesProvider({ children }: { children: ReactNode }) {
     };
 
     fetchPreferences();
-  }, [user, toast]);
-
-  // Function to map hex color to HSL
-  const getHSLFromHex = (hex: string): string => {
-    // Default HSL values for common accent colors
-    const colorMap: Record<string, string> = {
-      '#E63462': '347 80% 55%',  // Pink
-      '#9b87f5': '250 85% 75%',  // Purple
-      '#0EA5E9': '199 89% 48%',  // Blue
-      '#10B981': '160 84% 39%',  // Green
-      '#F59E0B': '38 92% 50%',   // Yellow
-      '#F97316': '24 94% 53%',   // Orange
-      '#EF4444': '0 84% 60%',    // Red
-    };
-    
-    return colorMap[hex] || '347 80% 55%'; // Default to pink if unknown
-  };
-
-  // Apply accent color to CSS variables
-  const applyAccentColor = (colorHex: string) => {
-    const hsl = getHSLFromHex(colorHex);
-    document.documentElement.style.setProperty('--accent', hsl);
-  };
+  }, [user, toast, applyAccentColor]);
 
   const updatePreferences = async (preferences: Partial<UserPreferences>) => {
     if (!user || !userPreferences) return;
@@ -160,15 +179,20 @@ export function UserPreferencesProvider({ children }: { children: ReactNode }) {
         accentColor: color
       });
 
-      // Apply the color
+      // Apply the color and update PWA theme
       applyAccentColor(color);
 
       toast({
-        title: "Accent Color Updated",
-        description: "Your accent color preference has been saved."
+        title: "Theme Updated",
+        description: "Your color preference has been saved and applied."
       });
     } catch (error) {
       console.error('Error setting accent color:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update theme color. Please try again.",
+        variant: "destructive"
+      });
     }
   };
 

@@ -14,6 +14,7 @@ import ContentRow from '@/components/ContentRow';
 import ContinueWatching from '@/components/ContinueWatching';
 import Footer from '@/components/Footer';
 import Spinner from '@/components/ui/spinner';
+import PWAInstallPrompt from '@/components/PWAInstallPrompt';
 
 const Index = () => {
   const { user } = useAuth();
@@ -66,6 +67,7 @@ const Index = () => {
   return (
     <main className="min-h-screen bg-background pb-16">
       <Navbar />
+      <PWAInstallPrompt /> {/* Render PWAInstallPrompt component here */}
 
       {isLoading ? (
         <div className="flex items-center justify-center min-h-screen">

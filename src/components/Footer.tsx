@@ -87,35 +87,35 @@ const Footer = () => {
             <h3 className="text-white font-medium mb-4">Connect</h3>
             <div className="flex space-x-3">
               <a 
-                href="#" 
+                href="https://github.com/chintan992" 
                 className="bg-white/10 hover:bg-white/20 p-2 rounded-full transition-colors"
                 aria-label="GitHub"
               >
                 <Github className="h-5 w-5 text-white" />
               </a>
               <a 
-                href="#" 
+                href="https://x.com/sid992r" 
                 className="bg-white/10 hover:bg-white/20 p-2 rounded-full transition-colors"
                 aria-label="Twitter"
               >
                 <Twitter className="h-5 w-5 text-white" />
               </a>
               <a 
-                href="#" 
+                href="https://facebook.com/chintan992" 
                 className="bg-white/10 hover:bg-white/20 p-2 rounded-full transition-colors"
                 aria-label="Facebook"
               >
                 <Facebook className="h-5 w-5 text-white" />
               </a>
               <a 
-                href="#" 
+                href="https://instagram.com/chintan992" 
                 className="bg-white/10 hover:bg-white/20 p-2 rounded-full transition-colors"
                 aria-label="Instagram"
               >
                 <Instagram className="h-5 w-5 text-white" />
               </a>
               <a 
-                href="mailto:info@example.com" 
+                href="mailto:chintanr21@gmail.com" 
                 className="bg-white/10 hover:bg-white/20 p-2 rounded-full transition-colors"
                 aria-label="Email"
               >

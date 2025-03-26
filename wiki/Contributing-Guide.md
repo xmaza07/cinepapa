@@ -26,7 +26,7 @@ We are committed to providing a welcoming and inclusive experience for everyone.
    - Click the "Fork" button on GitHub
    - Clone your fork locally:
      ```bash
-     git clone https://github.com/yourusername/lets-stream-v2.0.git
+     git clone https://github.com/chintan992/letsstream2.git
      cd lets-stream-v2.0
      ```
 

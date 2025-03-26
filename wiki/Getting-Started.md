@@ -16,7 +16,7 @@ Before you begin, ensure you have:
 
 ### 1. Clone the Repository
 ```bash
-git clone https://github.com/yourusername/lets-stream-v2.0.git
+git clone https://github.com/chintan992/letsstream2.git
 cd lets-stream-v2.0
 ```
 

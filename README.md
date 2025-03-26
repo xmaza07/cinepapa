@@ -3,7 +3,8 @@
 A modern streaming platform built with React, TypeScript, and Firebase, featuring movies, TV shows, and sports content with PWA support.
 
 [![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/chintan992/letsstream2)
-[![Deploy to Cloudflare Pages](https://raw.githubusercontent.com/cloudflare/workers-sdk/main/templates/pages/deploy-button.svg)](https://dash.cloudflare.com/pages/new?from=workers)
+
+[[Deploy to Cloudflare Pages]](https://dash.cloudflare.com/pages/new?from=workers)
 
 ## Features
 
@@ -12,7 +13,7 @@ A modern streaming platform built with React, TypeScript, and Firebase, featurin
 - 🎯 Personalized watch history and recommendations
 - 🔍 Advanced search functionality
 - 📱 Progressive Web App (PWA) support
-- 🌙 User preferences with customizable accent colors
+- 🌙 User preferences with customizable accent colours
 - 🔐 Firebase authentication and real-time data
 - 📺 Multi-source streaming support
 - 📱 Responsive design for all devices

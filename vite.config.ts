@@ -5,6 +5,7 @@ import { componentTagger } from "lovable-tagger";
 import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig(({ mode }) => ({
+  base: '/flicker-dreams-factory-13/',
   server: {
     host: "::",
     port: 8080,

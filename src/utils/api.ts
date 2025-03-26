@@ -1,4 +1,3 @@
-
 import { Media, MovieDetails, TVDetails, Episode, Review, Genre, Company, MovieImagesResponse } from './types';
 
 interface TMDBMovieResult {
@@ -262,10 +261,10 @@ const formatMediaItem = (item: TMDBMovieResult | TMDBTVResult): Media => {
 };
 
 // Get trending media (movies and TV shows)
-export const getTrending = async (timeWindow: 'day' | 'week' = 'week'): Promise<Media[]> => {
+export const getTrending = async (timeWindow: 'day' | 'week' = 'week', page: number = 1): Promise<Media[]> => {
   try {
     const response = await fetch(
-      `${BASE_URL}/trending/all/${timeWindow}?api_key=${API_KEY}&language=en-US`
+      `${BASE_URL}/trending/all/${timeWindow}?api_key=${API_KEY}&language=en-US&page=${page}`
     );
     const data = await response.json();
     return data.results.map(formatMediaItem);
@@ -276,10 +275,10 @@ export const getTrending = async (timeWindow: 'day' | 'week' = 'week'): Promise<
 };
 
 // Get popular movies
-export const getPopularMovies = async (): Promise<Media[]> => {
+export const getPopularMovies = async (page: number = 1): Promise<Media[]> => {
   try {
     const response = await fetch(
-      `${BASE_URL}/movie/popular?api_key=${API_KEY}&language=en-US`
+      `${BASE_URL}/movie/popular?api_key=${API_KEY}&language=en-US&page=${page}`
     );
     const data = await response.json();
   return data.results.map((item: TMDBMovieResult) => formatMediaItem({...item, media_type: 'movie'}));
@@ -290,13 +289,13 @@ export const getPopularMovies = async (): Promise<Media[]> => {
 };
 
 // Get popular TV shows
-export const getPopularTVShows = async (): Promise<Media[]> => {
+export const getPopularTVShows = async (page: number = 1): Promise<Media[]> => {
   try {
     const response = await fetch(
-      `${BASE_URL}/tv/popular?api_key=${API_KEY}&language=en-US`
+      `${BASE_URL}/tv/popular?api_key=${API_KEY}&language=en-US&page=${page}`
     );
     const data = await response.json();
-  return data.results.map((item: TMDBTVResult) => formatMediaItem({...item, media_type: 'tv'}));
+    return data.results.map((item: TMDBTVResult) => formatMediaItem({...item, media_type: 'tv'}));
   } catch (error) {
     console.error('Error fetching popular TV shows:', error);
     return [];
@@ -304,10 +303,10 @@ export const getPopularTVShows = async (): Promise<Media[]> => {
 };
 
 // Get top rated movies
-export const getTopRatedMovies = async (): Promise<Media[]> => {
+export const getTopRatedMovies = async (page: number = 1): Promise<Media[]> => {
   try {
     const response = await fetch(
-      `${BASE_URL}/movie/top_rated?api_key=${API_KEY}&language=en-US`
+      `${BASE_URL}/movie/top_rated?api_key=${API_KEY}&language=en-US&page=${page}`
     );
     const data = await response.json();
   return data.results.map((item: TMDBMovieResult) => formatMediaItem({...item, media_type: 'movie'}));
@@ -318,13 +317,13 @@ export const getTopRatedMovies = async (): Promise<Media[]> => {
 };
 
 // Get top rated TV shows
-export const getTopRatedTVShows = async (): Promise<Media[]> => {
+export const getTopRatedTVShows = async (page: number = 1): Promise<Media[]> => {
   try {
     const response = await fetch(
-      `${BASE_URL}/tv/top_rated?api_key=${API_KEY}&language=en-US`
+      `${BASE_URL}/tv/top_rated?api_key=${API_KEY}&language=en-US&page=${page}`
     );
     const data = await response.json();
-  return data.results.map((item: TMDBTVResult) => formatMediaItem({...item, media_type: 'tv'}));
+    return data.results.map((item: TMDBTVResult) => formatMediaItem({...item, media_type: 'tv'}));
   } catch (error) {
     console.error('Error fetching top rated TV shows:', error);
     return [];

@@ -1,11 +1,11 @@
-
-import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useState, useEffect } from 'react';
+import { useQuery, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { getTrending } from '@/utils/api';
 import { Media } from '@/utils/types';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import MediaGrid from '@/components/MediaGrid';
+import { MediaGridSkeleton } from '@/components/MediaSkeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { TrendingUp, ChevronDown } from 'lucide-react';
@@ -15,30 +15,49 @@ const ITEMS_PER_PAGE = 20;
 const Trending = () => {
   const [timeWindow, setTimeWindow] = useState<'day' | 'week'>('week');
   const [page, setPage] = useState(1);
+  const queryClient = useQueryClient();
+  const [allTrending, setAllTrending] = useState<Media[]>([]);
   
   const trendingQuery = useQuery({
-    queryKey: ['trending', timeWindow],
-    queryFn: () => getTrending(timeWindow),
+    queryKey: ['trending', timeWindow, page],
+    queryFn: () => getTrending(timeWindow, page),
+    placeholderData: keepPreviousData,
   });
+
+  // Update accumulated trending items when new data arrives
+  useEffect(() => {
+    if (trendingQuery.data) {
+      setAllTrending(prev => {
+        const newItems = trendingQuery.data.filter(
+          item => !prev.some(p => p.id === item.id)
+        );
+        return [...prev, ...newItems];
+      });
+    }
+  }, [trendingQuery.data]);
+
+  // Prefetch next page
+  useEffect(() => {
+    if (trendingQuery.data?.length === ITEMS_PER_PAGE) {
+      queryClient.prefetchQuery({
+        queryKey: ['trending', timeWindow, page + 1],
+        queryFn: () => getTrending(timeWindow, page + 1),
+      });
+    }
+  }, [page, timeWindow, queryClient, trendingQuery.data]);
   
   const handleShowMore = () => {
     setPage(prev => prev + 1);
   };
   
-  // Calculate displayed items based on current page
-  const displayedTrending = trendingQuery.data 
-    ? trendingQuery.data.slice(0, page * ITEMS_PER_PAGE)
-    : [];
-  
   // Check if there are more items to load
-  const hasMore = trendingQuery.data 
-    ? trendingQuery.data.length > displayedTrending.length
-    : false;
+  const hasMore = trendingQuery.data?.length === ITEMS_PER_PAGE;
   
-  // Reset page when changing time window
+  // Reset accumulated data when changing time window
   const handleTimeWindowChange = (value: 'day' | 'week') => {
     setTimeWindow(value);
     setPage(1);
+    setAllTrending([]);
   };
   
   return (
@@ -60,21 +79,25 @@ const Trending = () => {
             
             <TabsContent value="day">
               {trendingQuery.isLoading ? (
-                <div className="py-12 text-center text-white">Loading trending content...</div>
+                <MediaGridSkeleton />
               ) : trendingQuery.isError ? (
                 <div className="py-12 text-center text-white">Error loading trending content. Please try again.</div>
               ) : (
                 <>
-                  <MediaGrid media={displayedTrending} title="Trending Today" />
+                  <MediaGrid media={allTrending} title="Trending Today" />
                   
                   {hasMore && (
                     <div className="flex justify-center my-8">
                       <Button 
                         onClick={handleShowMore}
                         variant="outline"
-                        className="border-white/10 text-white hover:bg-white/10"
+                        className="border-white/10 text-white hover:bg-accent/20 hover:border-accent/50 hover:text-white transition-all duration-300"
                       >
-                        Show More <ChevronDown className="ml-2 h-4 w-4" />
+                        {trendingQuery.isFetching ? (
+                          <>Loading...</>
+                        ) : (
+                          <>Show More <ChevronDown className="ml-2 h-4 w-4 animate-bounce" /></>
+                        )}
                       </Button>
                     </div>
                   )}
@@ -84,21 +107,25 @@ const Trending = () => {
             
             <TabsContent value="week">
               {trendingQuery.isLoading ? (
-                <div className="py-12 text-center text-white">Loading trending content...</div>
+                <MediaGridSkeleton />
               ) : trendingQuery.isError ? (
                 <div className="py-12 text-center text-white">Error loading trending content. Please try again.</div>
               ) : (
                 <>
-                  <MediaGrid media={displayedTrending} title="Trending This Week" />
+                  <MediaGrid media={allTrending} title="Trending This Week" />
                   
                   {hasMore && (
                     <div className="flex justify-center my-8">
                       <Button 
                         onClick={handleShowMore}
                         variant="outline"
-                        className="border-white/10 text-white hover:bg-white/10"
+                        className="border-white/10 text-white hover:bg-accent/20 hover:border-accent/50 hover:text-white transition-all duration-300"
                       >
-                        Show More <ChevronDown className="ml-2 h-4 w-4" />
+                        {trendingQuery.isFetching ? (
+                          <>Loading...</>
+                        ) : (
+                          <>Show More <ChevronDown className="ml-2 h-4 w-4 animate-bounce" /></>
+                        )}
                       </Button>
                     </div>
                   )}

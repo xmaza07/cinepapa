@@ -1,10 +1,11 @@
-
-import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useState, useEffect } from 'react';
+import { useQuery, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { getPopularMovies, getTopRatedMovies } from '@/utils/api';
+import { Media } from '@/utils/types';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import MediaGrid from '@/components/MediaGrid';
+import { MediaGridSkeleton } from '@/components/MediaSkeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Film, ChevronDown, Grid3X3, List } from 'lucide-react';
@@ -16,61 +17,84 @@ const ITEMS_PER_PAGE = 20;
 
 const Movies = () => {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<'popular' | 'top_rated'>('popular');
   const [popularPage, setPopularPage] = useState(1);
   const [topRatedPage, setTopRatedPage] = useState(1);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [allPopularMovies, setAllPopularMovies] = useState<Media[]>([]);
+  const [allTopRatedMovies, setAllTopRatedMovies] = useState<Media[]>([]);
   
   const popularMoviesQuery = useQuery({
-    queryKey: ['popularMovies'],
-    queryFn: getPopularMovies,
+    queryKey: ['popularMovies', popularPage],
+    queryFn: () => getPopularMovies(popularPage),
+    placeholderData: keepPreviousData,
   });
   
   const topRatedMoviesQuery = useQuery({
-    queryKey: ['topRatedMovies'],
-    queryFn: getTopRatedMovies,
+    queryKey: ['topRatedMovies', topRatedPage],
+    queryFn: () => getTopRatedMovies(topRatedPage),
+    placeholderData: keepPreviousData,
   });
+
+  // Update all movies when new data arrives
+  useEffect(() => {
+    if (popularMoviesQuery.data) {
+      setAllPopularMovies(prev => {
+        const newMovies = popularMoviesQuery.data.filter(
+          movie => !prev.some(p => p.id === movie.id)
+        );
+        return [...prev, ...newMovies];
+      });
+    }
+  }, [popularMoviesQuery.data]);
+
+  useEffect(() => {
+    if (topRatedMoviesQuery.data) {
+      setAllTopRatedMovies(prev => {
+        const newMovies = topRatedMoviesQuery.data.filter(
+          movie => !prev.some(p => p.id === movie.id)
+        );
+        return [...prev, ...newMovies];
+      });
+    }
+  }, [topRatedMoviesQuery.data]);
+
+  // Prefetch next pages
+  useEffect(() => {
+    if (popularMoviesQuery.data?.length === ITEMS_PER_PAGE) {
+      queryClient.prefetchQuery({
+        queryKey: ['popularMovies', popularPage + 1],
+        queryFn: () => getPopularMovies(popularPage + 1),
+      });
+    }
+  }, [popularPage, queryClient, popularMoviesQuery.data]);
+
+  useEffect(() => {
+    if (topRatedMoviesQuery.data?.length === ITEMS_PER_PAGE) {
+      queryClient.prefetchQuery({
+        queryKey: ['topRatedMovies', topRatedPage + 1],
+        queryFn: () => getTopRatedMovies(topRatedPage + 1),
+      });
+    }
+  }, [topRatedPage, queryClient, topRatedMoviesQuery.data]);
   
   const handleShowMorePopular = () => {
     setPopularPage(prev => prev + 1);
-    toast({
-      title: "Loading more movies",
-      description: "Loading the next set of popular movies",
-      duration: 2000,
-    });
   };
   
   const handleShowMoreTopRated = () => {
     setTopRatedPage(prev => prev + 1);
-    toast({
-      title: "Loading more movies",
-      description: "Loading the next set of top rated movies",
-      duration: 2000,
-    });
   };
-  
+
   const toggleViewMode = () => {
     setViewMode(prev => prev === 'grid' ? 'list' : 'grid');
   };
-  
-  // Calculate displayed items based on current page
-  const displayedPopularMovies = popularMoviesQuery.data 
-    ? popularMoviesQuery.data.slice(0, popularPage * ITEMS_PER_PAGE)
-    : [];
-  
-  const displayedTopRatedMovies = topRatedMoviesQuery.data 
-    ? topRatedMoviesQuery.data.slice(0, topRatedPage * ITEMS_PER_PAGE)
-    : [];
-  
+
   // Check if there are more items to load
-  const hasMorePopular = popularMoviesQuery.data 
-    ? popularMoviesQuery.data.length > displayedPopularMovies.length
-    : false;
-    
-  const hasMoreTopRated = topRatedMoviesQuery.data
-    ? topRatedMoviesQuery.data.length > displayedTopRatedMovies.length
-    : false;
-  
+  const hasMorePopular = popularMoviesQuery.data?.length === ITEMS_PER_PAGE;
+  const hasMoreTopRated = topRatedMoviesQuery.data?.length === ITEMS_PER_PAGE;
+
   return (
     <PageTransition>
       <div className="min-h-screen flex flex-col bg-background">
@@ -116,15 +140,12 @@ const Movies = () => {
               
               <TabsContent value="popular" className="focus-visible:outline-none animate-fade-in">
                 {popularMoviesQuery.isLoading ? (
-                  <div className="py-12 text-center text-white">
-                    <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"></div>
-                    <p className="mt-4">Loading popular movies...</p>
-                  </div>
+                  <MediaGridSkeleton listView={viewMode === 'list'} />
                 ) : popularMoviesQuery.isError ? (
                   <div className="py-12 text-center text-white">Error loading movies. Please try again.</div>
                 ) : (
                   <>
-                    <MediaGrid media={displayedPopularMovies} title="Popular Movies" listView={viewMode === 'list'} />
+                    <MediaGrid media={allPopularMovies} title="Popular Movies" listView={viewMode === 'list'} />
                     
                     {hasMorePopular && (
                       <div className="flex justify-center my-8">
@@ -133,27 +154,13 @@ const Movies = () => {
                           variant="outline"
                           className="border-white/10 text-white hover:bg-accent/20 hover:border-accent/50 hover:text-white transition-all duration-300"
                         >
-                          Show More <ChevronDown className="ml-2 h-4 w-4 animate-bounce" />
+                          {popularMoviesQuery.isFetching ? (
+                            <>Loading...</>
+                          ) : (
+                            <>Show More <ChevronDown className="ml-2 h-4 w-4 animate-bounce" /></>
+                          )}
                         </Button>
                       </div>
-                    )}
-                    
-                    {displayedPopularMovies.length > 0 && (
-                      <Pagination className="mt-8">
-                        <PaginationContent>
-                          {[...Array(Math.ceil(popularMoviesQuery.data?.length || 0) / ITEMS_PER_PAGE)].slice(0, 5).map((_, i) => (
-                            <PaginationItem key={i}>
-                              <PaginationLink 
-                                isActive={popularPage === i + 1} 
-                                onClick={() => setPopularPage(i + 1)}
-                                className={popularPage === i + 1 ? "bg-accent text-white border-accent" : "text-white/70"}
-                              >
-                                {i + 1}
-                              </PaginationLink>
-                            </PaginationItem>
-                          ))}
-                        </PaginationContent>
-                      </Pagination>
                     )}
                   </>
                 )}
@@ -161,15 +168,12 @@ const Movies = () => {
               
               <TabsContent value="top_rated" className="focus-visible:outline-none animate-fade-in">
                 {topRatedMoviesQuery.isLoading ? (
-                  <div className="py-12 text-center text-white">
-                    <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"></div>
-                    <p className="mt-4">Loading top rated movies...</p>
-                  </div>
+                  <MediaGridSkeleton listView={viewMode === 'list'} />
                 ) : topRatedMoviesQuery.isError ? (
                   <div className="py-12 text-center text-white">Error loading movies. Please try again.</div>
                 ) : (
                   <>
-                    <MediaGrid media={displayedTopRatedMovies} title="Top Rated Movies" listView={viewMode === 'list'} />
+                    <MediaGrid media={allTopRatedMovies} title="Top Rated Movies" listView={viewMode === 'list'} />
                     
                     {hasMoreTopRated && (
                       <div className="flex justify-center my-8">
@@ -178,27 +182,13 @@ const Movies = () => {
                           variant="outline"
                           className="border-white/10 text-white hover:bg-accent/20 hover:border-accent/50 hover:text-white transition-all duration-300"
                         >
-                          Show More <ChevronDown className="ml-2 h-4 w-4 animate-bounce" />
+                          {topRatedMoviesQuery.isFetching ? (
+                            <>Loading...</>
+                          ) : (
+                            <>Show More <ChevronDown className="ml-2 h-4 w-4 animate-bounce" /></>
+                          )}
                         </Button>
                       </div>
-                    )}
-                    
-                    {displayedTopRatedMovies.length > 0 && (
-                      <Pagination className="mt-8">
-                        <PaginationContent>
-                          {[...Array(Math.ceil(topRatedMoviesQuery.data?.length || 0) / ITEMS_PER_PAGE)].slice(0, 5).map((_, i) => (
-                            <PaginationItem key={i}>
-                              <PaginationLink 
-                                isActive={topRatedPage === i + 1} 
-                                onClick={() => setTopRatedPage(i + 1)}
-                                className={topRatedPage === i + 1 ? "bg-accent text-white border-accent" : "text-white/70"}
-                              >
-                                {i + 1}
-                              </PaginationLink>
-                            </PaginationItem>
-                          ))}
-                        </PaginationContent>
-                      </Pagination>
                     )}
                   </>
                 )}

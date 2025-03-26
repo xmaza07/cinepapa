@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { History, Clock, Trash2, Bookmark, Heart } from 'lucide-react';
 import { useWatchHistory } from '@/hooks/watch-history';
@@ -11,9 +12,19 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from '@/hooks';
 
 const WatchHistory = () => {
-  const { watchHistory, clearWatchHistory, favorites, watchlist, addToFavorites, addToWatchlist, removeFromFavorites, removeFromWatchlist } = useWatchHistory();
+  const { 
+    watchHistory, 
+    clearWatchHistory, 
+    favorites, 
+    watchlist, 
+    deleteWatchHistoryItem, 
+    deleteSelectedWatchHistory,
+    removeFromFavorites,
+    removeFromWatchlist 
+  } = useWatchHistory();
   const { toast } = useToast();
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
   const [activeTab, setActiveTab] = useState<'history' | 'favorites' | 'watchlist'>('history');
 
@@ -25,6 +36,14 @@ const WatchHistory = () => {
     });
   };
 
+  const handleDeleteItem = (id: string) => {
+    deleteWatchHistoryItem(id);
+  };
+
+  const handleDeleteSelected = (ids: string[]) => {
+    deleteSelectedWatchHistory(ids);
+  };
+
   // Sort watch history based on selected option
   const sortedWatchHistory = [...watchHistory].sort((a, b) => {
     const dateA = new Date(a.created_at).getTime();
@@ -34,7 +53,8 @@ const WatchHistory = () => {
 
   // Convert watch history items to Media format for the MediaGrid
   const watchHistoryMedia = sortedWatchHistory.map(item => ({
-    id: item.media_id,
+    id: item.id, // Use the item's unique id for selection/deletion
+    media_id: item.media_id,
     title: item.title,
     name: item.title,
     poster_path: item.poster_path,
@@ -51,7 +71,8 @@ const WatchHistory = () => {
 
   // Convert favorites to Media format
   const favoritesMedia = favorites.map(item => ({
-    id: item.media_id,
+    id: item.id,
+    media_id: item.media_id,
     title: item.title,
     name: item.title,
     poster_path: item.poster_path,
@@ -64,7 +85,8 @@ const WatchHistory = () => {
 
   // Convert watchlist to Media format
   const watchlistMedia = watchlist.map(item => ({
-    id: item.media_id,
+    id: item.id,
+    media_id: item.media_id,
     title: item.title,
     name: item.title,
     poster_path: item.poster_path,
@@ -163,7 +185,13 @@ const WatchHistory = () => {
             
             <TabsContent value="history" className="mt-0">
               {watchHistory.length > 0 ? (
-                <MediaGrid media={watchHistoryMedia} listView />
+                <MediaGrid 
+                  media={watchHistoryMedia} 
+                  listView
+                  selectable
+                  onDelete={handleDeleteItem}
+                  onDeleteSelected={handleDeleteSelected}
+                />
               ) : (
                 <div className="glass p-8 rounded-lg text-center">
                   <History className="h-12 w-12 mx-auto mb-4 text-white/50" />
@@ -171,7 +199,7 @@ const WatchHistory = () => {
                   <p className="text-white/70 mb-4">
                     Start watching movies and shows to build your history.
                   </p>
-                  <Button onClick={() => window.location.href = '/'}>
+                  <Button onClick={() => navigate('/')}>
                     Browse Content
                   </Button>
                 </div>
@@ -188,7 +216,7 @@ const WatchHistory = () => {
                   <p className="text-white/70 mb-4">
                     Add movies and shows to your favorites for quick access.
                   </p>
-                  <Button onClick={() => window.location.href = '/'}>
+                  <Button onClick={() => navigate('/')}>
                     Browse Content
                   </Button>
                 </div>
@@ -205,7 +233,7 @@ const WatchHistory = () => {
                   <p className="text-white/70 mb-4">
                     Add movies and shows to your watchlist to watch later.
                   </p>
-                  <Button onClick={() => window.location.href = '/'}>
+                  <Button onClick={() => navigate('/')}>
                     Browse Content
                   </Button>
                 </div>

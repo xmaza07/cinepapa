@@ -1,4 +1,3 @@
-
 import { useState, useEffect, ReactNode } from 'react';
 import { useAuth } from '@/hooks';
 import { useUserPreferences } from '@/hooks/user-preferences';
@@ -209,28 +208,49 @@ export function WatchHistoryProvider({ children }: { children: ReactNode }) {
     const mediaType = media.media_type;
     const mediaId = media.id;
     const title = media.title || media.name || '';
-    const newItem: WatchHistoryItem = {
-      id: generateId(),
-      user_id: user.uid || 'offline_user', // Use a default user ID for offline mode
-      media_id: mediaId,
-      media_type: mediaType,
-      title,
-      poster_path: media.poster_path,
-      backdrop_path: media.backdrop_path,
-      overview: media.overview || null,
-      rating: media.vote_average || 0,
-      watch_position: position,
-      duration,
-      created_at: new Date().toISOString(),
-      preferred_source: preferredSource || '',
-      // Only include season and episode if they are numbers
-      ...(typeof season === 'number' ? { season } : {}),
-      ...(typeof episode === 'number' ? { episode } : {})
-    };
 
     if (!navigator.onLine) {
-      // Offline mode: Save to local storage
       const currentHistory = loadLocalWatchHistory();
+      // For TV shows, look for existing entry of the same show
+      if (mediaType === 'tv') {
+        const existingShowIndex = currentHistory.findIndex(item => 
+          item.media_id === mediaId && item.media_type === 'tv'
+        );
+        if (existingShowIndex > -1) {
+          // Update existing show entry
+          const updatedHistory = [...currentHistory];
+          updatedHistory[existingShowIndex] = {
+            ...updatedHistory[existingShowIndex],
+            watch_position: position,
+            season,
+            episode,
+            created_at: new Date().toISOString(),
+            preferred_source: preferredSource || updatedHistory[existingShowIndex].preferred_source
+          };
+          setWatchHistory(updatedHistory);
+          saveLocalWatchHistory(updatedHistory);
+          return;
+        }
+      }
+      
+      const newItem: WatchHistoryItem = {
+        id: generateId(),
+        user_id: user.uid || 'offline_user',
+        media_id: mediaId,
+        media_type: mediaType,
+        title,
+        poster_path: media.poster_path,
+        backdrop_path: media.backdrop_path,
+        overview: media.overview || null,
+        rating: media.vote_average || 0,
+        watch_position: position,
+        duration,
+        created_at: new Date().toISOString(),
+        preferred_source: preferredSource || '',
+        ...(typeof season === 'number' ? { season } : {}),
+        ...(typeof episode === 'number' ? { episode } : {})
+      };
+
       const updatedHistory = [newItem, ...currentHistory];
       setWatchHistory(updatedHistory);
       saveLocalWatchHistory(updatedHistory);
@@ -238,24 +258,43 @@ export function WatchHistoryProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      const existingItem = watchHistory.find(item => 
-        item.media_id === mediaId && 
-        item.media_type === mediaType && 
-        (mediaType === 'movie' || (item.season === season && item.episode === episode))
-      );
-      
-      if (existingItem) {
-        await updateWatchPosition(mediaId, mediaType, position, season, episode, preferredSource);
-      } else {
+      // For TV shows, look for existing entry of the same show
+      if (mediaType === 'tv') {
+        const existingShow = watchHistory.find(item => 
+          item.media_id === mediaId && item.media_type === 'tv'
+        );
         
-        // Save to Firestore
-        const historyRef = doc(db, 'watchHistory', newItem.id);
-        await setDoc(historyRef, newItem);
-        
-        const updatedHistory = [newItem, ...watchHistory];
-        setWatchHistory(updatedHistory);
-        saveLocalWatchHistory(updatedHistory); // Also save to local storage for offline access
+        if (existingShow) {
+          await updateWatchPosition(mediaId, mediaType, position, season, episode, preferredSource);
+          return;
+        }
       }
+
+      const newItem: WatchHistoryItem = {
+        id: generateId(),
+        user_id: user.uid,
+        media_id: mediaId,
+        media_type: mediaType,
+        title,
+        poster_path: media.poster_path,
+        backdrop_path: media.backdrop_path,
+        overview: media.overview || null,
+        rating: media.vote_average || 0,
+        watch_position: position,
+        duration,
+        created_at: new Date().toISOString(),
+        preferred_source: preferredSource || '',
+        ...(typeof season === 'number' ? { season } : {}),
+        ...(typeof episode === 'number' ? { episode } : {})
+      };
+      
+      // Save to Firestore
+      const historyRef = doc(db, 'watchHistory', newItem.id);
+      await setDoc(historyRef, newItem);
+      
+      const updatedHistory = [newItem, ...watchHistory];
+      setWatchHistory(updatedHistory);
+      saveLocalWatchHistory(updatedHistory);
     } catch (error) {
       console.error('Error adding to watch history:', error);
       toast({
@@ -278,23 +317,28 @@ export function WatchHistoryProvider({ children }: { children: ReactNode }) {
 
     const updatedItemData = {
       watch_position: position,
-      // Only include these fields if they are valid numbers
+      created_at: new Date().toISOString(), // Always update timestamp to keep show at top of history
       ...(typeof season === 'number' ? { season } : {}),
       ...(typeof episode === 'number' ? { episode } : {}),
-      ...(preferredSource && preferredSource !== preferredSource ? { preferred_source: preferredSource } : {})
+      ...(preferredSource ? { preferred_source: preferredSource } : {})
     };
     
     if (!navigator.onLine) {
       // Offline mode: Update in local storage
       const currentHistory = loadLocalWatchHistory();
+      // For TV shows, find the existing show entry regardless of episode
       const itemIndex = currentHistory.findIndex(item => 
         item.media_id === mediaId && 
-        item.media_type === mediaType && 
-        (mediaType === 'movie' || (item.season === season && item.episode === episode))
+        item.media_type === mediaType
       );
       if (itemIndex > -1) {
         const updatedHistory = [...currentHistory];
-        updatedHistory[itemIndex] = { ...updatedHistory[itemIndex], ...updatedItemData };
+        updatedHistory[itemIndex] = { 
+          ...updatedHistory[itemIndex], 
+          ...updatedItemData,
+          // Move to top of history
+          created_at: new Date().toISOString()
+        };
         setWatchHistory(updatedHistory);
         saveLocalWatchHistory(updatedHistory);
       }
@@ -302,14 +346,14 @@ export function WatchHistoryProvider({ children }: { children: ReactNode }) {
     }
     
     try {
+      // For TV shows, find the existing show entry regardless of episode
       const item = watchHistory.find(item => 
         item.media_id === mediaId && 
-        item.media_type === mediaType && 
-        (mediaType === 'movie' || (item.season === season && item.episode === episode))
+        item.media_type === mediaType
       );
       
       if (item) {
-        // Only update if the position has changed by more than 20 minutes (1200 seconds)
+        // Only update if significant progress has been made (more than 20 minutes)
         const TWENTY_MINUTES = 1200;
         if (Math.abs(item.watch_position - position) < TWENTY_MINUTES) {
           return;
@@ -321,7 +365,7 @@ export function WatchHistoryProvider({ children }: { children: ReactNode }) {
           return;
         }
         
-        // Update in Firestore using merge to only update changed fields
+        // Update in Firestore using merge to update only changed fields
         const historyRef = doc(db, 'watchHistory', item.id);
         await setDoc(historyRef, updatedItemData, { merge: true });
         
@@ -329,8 +373,13 @@ export function WatchHistoryProvider({ children }: { children: ReactNode }) {
           h.id === item.id ? { ...h, ...updatedItemData } : h
         );
         
-        setWatchHistory(updatedHistory);
-        saveLocalWatchHistory(updatedHistory); // Also update local storage
+        // Sort history to ensure updated item appears at the top
+        const sortedHistory = [...updatedHistory].sort((a, b) => 
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
+        
+        setWatchHistory(sortedHistory);
+        saveLocalWatchHistory(sortedHistory);
       }
     } catch (error) {
       console.error('Error updating watch position:', error);
@@ -379,6 +428,64 @@ export function WatchHistoryProvider({ children }: { children: ReactNode }) {
       toast({
         title: "Error clearing history",
         description: "There was a problem clearing your watch history.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const deleteWatchHistoryItem = async (id: string) => {
+    if (!user) return;
+    
+    try {
+      // Delete from Firestore
+      const historyRef = doc(db, 'watchHistory', id);
+      await deleteDoc(historyRef);
+      
+      // Update local state
+      const updatedHistory = watchHistory.filter(item => item.id !== id);
+      setWatchHistory(updatedHistory);
+      saveLocalWatchHistory(updatedHistory);
+      
+      toast({
+        title: "Item removed",
+        description: "The item has been removed from your watch history."
+      });
+    } catch (error) {
+      console.error('Error deleting watch history item:', error);
+      toast({
+        title: "Error removing item",
+        description: "There was a problem removing the item from your history.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const deleteSelectedWatchHistory = async (ids: string[]) => {
+    if (!user || ids.length === 0) return;
+    
+    try {
+      // Delete all selected items from Firestore
+      const deletePromises = ids.map(id => {
+        const historyRef = doc(db, 'watchHistory', id);
+        return deleteDoc(historyRef);
+      });
+      
+      await Promise.all(deletePromises);
+      
+      // Update local state
+      const updatedHistory = watchHistory.filter(item => !ids.includes(item.id));
+      setWatchHistory(updatedHistory);
+      saveLocalWatchHistory(updatedHistory);
+      
+      toast({
+        title: "Items removed",
+        description: `${ids.length} ${ids.length === 1 ? 'item has' : 'items have'} been removed from your watch history.`
+      });
+    } catch (error) {
+      console.error('Error deleting watch history items:', error);
+      toast({
+        title: "Error removing items",
+        description: "There was a problem removing the items from your history.",
         variant: "destructive"
       });
     }
@@ -534,6 +641,8 @@ export function WatchHistoryProvider({ children }: { children: ReactNode }) {
       addToWatchHistory,
       updateWatchPosition,
       clearWatchHistory,
+      deleteWatchHistoryItem,
+      deleteSelectedWatchHistory,
       addToFavorites,
       removeFromFavorites,
       isInFavorites,

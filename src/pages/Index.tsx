@@ -43,7 +43,9 @@ const Index = () => {
           getTopRatedTVShows()
         ]);
 
+        console.log('Trending data before filter:', trendingData);
         const filteredTrendingData = trendingData.filter(item => item.backdrop_path);
+        console.log('Trending data after filter:', filteredTrendingData);
 
         setTrendingMedia(filteredTrendingData);
         setPopularMovies(popularMoviesData);
@@ -54,7 +56,6 @@ const Index = () => {
         console.error('Error fetching homepage data:', error);
       } finally {
         setIsLoading(false);
-
         setTimeout(() => {
           setContentVisible(true);
         }, 300);
@@ -64,10 +65,12 @@ const Index = () => {
     fetchData();
   }, []);
 
+  console.log('Current trendingMedia state:', trendingMedia);
+
   return (
     <main className="min-h-screen bg-background pb-16">
       <Navbar />
-      <PWAInstallPrompt /> {/* Render PWAInstallPrompt component here */}
+      <PWAInstallPrompt />
 
       {isLoading ? (
         <div className="flex items-center justify-center min-h-screen">
@@ -75,11 +78,12 @@ const Index = () => {
         </div>
       ) : (
         <>
-          {trendingMedia.length > 0 && <Hero media={trendingMedia.slice(0, 5)} className="hero" />}
+          <div className="pt-16"> {/* Add padding-top to account for navbar */}
+            {trendingMedia.length > 0 && <Hero media={trendingMedia.slice(0, 5)} className="hero" />}
+          </div>
 
           <div className={`mt-8 md:mt-12 transition-opacity duration-500 ${contentVisible ? 'opacity-100' : 'opacity-0'}`}>
             {user && <ContinueWatching />}
-
             <ContentRow title="Trending Now" media={trendingMedia} featured />
             <ContentRow title="Popular Movies" media={popularMovies} />
             <ContentRow title="Popular TV Shows" media={popularTVShows} />

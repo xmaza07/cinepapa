@@ -130,16 +130,20 @@
     rgba(0, 0, 0, 0.85) 30%,
     rgba(0, 0, 0, 0.5) 50%, 
     rgba(0, 0, 0, 0.1) 80%, 
-    rgba(0, 0, 0, 0) 100%);
+    rgba(0, 0, 0, 0) 100%
+  );
+  pointer-events: none;
 }
 
 /* Side gradient for hero */
 .hero-side-gradient {
   background: linear-gradient(to right,
-    rgba(0, 0, 0, 0.8) 0%,
-    rgba(0, 0, 0, 0.5) 30%,
-    rgba(0, 0, 0, 0) 60%
+    rgba(0, 0, 0, 0.9) 0%,
+    rgba(0, 0, 0, 0.7) 30%,
+    rgba(0, 0, 0, 0.3) 60%,
+    rgba(0, 0, 0, 0) 100%
   );
+  pointer-events: none;
 }
 
 .image-skeleton {

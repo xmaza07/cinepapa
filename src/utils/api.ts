@@ -75,7 +75,6 @@ const API_KEY = '297f1b91919bae59d50ed815f8d2e14c';
 const BASE_URL = 'https://api.themoviedb.org/3';
 const IMAGE_BASE_URL = 'https://image.tmdb.org/t/p';
 
-// Image sizes
 export const posterSizes = {
   small: `${IMAGE_BASE_URL}/w185`,
   medium: `${IMAGE_BASE_URL}/w342`,
@@ -90,7 +89,6 @@ export const backdropSizes = {
   original: `${IMAGE_BASE_URL}/original`,
 };
 
-// Enhanced video sources with more options
 export const videoSources = [
   {
     key: 'vidlink',
@@ -241,7 +239,6 @@ export const videoSources = [
   },
 ];
 
-// Helper function to format API responses to Media type
 const formatMediaItem = (item: TMDBMovieResult | TMDBTVResult): Media => {
   const mediaType = item.media_type || (item.title ? 'movie' : 'tv');
   
@@ -263,10 +260,13 @@ const formatMediaItem = (item: TMDBMovieResult | TMDBTVResult): Media => {
 // Get trending media (movies and TV shows)
 export const getTrending = async (timeWindow: 'day' | 'week' = 'week', page: number = 1): Promise<Media[]> => {
   try {
+    console.log('Fetching trending media...');
     const response = await fetch(
       `${BASE_URL}/trending/all/${timeWindow}?api_key=${API_KEY}&language=en-US&page=${page}`
     );
+    console.log('Trending API Response status:', response.status);
     const data = await response.json();
+    console.log('Trending API raw data:', data);
     return data.results.map(formatMediaItem);
   } catch (error) {
     console.error('Error fetching trending media:', error);
@@ -348,7 +348,6 @@ export const getMovieDetails = async (id: number): Promise<MovieDetails | null> 
       imagesResponse.json() as Promise<MovieImagesResponse>
     ]);
     
-    // Get the US certification
     let certification = "";
     if (detailsData.release_dates && detailsData.release_dates.results) {
       const usReleases = detailsData.release_dates?.results.find((country) => country.iso_3166_1 === "US");
@@ -357,7 +356,6 @@ export const getMovieDetails = async (id: number): Promise<MovieDetails | null> 
       }
     }
 
-    // Get the best logo (English logos with highest vote average)
     let bestLogo = null;
     if (imagesData.logos && imagesData.logos.length > 0) {
       const englishLogos = imagesData.logos.filter(logo => logo.iso_639_1 === "en");
@@ -404,7 +402,6 @@ export const getTVDetails = async (id: number): Promise<TVDetails | null> => {
       imagesResponse.json() as Promise<MovieImagesResponse>
     ]);
     
-    // Get the US certification
     let certification = "";
     if (detailsData.content_ratings && detailsData.content_ratings.results) {
       const usRating = detailsData.content_ratings?.results.find((country) => country.iso_3166_1 === "US");
@@ -413,7 +410,6 @@ export const getTVDetails = async (id: number): Promise<TVDetails | null> => {
       }
     }
 
-    // Get the best logo (English logos with highest vote average)
     let bestLogo = null;
     if (imagesData.logos && imagesData.logos.length > 0) {
       const englishLogos = imagesData.logos.filter(logo => logo.iso_639_1 === "en");

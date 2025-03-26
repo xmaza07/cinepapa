@@ -632,7 +632,119 @@ export function WatchHistoryProvider({ children }: { children: ReactNode }) {
   const isInWatchlist = (mediaId: number, mediaType: 'movie' | 'tv'): boolean => {
     return watchlist.some(item => item.media_id === mediaId && item.media_type === mediaType);
   };
-  
+
+  const deleteFavoriteItem = async (id: string) => {
+    if (!user) return;
+    
+    try {
+      // Delete from Firestore
+      const favoriteRef = doc(db, 'favorites', id);
+      await deleteDoc(favoriteRef);
+      
+      // Update local state
+      const updatedFavorites = favorites.filter(item => item.id !== id);
+      setFavorites(updatedFavorites);
+      
+      toast({
+        title: "Item removed",
+        description: "The item has been removed from your favorites."
+      });
+    } catch (error) {
+      console.error('Error deleting favorite item:', error);
+      toast({
+        title: "Error removing item",
+        description: "There was a problem removing the item from your favorites.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const deleteSelectedFavorites = async (ids: string[]) => {
+    if (!user || ids.length === 0) return;
+    
+    try {
+      // Delete all selected items from Firestore
+      const deletePromises = ids.map(id => {
+        const favoriteRef = doc(db, 'favorites', id);
+        return deleteDoc(favoriteRef);
+      });
+      
+      await Promise.all(deletePromises);
+      
+      // Update local state
+      const updatedFavorites = favorites.filter(item => !ids.includes(item.id));
+      setFavorites(updatedFavorites);
+      
+      toast({
+        title: "Items removed",
+        description: `${ids.length} ${ids.length === 1 ? 'item has' : 'items have'} been removed from your favorites.`
+      });
+    } catch (error) {
+      console.error('Error deleting favorite items:', error);
+      toast({
+        title: "Error removing items",
+        description: "There was a problem removing the items from your favorites.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const deleteWatchlistItem = async (id: string) => {
+    if (!user) return;
+    
+    try {
+      // Delete from Firestore
+      const watchlistRef = doc(db, 'watchlist', id);
+      await deleteDoc(watchlistRef);
+      
+      // Update local state
+      const updatedWatchlist = watchlist.filter(item => item.id !== id);
+      setWatchlist(updatedWatchlist);
+      
+      toast({
+        title: "Item removed",
+        description: "The item has been removed from your watchlist."
+      });
+    } catch (error) {
+      console.error('Error deleting watchlist item:', error);
+      toast({
+        title: "Error removing item",
+        description: "There was a problem removing the item from your watchlist.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const deleteSelectedWatchlist = async (ids: string[]) => {
+    if (!user || ids.length === 0) return;
+    
+    try {
+      // Delete all selected items from Firestore
+      const deletePromises = ids.map(id => {
+        const watchlistRef = doc(db, 'watchlist', id);
+        return deleteDoc(watchlistRef);
+      });
+      
+      await Promise.all(deletePromises);
+      
+      // Update local state
+      const updatedWatchlist = watchlist.filter(item => !ids.includes(item.id));
+      setWatchlist(updatedWatchlist);
+      
+      toast({
+        title: "Items removed",
+        description: `${ids.length} ${ids.length === 1 ? 'item has' : 'items have'} been removed from your watchlist.`
+      });
+    } catch (error) {
+      console.error('Error deleting watchlist items:', error);
+      toast({
+        title: "Error removing items",
+        description: "There was a problem removing the items from your watchlist.",
+        variant: "destructive"
+      });
+    }
+  };
+
   return (
     <WatchHistoryContext.Provider value={{
       watchHistory,
@@ -643,6 +755,10 @@ export function WatchHistoryProvider({ children }: { children: ReactNode }) {
       clearWatchHistory,
       deleteWatchHistoryItem,
       deleteSelectedWatchHistory,
+      deleteFavoriteItem,
+      deleteSelectedFavorites,
+      deleteWatchlistItem,
+      deleteSelectedWatchlist,
       addToFavorites,
       removeFromFavorites,
       isInFavorites,

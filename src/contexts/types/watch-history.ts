@@ -64,6 +64,10 @@ export interface WatchHistoryContextType {
   clearWatchHistory: () => Promise<void>;
   deleteWatchHistoryItem: (id: string) => Promise<void>;
   deleteSelectedWatchHistory: (ids: string[]) => Promise<void>;
+  deleteFavoriteItem: (id: string) => Promise<void>;
+  deleteSelectedFavorites: (ids: string[]) => Promise<void>;
+  deleteWatchlistItem: (id: string) => Promise<void>;
+  deleteSelectedWatchlist: (ids: string[]) => Promise<void>;
   addToFavorites: (item: MediaBaseItem) => Promise<void>;
   removeFromFavorites: (mediaId: number, mediaType: 'movie' | 'tv') => Promise<void>;
   isInFavorites: (mediaId: number, mediaType: 'movie' | 'tv') => boolean;

@@ -19,6 +19,10 @@ const WatchHistory = () => {
     watchlist, 
     deleteWatchHistoryItem, 
     deleteSelectedWatchHistory,
+    deleteFavoriteItem,
+    deleteSelectedFavorites,
+    deleteWatchlistItem,
+    deleteSelectedWatchlist,
     removeFromFavorites,
     removeFromWatchlist 
   } = useWatchHistory();
@@ -36,12 +40,28 @@ const WatchHistory = () => {
     });
   };
 
-  const handleDeleteItem = (id: string) => {
+  const handleDeleteWatchHistoryItem = (id: string) => {
     deleteWatchHistoryItem(id);
   };
 
-  const handleDeleteSelected = (ids: string[]) => {
+  const handleDeleteSelectedWatchHistory = (ids: string[]) => {
     deleteSelectedWatchHistory(ids);
+  };
+
+  const handleDeleteFavoriteItem = (id: string) => {
+    deleteFavoriteItem(id);
+  };
+
+  const handleDeleteSelectedFavorites = (ids: string[]) => {
+    deleteSelectedFavorites(ids);
+  };
+
+  const handleDeleteWatchlistItem = (id: string) => {
+    deleteWatchlistItem(id);
+  };
+
+  const handleDeleteSelectedWatchlist = (ids: string[]) => {
+    deleteSelectedWatchlist(ids);
   };
 
   // Sort watch history based on selected option
@@ -80,7 +100,8 @@ const WatchHistory = () => {
     overview: item.overview || '',
     vote_average: item.rating || 0,
     media_type: item.media_type,
-    genre_ids: []
+    genre_ids: [],
+    added_at: item.added_at
   }));
 
   // Convert watchlist to Media format
@@ -94,7 +115,8 @@ const WatchHistory = () => {
     overview: item.overview || '',
     vote_average: item.rating || 0,
     media_type: item.media_type,
-    genre_ids: []
+    genre_ids: [],
+    added_at: item.added_at
   }));
 
   const handleTabChange = (value: string) => {
@@ -189,8 +211,8 @@ const WatchHistory = () => {
                   media={watchHistoryMedia} 
                   listView
                   selectable
-                  onDelete={handleDeleteItem}
-                  onDeleteSelected={handleDeleteSelected}
+                  onDelete={handleDeleteWatchHistoryItem}
+                  onDeleteSelected={handleDeleteSelectedWatchHistory}
                 />
               ) : (
                 <div className="glass p-8 rounded-lg text-center">
@@ -208,7 +230,13 @@ const WatchHistory = () => {
             
             <TabsContent value="favorites" className="mt-0">
               {favorites.length > 0 ? (
-                <MediaGrid media={favoritesMedia} listView />
+                <MediaGrid 
+                  media={favoritesMedia} 
+                  listView
+                  selectable
+                  onDelete={handleDeleteFavoriteItem}
+                  onDeleteSelected={handleDeleteSelectedFavorites}
+                />
               ) : (
                 <div className="glass p-8 rounded-lg text-center">
                   <Heart className="h-12 w-12 mx-auto mb-4 text-white/50" />
@@ -225,7 +253,13 @@ const WatchHistory = () => {
             
             <TabsContent value="watchlist" className="mt-0">
               {watchlist.length > 0 ? (
-                <MediaGrid media={watchlistMedia} listView />
+                <MediaGrid 
+                  media={watchlistMedia} 
+                  listView
+                  selectable
+                  onDelete={handleDeleteWatchlistItem}
+                  onDeleteSelected={handleDeleteSelectedWatchlist}
+                />
               ) : (
                 <div className="glass p-8 rounded-lg text-center">
                   <Bookmark className="h-12 w-12 mx-auto mb-4 text-white/50" />

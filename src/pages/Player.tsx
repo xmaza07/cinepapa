@@ -16,6 +16,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useWatchHistory } from '@/hooks/watch-history';
 import { useAuth } from '@/hooks';
+import { useUserPreferences } from '@/hooks/user-preferences';
 
 const Player = () => {
   const { id, season, episode } = useParams<{
@@ -23,8 +24,11 @@ const Player = () => {
     season?: string;
     episode?: string;
   }>();
+  const { userPreferences, updatePreferences } = useUserPreferences();
   const [title, setTitle] = useState<string>('');
-  const [selectedSource, setSelectedSource] = useState<string>(videoSources[0].key);
+  const [selectedSource, setSelectedSource] = useState<string>(
+    userPreferences?.preferred_source || videoSources[0].key
+  );
   const [iframeUrl, setIframeUrl] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
   const [mediaType, setMediaType] = useState<'movie' | 'tv'>('movie');
@@ -58,6 +62,13 @@ const Player = () => {
       setIsInMyWatchlist(isInWatchlist(mediaId, mediaType));
     }
   }, [user, id, mediaType, isInFavorites, isInWatchlist]);
+
+  // Effect to initialize selected source from preferences
+  useEffect(() => {
+    if (userPreferences?.preferred_source) {
+      setSelectedSource(userPreferences.preferred_source);
+    }
+  }, [userPreferences?.preferred_source]);
 
   // Memoized function to update the iframe URL
   const updateIframeUrl = useCallback((mediaId: number, seasonNum?: number, episodeNum?: number) => {
@@ -178,8 +189,16 @@ const Player = () => {
     }
   }, [id, mediaType, season, episode, hasInitialized, mediaDetails, updateIframeUrl]);
   
-  const handleSourceChange = (sourceKey: string) => {
+  const handleSourceChange = async (sourceKey: string) => {
     setSelectedSource(sourceKey);
+    
+    // Save the preference if user is logged in
+    if (user) {
+      await updatePreferences({
+        preferred_source: sourceKey
+      });
+    }
+    
     toast({
       title: "Source Changed",
       description: `Switched to ${videoSources.find(s => s.key === sourceKey)?.name || 'new source'}`,

@@ -1,11 +1,10 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/hooks';
 import { useWatchHistory } from '@/hooks/watch-history';
 import { useUserPreferences } from '@/hooks/user-preferences';
-import { User, History, Settings } from 'lucide-react';
+import { User, History, Settings, Check } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import MediaGrid from '@/components/MediaGrid';
@@ -14,12 +13,14 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { Switch } from "@/components/ui/switch";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import AccentColorPicker from '@/components/AccentColorPicker';
+import { videoSources } from '@/utils/api';
 
 const Profile = () => {
   const { user, logout } = useAuth();
   const { watchHistory, clearWatchHistory } = useWatchHistory();
-  const { userPreferences, toggleWatchHistory } = useUserPreferences();
+  const { userPreferences, toggleWatchHistory, updatePreferences } = useUserPreferences();
   const [activeTab, setActiveTab] = useState('history');
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -179,13 +180,36 @@ const Profile = () => {
                 {/* Accent Color Picker */}
                 <AccentColorPicker />
                 
-                <div>
-                  <h3 className="text-lg font-medium text-white mb-2">Preferred Source</h3>
-                  <p className="text-white/70">
-                    {userPreferences?.preferred_source ? 
-                      `Your preferred video source is set to: ${userPreferences.preferred_source}` : 
-                      'No preferred video source set.'}
+                {/* Video Source Preference */}
+                <div className="space-y-2">
+                  <h3 className="text-lg font-medium text-white">Preferred Video Source</h3>
+                  <p className="text-sm text-white/70">
+                    Select your default video source for movies and TV shows
                   </p>
+                  <Select 
+                    value={userPreferences?.preferred_source || ''} 
+                    onValueChange={(value) => updatePreferences({ preferred_source: value })}
+                  >
+                    <SelectTrigger className="w-full sm:w-[200px] bg-white/10 border-white/20 text-white">
+                      <SelectValue placeholder="Select source" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-background border-white/10">
+                      {videoSources.map(source => (
+                        <SelectItem 
+                          key={source.key} 
+                          value={source.key}
+                          className="text-white focus:text-white focus:bg-white/10"
+                        >
+                          <div className="flex items-center gap-2">
+                            {userPreferences?.preferred_source === source.key && (
+                              <Check className="h-4 w-4" />
+                            )}
+                            {source.name}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             </div>

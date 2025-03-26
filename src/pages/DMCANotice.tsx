@@ -3,19 +3,58 @@ import { AnimatePresence } from "framer-motion";
 const DMCANotice = () => {
   return (
     <AnimatePresence mode="wait">
-      <div className="container mx-auto p-4">
+      <div className="container mx-auto p-4 prose prose-invert max-w-4xl">
         <h1 className="text-3xl font-bold mb-4">DMCA Notice</h1>
-        <p className="mb-4">Let's Stream V2.0 respects the intellectual property rights of others and expects its users to do the same. It is our policy to respond to notices of alleged copyright infringement that comply with the Digital Millennium Copyright Act (DMCA) and other applicable laws.</p>
-        <p>If you believe that your work has been copied in a way that constitutes copyright infringement, please provide us with the following information:</p>
-        <ul className="list-disc list-inside mb-4">
-          <li>A physical or electronic signature of the person authorized to act on behalf of the owner of the copyright interest.</li>
-          <li>Identification of the copyrighted work claimed to have been infringed.</li>
-          <li>Identification of the material that is claimed to be infringing or to be the subject of infringing activity and that is to be removed or access to which is to be disabled, and information reasonably sufficient to permit us to locate the material.</li>
-          <li>Information reasonably sufficient to permit us to contact the complaining party, such as an address, telephone number, and, if available, an email address at which the complaining party may be contacted.</li>
-          <li>A statement that the complaining party has a good faith belief that use of the material in the manner complained of is not authorized by the copyright owner, its agent, or the law.</li>
-          <li>A statement that the information in the notification is accurate, and under penalty of perjury, that the signing party is authorized to act on behalf of the owner of the copyright or other intellectual property right that is allegedly infringed.</li>
+
+        <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4 mb-6">
+          <h2 className="text-xl font-semibold text-yellow-500 mb-2">Important Notice</h2>
+          <p className="text-white/80">
+            This is an educational demonstration project that does not host any content. All content is fetched from third-party APIs. 
+            DMCA notices should be directed to the respective content owners or hosting services.
+          </p>
+        </div>
+
+        <h2 className="text-2xl font-semibold mb-3">Our Role</h2>
+        <p className="mb-4">
+          This application is a frontend demonstration that:
+        </p>
+        <ul className="list-disc pl-6 mb-4">
+          <li>Does not host or store any media content</li>
+          <li>Uses third-party APIs for educational purposes only</li>
+          <li>Has no control over the content provided by these APIs</li>
+          <li>May be discontinued at any time</li>
         </ul>
-        <p>Please send your DMCA notice to our designated copyright agent at [email address].</p>
+
+        <h2 className="text-2xl font-semibold mb-3">Third-Party Content</h2>
+        <p className="mb-4">
+          For any copyright concerns:
+        </p>
+        <ul className="list-disc pl-6 mb-4">
+          <li>Identify the specific content in question</li>
+          <li>Contact the actual hosting service or content owner</li>
+          <li>Submit DMCA notices to the appropriate content provider</li>
+        </ul>
+
+        <h2 className="text-2xl font-semibold mb-3">Contact Information</h2>
+        <p className="mb-4">
+          While we do not host content, if you have questions about our educational demonstration, contact us at:
+          <br />
+          Email: demo@example.com (for demonstration purposes only)
+        </p>
+
+        <div className="bg-gray-500/10 border border-gray-500/20 rounded-lg p-4 mb-6">
+          <h3 className="text-xl font-semibold mb-2">Disclaimer</h3>
+          <p className="text-white/80">
+            We are not responsible for any content displayed through third-party APIs. This is purely an educational 
+            demonstration of frontend development techniques.
+          </p>
+        </div>
+
+        <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 mt-6">
+          <p className="text-white/80">
+            Last updated: March 26, 2025
+          </p>
+        </div>
       </div>
     </AnimatePresence>
   );

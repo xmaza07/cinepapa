@@ -3,17 +3,65 @@ import { AnimatePresence } from "framer-motion";
 const ContentRemoval = () => {
   return (
     <AnimatePresence mode="wait">
-      <div className="container mx-auto p-4">
+      <div className="container mx-auto p-4 prose prose-invert max-w-4xl">
         <h1 className="text-3xl font-bold mb-4">Content Removal</h1>
-        <p className="mb-4">Let's Stream V2.0 respects the intellectual property rights of others and expects its users to do the same. If you believe that your content has been uploaded to our platform without proper authorization, please follow these steps to request the removal of your content:</p>
-        <ol className="list-decimal list-inside mb-4">
-          <li>Provide a detailed description of the content that you believe has been infringed upon.</li>
-          <li>Include the URL or any other relevant information that can help us locate the content.</li>
-          <li>Specify the reason for your request, such as copyright infringement or other intellectual property rights violations.</li>
-          <li>Include your contact information, including your name, address, telephone number, and email address.</li>
-          <li>Sign the request and date it.</li>
+
+        <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4 mb-6">
+          <h2 className="text-xl font-semibold text-yellow-500 mb-2">Educational Project Notice</h2>
+          <p className="text-white/80">
+            This is an educational demonstration project. We do not host or store any media content. 
+            All content removal requests should be directed to the appropriate content owners or hosting services.
+          </p>
+        </div>
+
+        <h2 className="text-2xl font-semibold mb-3">Understanding Our Role</h2>
+        <p className="mb-4">
+          As an educational frontend demonstration:
+        </p>
+        <ul className="list-disc pl-6 mb-4">
+          <li>We do not host any media content</li>
+          <li>Content is displayed through third-party APIs</li>
+          <li>We have no control over the content provided by these services</li>
+          <li>This project is for educational purposes only</li>
+        </ul>
+
+        <h2 className="text-2xl font-semibold mb-3">How to Remove Content</h2>
+        <p className="mb-4">
+          If you wish to have content removed:
+        </p>
+        <ol className="list-decimal pl-6 mb-4">
+          <li>Identify the specific content in question</li>
+          <li>Determine which third-party service is hosting the content</li>
+          <li>Contact the appropriate content host or owner directly</li>
+          <li>Follow their content removal procedures</li>
         </ol>
-        <p>Please send your content removal request to our designated copyright agent at [email address].</p>
+
+        <h2 className="text-2xl font-semibold mb-3">Third-Party Services</h2>
+        <p className="mb-4">
+          Content removal requests should be directed to the respective content owners or hosting services. 
+          We cannot process content removal requests as we do not host or control any media content.
+        </p>
+
+        <div className="bg-gray-500/10 border border-gray-500/20 rounded-lg p-4 mb-6">
+          <h3 className="text-xl font-semibold mb-2">Important Note</h3>
+          <p className="text-white/80">
+            This application may be discontinued at any time as it exists solely for educational and demonstration purposes. 
+            We are not responsible for any content displayed through third-party APIs.
+          </p>
+        </div>
+
+        <h2 className="text-2xl font-semibold mb-3">Contact</h2>
+        <p className="mb-4">
+          For questions about this educational demonstration, contact:
+          <br />
+          Email: demo@example.com (for demonstration purposes only)
+        </p>
+
+        <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 mt-6">
+          <p className="text-white/80">
+            Last updated: March 26, 2025
+          </p>
+        </div>
       </div>
     </AnimatePresence>
   );

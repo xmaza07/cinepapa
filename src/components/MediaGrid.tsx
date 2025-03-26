@@ -10,6 +10,8 @@ import { useState } from 'react';
 // Extend Media type to include optional string ID and timestamp
 interface ExtendedMedia extends Omit<Media, 'id'> {
   id: string | number;
+  media_id: number;
+  docId?: string;  // Document ID for deletion
   created_at?: string;
   watch_position?: number;
   duration?: number;
@@ -63,12 +65,12 @@ const MediaGrid = ({
     setSelectedItems([]);
   };
 
-  const handleSelect = (id: string | number) => {
+  const handleSelect = (docId: string) => {
     setSelectedItems(prev => {
-      if (prev.includes(String(id))) {
-        return prev.filter(item => item !== String(id));
+      if (prev.includes(docId)) {
+        return prev.filter(item => item !== docId);
       }
-      return [...prev, String(id)];
+      return [...prev, docId];
     });
   };
 
@@ -76,7 +78,7 @@ const MediaGrid = ({
     if (selectedItems.length === media.length) {
       setSelectedItems([]);
     } else {
-      setSelectedItems(media.map(item => String(item.id)));
+      setSelectedItems(media.map(item => item.docId!).filter(Boolean));
     }
   };
 
@@ -159,25 +161,25 @@ const MediaGrid = ({
               className="glass p-4 rounded-lg hover:bg-white/10 transition-colors group"
             >
               <div className="flex gap-4 items-center">
-                {selectMode && (
+                {selectMode && mediaItem.docId && (
                   <div className="flex-shrink-0">
                     <Checkbox 
-                      checked={selectedItems.includes(String(mediaItem.id))}
-                      onCheckedChange={() => handleSelect(mediaItem.id)}
+                      checked={selectedItems.includes(mediaItem.docId)}
+                      onCheckedChange={() => handleSelect(mediaItem.docId!)}
                     />
                   </div>
                 )}
                 <div className="flex-shrink-0 w-16 h-24 md:w-20 md:h-30 overflow-hidden rounded-md">
-                  <MediaCard media={{ ...mediaItem, id: Number(mediaItem.id) }} className="h-full w-full" minimal />
+                  <MediaCard media={{ ...mediaItem, id: mediaItem.media_id }} className="h-full w-full" minimal />
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center justify-between">
                     <h3 className="text-lg font-semibold text-white">{mediaItem.title || mediaItem.name}</h3>
-                    {!selectMode && onDelete && typeof mediaItem.id === 'string' && (
+                    {!selectMode && onDelete && mediaItem.docId && (
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => onDelete(mediaItem.id as string)}
+                        onClick={() => onDelete(mediaItem.docId!)}
                         className="opacity-0 group-hover:opacity-100 transition-opacity"
                       >
                         <Trash2 className="h-4 w-4 text-white/70 hover:text-red-500" />
@@ -216,25 +218,25 @@ const MediaGrid = ({
               variants={item}
               className="group relative"
             >
-              {selectMode && (
+              {selectMode && mediaItem.docId && (
                 <div className="absolute top-2 left-2 z-10">
                   <Checkbox 
-                    checked={selectedItems.includes(String(mediaItem.id))}
-                    onCheckedChange={() => handleSelect(mediaItem.id)}
+                    checked={selectedItems.includes(mediaItem.docId)}
+                    onCheckedChange={() => handleSelect(mediaItem.docId!)}
                   />
                 </div>
               )}
-              {!selectMode && onDelete && typeof mediaItem.id === 'string' && (
+              {!selectMode && onDelete && mediaItem.docId && (
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => onDelete(mediaItem.id as string)}
+                  onClick={() => onDelete(mediaItem.docId!)}
                   className="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity"
                 >
                   <Trash2 className="h-4 w-4 text-white/70 hover:text-red-500" />
                 </Button>
               )}
-              <MediaCard media={{ ...mediaItem, id: Number(mediaItem.id) }} />
+              <MediaCard media={{ ...mediaItem, id: mediaItem.media_id }} />
             </motion.div>
           ))}
         </motion.div>

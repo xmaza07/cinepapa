@@ -73,7 +73,7 @@ const WatchHistory = () => {
 
   // Convert watch history items to Media format for the MediaGrid
   const watchHistoryMedia = sortedWatchHistory.map(item => ({
-    id: item.id, // Use the item's unique id for selection/deletion
+    id: item.media_id, // Use media_id for navigation
     media_id: item.media_id,
     title: item.title,
     name: item.title,
@@ -86,12 +86,13 @@ const WatchHistory = () => {
     // Additional watch info to display
     watch_position: item.watch_position,
     duration: item.duration,
-    created_at: item.created_at
+    created_at: item.created_at,
+    docId: item.id // Store document ID separately for deletion
   }));
 
   // Convert favorites to Media format
   const favoritesMedia = favorites.map(item => ({
-    id: item.id,
+    id: item.media_id,  // Use media_id for navigation
     media_id: item.media_id,
     title: item.title,
     name: item.title,
@@ -101,12 +102,13 @@ const WatchHistory = () => {
     vote_average: item.rating || 0,
     media_type: item.media_type,
     genre_ids: [],
-    added_at: item.added_at
+    added_at: item.added_at,
+    docId: item.id  // Store document ID separately for deletion
   }));
 
   // Convert watchlist to Media format
   const watchlistMedia = watchlist.map(item => ({
-    id: item.id,
+    id: item.media_id,  // Use media_id for navigation
     media_id: item.media_id,
     title: item.title,
     name: item.title,
@@ -116,7 +118,8 @@ const WatchHistory = () => {
     vote_average: item.rating || 0,
     media_type: item.media_type,
     genre_ids: [],
-    added_at: item.added_at
+    added_at: item.added_at,
+    docId: item.id  // Store document ID separately for deletion
   }));
 
   const handleTabChange = (value: string) => {

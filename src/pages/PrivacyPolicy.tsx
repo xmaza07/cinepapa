@@ -3,15 +3,76 @@ import { AnimatePresence } from "framer-motion";
 const PrivacyPolicy = () => {
   return (
     <AnimatePresence mode="wait">
-      <div className="container mx-auto p-4">
+      <div className="container mx-auto p-4 prose prose-invert max-w-4xl">
         <h1 className="text-3xl font-bold mb-4">Privacy Policy</h1>
-        <p className="mb-4">At Let's Stream V2.0, we are committed to protecting your privacy. This Privacy Policy explains how we collect, use, and disclose your personal information when you use our website.</p>
-        <p>We may collect personal information from you, such as your name, email address, and other contact details when you register on our website or use our services. We use this information to provide and improve our services, to communicate with you, and to personalize your experience on our website.</p>
-        <p>We may also collect non-personal information, such as your IP address, browser type, and operating system, to help us understand how our website is being used and to improve our services.</p>
-        <p>We do not sell, trade, or otherwise transfer your personal information to third parties without your consent. However, we may share your personal information with third-party service providers who help us operate our website and provide our services, such as payment processors and email marketing services. These third parties are required to keep your personal information confidential and use it only for the purposes for which we disclose it to them.</p>
-        <p>We may also disclose your personal information if required by law or if we believe that such action is necessary to comply with legal obligations, protect our rights, or protect the safety of our users.</p>
-        <p>We take reasonable measures to protect your personal information from unauthorized access, disclosure, or destruction. However, no method of transmission over the Internet or electronic storage is 100% secure, and we cannot guarantee absolute security.</p>
-        <p>We may update this Privacy Policy from time to time. If we make any material changes to this Privacy Policy, we will notify you by posting a notice on our website or by sending you an email. We encourage you to review this Privacy Policy periodically to stay informed about our privacy practices.</p>
+
+        <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4 mb-6">
+          <h2 className="text-xl font-semibold text-yellow-500 mb-2">Educational Demonstration Notice</h2>
+          <p className="text-white/80">
+            This application is an educational demonstration that uses third-party APIs. We prioritize your privacy while 
+            demonstrating frontend development concepts.
+          </p>
+        </div>
+
+        <h2 className="text-2xl font-semibold mb-3">1. Information Collection</h2>
+        <p className="mb-4">
+          We collect minimal information necessary for the educational demonstration:
+        </p>
+        <ul className="list-disc pl-6 mb-4">
+          <li>Basic account information (if you choose to create an account)</li>
+          <li>Watch history and preferences (stored locally)</li>
+          <li>Usage analytics for demonstration purposes</li>
+        </ul>
+
+        <h2 className="text-2xl font-semibold mb-3">2. Use of Information</h2>
+        <p className="mb-4">
+          The information collected is used solely to:
+        </p>
+        <ul className="list-disc pl-6 mb-4">
+          <li>Demonstrate user authentication features</li>
+          <li>Showcase personalization capabilities</li>
+          <li>Improve the educational demonstration</li>
+        </ul>
+
+        <h2 className="text-2xl font-semibold mb-3">3. Third-Party Services</h2>
+        <p className="mb-4">
+          Our demonstration interfaces with third-party APIs. We do not control and are not responsible for their privacy 
+          practices. Users should review the privacy policies of these services.
+        </p>
+
+        <h2 className="text-2xl font-semibold mb-3">4. Data Storage</h2>
+        <p className="mb-4">
+          Most user preferences and watch history are stored locally in your browser. Any server-side data may be deleted 
+          at any time as this is a demonstration project.
+        </p>
+
+        <h2 className="text-2xl font-semibold mb-3">5. Data Security</h2>
+        <p className="mb-4">
+          While we implement reasonable security measures, this is an educational demonstration and should not be used 
+          for sensitive information.
+        </p>
+
+        <h2 className="text-2xl font-semibold mb-3">6. Your Rights</h2>
+        <p className="mb-4">
+          You can:
+        </p>
+        <ul className="list-disc pl-6 mb-4">
+          <li>Access your stored information</li>
+          <li>Delete your account and associated data</li>
+          <li>Clear local storage and cookies</li>
+        </ul>
+
+        <h2 className="text-2xl font-semibold mb-3">7. Children's Privacy</h2>
+        <p className="mb-4">
+          This educational demonstration is not intended for children under 13. We do not knowingly collect information 
+          from children under 13.
+        </p>
+
+        <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 mt-6">
+          <p className="text-white/80">
+            Last updated: March 26, 2025
+          </p>
+        </div>
       </div>
     </AnimatePresence>
   );

@@ -18,6 +18,7 @@ const TVDetailsPage = () => {
   const [episodes, setEpisodes] = useState<Episode[]>([]);
   const [selectedSeason, setSelectedSeason] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [backdropLoaded, setBackdropLoaded] = useState(false);
   const [logoLoaded, setLogoLoaded] = useState(false);
   const [activeTab, setActiveTab] = useState<'episodes' | 'about' | 'reviews'>('episodes');
@@ -28,20 +29,36 @@ const TVDetailsPage = () => {
   
   useEffect(() => {
     const fetchTVData = async () => {
-      if (!id) return;
+      if (!id) {
+        setError("TV show ID is required");
+        setIsLoading(false);
+        return;
+      }
+
+      const tvId = parseInt(id, 10);
+      if (isNaN(tvId)) {
+        setError("Invalid TV show ID");
+        setIsLoading(false);
+        return;
+      }
       
       try {
         setIsLoading(true);
-        const tvId = parseInt(id, 10);
+        setError(null);
         const [tvData, recommendationsData] = await Promise.all([
           getTVDetails(tvId),
           getTVRecommendations(tvId)
         ]);
         
+        if (!tvData) {
+          setError("TV show not found");
+          return;
+        }
+
         setTVShow(tvData);
         setRecommendations(recommendationsData);
         
-        if (tvData && tvData.seasons && tvData.seasons.length > 0) {
+        if (tvData.seasons && tvData.seasons.length > 0) {
           const firstSeason = tvData.seasons.find(s => s.season_number > 0);
           if (firstSeason) {
             setSelectedSeason(firstSeason.season_number);
@@ -49,6 +66,7 @@ const TVDetailsPage = () => {
         }
       } catch (error) {
         console.error('Error fetching TV show data:', error);
+        setError("Failed to load TV show data. Please try again.");
       } finally {
         setIsLoading(false);
       }
@@ -115,6 +133,17 @@ const TVDetailsPage = () => {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
         <div className="animate-pulse-slow text-white font-medium">Loading...</div>
+      </div>
+    );
+  }
+  
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-background">
+        <h1 className="text-2xl text-white mb-4">{error}</h1>
+        <Button onClick={() => navigate('/')} variant="outline">
+          Return to Home
+        </Button>
       </div>
     );
   }

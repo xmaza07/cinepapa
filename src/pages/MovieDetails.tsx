@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getMovieDetails, getMovieRecommendations, backdropSizes, posterSizes } from '@/utils/api';
@@ -14,8 +13,9 @@ const MovieDetailsPage = () => {
   const { id } = useParams<{ id: string }>();
   const [movie, setMovie] = useState<MovieDetails | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-const [backdropLoaded, setBackdropLoaded] = useState(false);
-const [logoLoaded, setLogoLoaded] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [backdropLoaded, setBackdropLoaded] = useState(false);
+  const [logoLoaded, setLogoLoaded] = useState(false);
   const [activeTab, setActiveTab] = useState<'about' | 'reviews'>('about');
   const [recommendations, setRecommendations] = useState<Media[]>([]);
   const navigate = useNavigate();
@@ -23,19 +23,37 @@ const [logoLoaded, setLogoLoaded] = useState(false);
   
   useEffect(() => {
     const fetchMovieData = async () => {
-      if (!id) return;
+      if (!id) {
+        setError("Movie ID is required");
+        setIsLoading(false);
+        return;
+      }
+
+      const movieId = parseInt(id, 10);
+      if (isNaN(movieId)) {
+        setError("Invalid movie ID");
+        setIsLoading(false);
+        return;
+      }
       
       try {
         setIsLoading(true);
-        const movieId = parseInt(id, 10);
+        setError(null);
         const [movieData, recommendationsData] = await Promise.all([
           getMovieDetails(movieId),
           getMovieRecommendations(movieId),
         ]);
+        
+        if (!movieData) {
+          setError("Movie not found");
+          return;
+        }
+        
         setMovie(movieData);
         setRecommendations(recommendationsData);
       } catch (error) {
         console.error('Error fetching movie data:', error);
+        setError("Failed to load movie data. Please try again.");
       } finally {
         setIsLoading(false);
       }
@@ -60,6 +78,17 @@ const [logoLoaded, setLogoLoaded] = useState(false);
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
         <div className="animate-pulse-slow text-white font-medium">Loading...</div>
+      </div>
+    );
+  }
+  
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-background">
+        <h1 className="text-2xl text-white mb-4">{error}</h1>
+        <Button onClick={() => navigate('/')} variant="outline">
+          Return to Home
+        </Button>
       </div>
     );
   }

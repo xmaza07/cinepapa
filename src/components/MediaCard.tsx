@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { cn } from "@/lib/utils";
@@ -18,9 +17,12 @@ const MediaCard = ({ media, className, featured = false, minimal = false }: Medi
   // Added console log for debugging
   console.log(`MediaCard: ${media.media_type}/${media.id} - ${media.title || media.name}`);
   
+  // Use media_id for navigation if available, fallback to id
+  const mediaId = media.media_id || media.id;
+  
   const detailPath = media.media_type === 'movie' 
-    ? `/movie/${media.id}` 
-    : `/tv/${media.id}`;
+    ? `/movie/${mediaId}` 
+    : `/tv/${mediaId}`;
   
   if (minimal) {
     return (

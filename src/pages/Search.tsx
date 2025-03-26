@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { searchMedia } from '@/utils/api';
@@ -107,9 +106,13 @@ const Search = () => {
         const results = await searchMedia(searchQuery);
         
         // Filter results by media type if specified
-        let filteredResults = results;
+        let filteredResults = results.map(item => ({
+          ...item,
+          media_id: item.id // Ensure media_id is set for MediaGrid
+        }));
+
         if (type !== 'all') {
-          filteredResults = results.filter(item => item.media_type === type);
+          filteredResults = filteredResults.filter(item => item.media_type === type);
         }
         
         // Sort results

@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getTVDetails, getTVRecommendations, getSeasonDetails, backdropSizes, posterSizes } from '@/utils/api';
+import { getTVDetails, getTVRecommendations, getSeasonDetails, backdropSizes, posterSizes, getTVTrailer } from '@/utils/api';
 import { TVDetails, Episode, Media } from '@/utils/types';
 import { Button } from '@/components/ui/button';
 import ContentRow from '@/components/ContentRow';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Navbar from '@/components/Navbar';
 import ReviewSection from '@/components/ReviewSection';
-import { Play, Calendar, Star, ArrowLeft, List, Shield, History } from 'lucide-react';
+import { Play, Calendar, Star, ArrowLeft, List, Shield, History, Heart, Bookmark } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useWatchHistory } from '@/hooks/watch-history';
 import { format } from 'date-fns';
@@ -25,7 +25,10 @@ const TVDetailsPage = () => {
   const [recommendations, setRecommendations] = useState<Media[]>([]);
   const navigate = useNavigate();
   const isMobile = useIsMobile();
-  const { watchHistory } = useWatchHistory();
+  const { watchHistory, addToFavorites, addToWatchlist, removeFromFavorites, removeFromWatchlist, isInFavorites, isInWatchlist } = useWatchHistory();
+  const [trailerKey, setTrailerKey] = useState<string | null>(null);
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [isInMyWatchlist, setIsInMyWatchlist] = useState(false);
   
   useEffect(() => {
     const fetchTVData = async () => {
@@ -89,10 +92,72 @@ const TVDetailsPage = () => {
     
     fetchEpisodes();
   }, [tvShow, selectedSeason]);
+
+  useEffect(() => {
+    const fetchTrailer = async () => {
+      if (tvShow?.id) {
+        try {
+          const trailerData = await getTVTrailer(tvShow.id);
+          setTrailerKey(trailerData);
+        } catch (error) {
+          console.error('Error fetching trailer:', error);
+        }
+      }
+    };
+    
+    fetchTrailer();
+  }, [tvShow?.id]);
+
+  useEffect(() => {
+    if (tvShow?.id) {
+      setIsFavorite(isInFavorites(tvShow.id, 'tv'));
+      setIsInMyWatchlist(isInWatchlist(tvShow.id, 'tv'));
+    }
+  }, [tvShow?.id, isInFavorites, isInWatchlist]);
   
   const handlePlayEpisode = (seasonNumber: number, episodeNumber: number) => {
     if (tvShow) {
       navigate(`/player/tv/${tvShow.id}/${seasonNumber}/${episodeNumber}`);
+    }
+  };
+
+  const handleToggleFavorite = () => {
+    if (!tvShow) return;
+    
+    if (isFavorite) {
+      removeFromFavorites(tvShow.id, 'tv');
+      setIsFavorite(false);
+    } else {
+      addToFavorites({
+        media_id: tvShow.id,
+        media_type: 'tv',
+        title: tvShow.name,
+        poster_path: tvShow.poster_path,
+        backdrop_path: tvShow.backdrop_path,
+        overview: tvShow.overview,
+        rating: tvShow.vote_average
+      });
+      setIsFavorite(true);
+    }
+  };
+
+  const handleToggleWatchlist = () => {
+    if (!tvShow) return;
+    
+    if (isInMyWatchlist) {
+      removeFromWatchlist(tvShow.id, 'tv');
+      setIsInMyWatchlist(false);
+    } else {
+      addToWatchlist({
+        media_id: tvShow.id,
+        media_type: 'tv',
+        title: tvShow.name,
+        poster_path: tvShow.poster_path,
+        backdrop_path: tvShow.backdrop_path,
+        overview: tvShow.overview,
+        rating: tvShow.vote_average
+      });
+      setIsInMyWatchlist(true);
     }
   };
 
@@ -185,6 +250,17 @@ const TVDetailsPage = () => {
           onLoad={() => setBackdropLoaded(true)}
         />
         
+        {!isMobile && trailerKey && (
+          <div className="absolute inset-0 bg-black/60">
+            <iframe
+              className="w-full h-full"
+              src={`https://www.youtube.com/embed/${trailerKey}?autoplay=1&mute=1&controls=0&modestbranding=1&loop=1&playlist=${trailerKey}`}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
+          </div>
+        )}
+
         <div className="absolute inset-0 details-gradient" />
         
         <div className="absolute bottom-0 left-0 right-0 p-6 md:p-12 lg:p-16">
@@ -292,6 +368,24 @@ const TVDetailsPage = () => {
                     Continue S{getLastWatchedEpisode()?.season} E{getLastWatchedEpisode()?.episode} ({getLastWatchedEpisode()?.progress}%)
                   </Button>
                 )}
+
+                <Button 
+                  onClick={handleToggleFavorite}
+                  variant="outline"
+                  className={`border-white/20 ${isFavorite ? 'bg-accent text-white' : 'bg-black/50 text-white hover:bg-black/70'}`}
+                >
+                  <Heart className={`h-4 w-4 mr-2 ${isFavorite ? 'fill-current' : ''}`} />
+                  {isFavorite ? 'In Favorites' : 'Add to Favorites'}
+                </Button>
+
+                <Button 
+                  onClick={handleToggleWatchlist}
+                  variant="outline"
+                  className={`border-white/20 ${isInMyWatchlist ? 'bg-accent text-white' : 'bg-black/50 text-white hover:bg-black/70'}`}
+                >
+                  <Bookmark className={`h-4 w-4 mr-2 ${isInMyWatchlist ? 'fill-current' : ''}`} />
+                  {isInMyWatchlist ? 'In Watchlist' : 'Add to Watchlist'}
+                </Button>
               </div>
             </div>
           </div>

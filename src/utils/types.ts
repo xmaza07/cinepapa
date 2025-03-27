@@ -1,6 +1,6 @@
-
 export interface Media {
   id: number;
+  media_id?: number;  // Add optional media_id
   title?: string;
   name?: string;
   poster_path: string;

@@ -166,7 +166,7 @@ const Navbar = () => {
                   {searchSuggestions.map((item) => (
                     <Link
                       key={`${item.media_type}-${item.id}`}
-                      to={`/${item.media_type === 'movie' ? 'movies' : 'tv'}/${item.id}`}
+                      to={`/${item.media_type}/${item.id}`}
                       className="flex items-center px-4 py-2 hover:bg-white/10 text-white/90 text-sm"
                       onClick={() => {
                         setShowSuggestions(false);
@@ -240,7 +240,7 @@ const Navbar = () => {
                   {searchSuggestions.map((item) => (
                     <Link
                       key={`${item.media_type}-${item.id}`}
-                      to={`/${item.media_type === 'movie' ? 'movies' : 'tv'}/${item.id}`}
+                      to={`/${item.media_type}/${item.id}`}
                       className="flex items-center px-4 py-2 hover:bg-white/10 text-white/90 text-sm"
                       onClick={() => {
                         setShowSuggestions(false);

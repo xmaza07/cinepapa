@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -40,8 +39,8 @@ const AnimatedRoutes = () => {
       <Routes location={location} key={location.pathname}>
         {/* Public Routes */}
         <Route path="/" element={<Index />} />
-        <Route path="/movies" element={<Movies />} />
         <Route path="/movie" element={<Movies />} />
+        <Route path="/movies" element={<Navigate to="/movie" replace />} />
         <Route path="/tv" element={<TVShows />} />
         <Route path="/trending" element={<Trending />} />
         <Route path="/sports" element={<Sports />} />

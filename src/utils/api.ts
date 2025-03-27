@@ -1,4 +1,31 @@
+import axios from 'axios';
 import { Media, MovieDetails, TVDetails, Episode, Review, Genre, Company, MovieImagesResponse } from './types';
+
+// Add interface for video response
+interface TMDBVideo {
+  id: string;
+  key: string;
+  name: string;
+  site: string;
+  size: number;
+  type: string;
+  official: boolean;
+  published_at: string;
+}
+
+interface TMDBVideoResponse {
+  id: number;
+  results: TMDBVideo[];
+}
+
+// Create axios instance for TMDB
+const tmdb = axios.create({
+  baseURL: 'https://api.themoviedb.org/3',
+  params: {
+    api_key: '297f1b91919bae59d50ed815f8d2e14c',
+    language: 'en-US'
+  }
+});
 
 interface TMDBMovieResult {
   id: number;
@@ -522,5 +549,61 @@ export const searchMedia = async (query: string, page: number = 1): Promise<Medi
   } catch (error) {
     console.error('Error searching media:', error);
     return [];
+  }
+};
+
+export const getMovieTrailer = async (movieId: number): Promise<string | null> => {
+  try {
+    const response = await tmdb.get<TMDBVideoResponse>(`/movie/${movieId}/videos`);
+    const videos = response.data.results;
+    
+    // Try to find official trailer first
+    const trailer = videos.find(
+      (video) => 
+        video.type === "Trailer" && 
+        video.site === "YouTube" &&
+        video.official === true
+    ) || 
+    // Fallback to any trailer
+    videos.find(
+      (video) => 
+        video.type === "Trailer" && 
+        video.site === "YouTube"
+    ) ||
+    // Last resort: any video
+    videos.find((video) => video.site === "YouTube");
+
+    return trailer ? trailer.key : null;
+  } catch (error) {
+    console.error('Error fetching movie trailer:', error);
+    return null;
+  }
+};
+
+export const getTVTrailer = async (tvId: number): Promise<string | null> => {
+  try {
+    const response = await tmdb.get<TMDBVideoResponse>(`/tv/${tvId}/videos`);
+    const videos = response.data.results;
+    
+    // Try to find official trailer first
+    const trailer = videos.find(
+      (video) => 
+        video.type === "Trailer" && 
+        video.site === "YouTube" &&
+        video.official === true
+    ) || 
+    // Fallback to any trailer
+    videos.find(
+      (video) => 
+        video.type === "Trailer" && 
+        video.site === "YouTube"
+    ) ||
+    // Last resort: any video
+    videos.find((video) => video.site === "YouTube");
+
+    return trailer ? trailer.key : null;
+  } catch (error) {
+    console.error('Error fetching TV trailer:', error);
+    return null;
   }
 };

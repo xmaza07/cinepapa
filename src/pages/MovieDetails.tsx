@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getMovieDetails, getMovieRecommendations, backdropSizes, posterSizes } from '@/utils/api';
+import { getMovieDetails, getMovieRecommendations, getMovieTrailer, backdropSizes, posterSizes } from '@/utils/api';
 import { MovieDetails, Media } from '@/utils/types';
 import { Button } from '@/components/ui/button';
 import Navbar from '@/components/Navbar';
 import ContentRow from '@/components/ContentRow';
 import ReviewSection from '@/components/ReviewSection';
-import { Play, Clock, Calendar, Star, ArrowLeft, Shield } from 'lucide-react';
+import { Play, Clock, Calendar, Star, ArrowLeft, Shield, Heart, Bookmark } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useWatchHistory } from '@/hooks/watch-history';
 
 const MovieDetailsPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -18,6 +19,17 @@ const MovieDetailsPage = () => {
   const [logoLoaded, setLogoLoaded] = useState(false);
   const [activeTab, setActiveTab] = useState<'about' | 'reviews'>('about');
   const [recommendations, setRecommendations] = useState<Media[]>([]);
+  const [trailerKey, setTrailerKey] = useState<string | null>(null);
+  const { 
+    addToFavorites, 
+    addToWatchlist,
+    removeFromFavorites,
+    removeFromWatchlist,
+    isInFavorites,
+    isInWatchlist 
+  } = useWatchHistory();
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [isInMyWatchlist, setIsInMyWatchlist] = useState(false);
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   
@@ -62,9 +74,71 @@ const MovieDetailsPage = () => {
     fetchMovieData();
   }, [id]);
   
+  useEffect(() => {
+    const fetchTrailer = async () => {
+      if (movie?.id) {
+        try {
+          const trailerData = await getMovieTrailer(movie.id);
+          setTrailerKey(trailerData);
+        } catch (error) {
+          console.error('Error fetching trailer:', error);
+        }
+      }
+    };
+    
+    fetchTrailer();
+  }, [movie?.id]);
+
+  useEffect(() => {
+    if (movie?.id) {
+      setIsFavorite(isInFavorites(movie.id, 'movie'));
+      setIsInMyWatchlist(isInWatchlist(movie.id, 'movie'));
+    }
+  }, [movie?.id, isInFavorites, isInWatchlist]);
+
   const handlePlayMovie = () => {
     if (movie) {
       navigate(`/player/movie/${movie.id}`);
+    }
+  };
+
+  const handleToggleFavorite = () => {
+    if (!movie) return;
+    
+    if (isFavorite) {
+      removeFromFavorites(movie.id, 'movie');
+      setIsFavorite(false);
+    } else {
+      addToFavorites({
+        media_id: movie.id,
+        media_type: 'movie',
+        title: movie.title,
+        poster_path: movie.poster_path,
+        backdrop_path: movie.backdrop_path,
+        overview: movie.overview,
+        rating: movie.vote_average
+      });
+      setIsFavorite(true);
+    }
+  };
+
+  const handleToggleWatchlist = () => {
+    if (!movie) return;
+    
+    if (isInMyWatchlist) {
+      removeFromWatchlist(movie.id, 'movie');
+      setIsInMyWatchlist(false);
+    } else {
+      addToWatchlist({
+        media_id: movie.id,
+        media_type: 'movie',
+        title: movie.title,
+        poster_path: movie.poster_path,
+        backdrop_path: movie.backdrop_path,
+        overview: movie.overview,
+        rating: movie.vote_average
+      });
+      setIsInMyWatchlist(true);
     }
   };
 
@@ -113,7 +187,8 @@ const MovieDetailsPage = () => {
         {/* Loading skeleton */}
         {!backdropLoaded && (
           <div className="absolute inset-0 bg-background image-skeleton" />
-        )}
+        )
+        }
         
         {/* Back button */}
         <button 
@@ -136,6 +211,18 @@ const MovieDetailsPage = () => {
         {/* Gradient overlay */}
         <div className="absolute inset-0 details-gradient" />
         
+        {/* Trailer section - only show on desktop */}
+        {!isMobile && trailerKey && (
+          <div className="absolute inset-0 bg-black/60">
+            <iframe
+              className="w-full h-full"
+              src={`https://www.youtube.com/embed/${trailerKey}?autoplay=1&mute=1&controls=0&modestbranding=1&loop=1&playlist=${trailerKey}`}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
+          </div>
+        )}
+
         {/* Movie info overlay */}
         <div className="absolute bottom-0 left-0 right-0 p-6 md:p-12 lg:p-16">
           <div className="flex flex-col md:flex-row items-start gap-6 max-w-6xl mx-auto">
@@ -219,13 +306,33 @@ const MovieDetailsPage = () => {
               
               <p className="text-white/80 mb-6">{movie.overview}</p>
               
-              <Button 
-                onClick={handlePlayMovie}
-                className="bg-accent hover:bg-accent/80 text-white flex items-center"
-              >
-                <Play className="h-4 w-4 mr-2" />
-                Play
-              </Button>
+              <div className="flex flex-wrap gap-3">
+                <Button 
+                  onClick={handlePlayMovie}
+                  className="bg-accent hover:bg-accent/80 text-white flex items-center"
+                >
+                  <Play className="h-4 w-4 mr-2" />
+                  Play
+                </Button>
+
+                <Button 
+                  onClick={handleToggleFavorite}
+                  variant="outline"
+                  className={`border-white/20 ${isFavorite ? 'bg-accent text-white' : 'bg-black/50 text-white hover:bg-black/70'}`}
+                >
+                  <Heart className={`h-4 w-4 mr-2 ${isFavorite ? 'fill-current' : ''}`} />
+                  {isFavorite ? 'In Favorites' : 'Add to Favorites'}
+                </Button>
+
+                <Button 
+                  onClick={handleToggleWatchlist}
+                  variant="outline"
+                  className={`border-white/20 ${isInMyWatchlist ? 'bg-accent text-white' : 'bg-black/50 text-white hover:bg-black/70'}`}
+                >
+                  <Bookmark className={`h-4 w-4 mr-2 ${isInMyWatchlist ? 'fill-current' : ''}`} />
+                  {isInMyWatchlist ? 'In Watchlist' : 'Add to Watchlist'}
+                </Button>
+              </div>
             </div>
           </div>
         </div>

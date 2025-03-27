@@ -129,7 +129,8 @@ const ContinueWatching = ({ maxItems = 20 }: ContinueWatchingProps) => {
         >
           {continuableItems.map((item) => (
             <motion.div
-              key={`${item.media_id}-${item.season}-${item.episode}`}
+              // Make key unique by including the item's ID
+              key={`${item.id}-${item.media_id}-${item.season || 0}-${item.episode || 0}`}
               className="relative flex-none w-[280px] md:w-[320px] aspect-video bg-card rounded-lg overflow-hidden group cursor-pointer"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}

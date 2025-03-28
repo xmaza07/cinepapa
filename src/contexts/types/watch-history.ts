@@ -59,6 +59,9 @@ export interface WatchHistoryContextType {
   watchHistory: WatchHistoryItem[];
   favorites: FavoriteItem[];
   watchlist: WatchlistItem[];
+  hasMore: boolean;
+  isLoading: boolean;
+  loadMore: () => Promise<void>;
   addToWatchHistory: (media: Media, position: number, duration: number, season?: number, episode?: number, preferredSource?: string) => Promise<void>;
   updateWatchPosition: (mediaId: number, mediaType: 'movie' | 'tv', position: number, season?: number, episode?: number) => Promise<void>;
   clearWatchHistory: () => Promise<void>;
@@ -74,7 +77,6 @@ export interface WatchHistoryContextType {
   addToWatchlist: (item: MediaBaseItem) => Promise<void>;
   removeFromWatchlist: (mediaId: number, mediaType: 'movie' | 'tv') => Promise<void>;
   isInWatchlist: (mediaId: number, mediaType: 'movie' | 'tv') => boolean;
-  isLoading: boolean;
 }
 
 export const WatchHistoryContext = createContext<WatchHistoryContextType | undefined>(undefined);

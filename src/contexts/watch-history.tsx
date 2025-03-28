@@ -1,8 +1,8 @@
-import { useState, useEffect, ReactNode } from 'react';
+import { useState, useEffect, useCallback, ReactNode } from 'react';
 import { useAuth } from '@/hooks';
 import { useUserPreferences } from '@/hooks/user-preferences';
 import { getApp } from 'firebase/app';
-import { getFirestore, collection, doc, setDoc, getDocs, deleteDoc, query, where, deleteField } from 'firebase/firestore';
+import { getFirestore, collection, doc, setDoc, getDocs, deleteDoc, query, where, deleteField, limit, orderBy, startAfter, writeBatch } from 'firebase/firestore';
 import { generateId } from '@/utils/supabase';
 import { Media } from '@/utils/types';
 import { useToast } from '@/components/ui/use-toast';
@@ -17,6 +17,12 @@ import {
 import RateLimiter from '@/utils/rate-limiter';
 
 const LOCAL_STORAGE_HISTORY_KEY = 'fdf_watch_history';
+const ITEMS_PER_PAGE = 20;
+const MAX_LOCAL_HISTORY = 10;
+const DEBOUNCE_WINDOW = 300000; // 5 minutes in milliseconds
+const SIGNIFICANT_PROGRESS = 120; // 2 minutes difference to consider significant progress
+const MINIMUM_UPDATE_INTERVAL = 60000; // 1 minute in milliseconds
+const lastUpdateTimestamps = new Map<string, number>();
 
 export { WatchHistoryContext };
 
@@ -45,129 +51,109 @@ const saveLocalWatchHistory = (history: WatchHistoryItem[]) => {
   }
 };
 
+interface QueryDocumentSnapshot {
+  id: string;
+  data: () => Record<string, unknown>;
+}
+
 export function WatchHistoryProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const { userPreferences } = useUserPreferences();
-  const [watchHistory, setWatchHistory] = useState<WatchHistoryItem[]>(loadLocalWatchHistory()); // Initialize from local storage
+  const [watchHistory, setWatchHistory] = useState<WatchHistoryItem[]>([]);
+  const [lastVisible, setLastVisible] = useState<QueryDocumentSnapshot | null>(null);
+  const [hasMore, setHasMore] = useState(true);
   const [favorites, setFavorites] = useState<FavoriteItem[]>([]);
   const [watchlist, setWatchlist] = useState<WatchlistItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
-  
-  useEffect(() => {
-    const fetchData = async () => {
-      if (!user) {
-        setWatchHistory(loadLocalWatchHistory()); // Load from local storage if no user
-        setFavorites([]);
-        setWatchlist([]);
-        setIsLoading(false);
+
+  const loadLocalWatchHistory = useCallback(() => {
+    try {
+      const storedHistory = localStorage.getItem(LOCAL_STORAGE_HISTORY_KEY);
+      if (!storedHistory) return [];
+      const history = JSON.parse(storedHistory);
+      // Only keep the most recent items for PWA
+      return history.slice(0, MAX_LOCAL_HISTORY);
+    } catch (error) {
+      console.error('Error loading local watch history:', error);
+      return [];
+    }
+  }, []);
+
+  const saveLocalWatchHistory = useCallback((history: WatchHistoryItem[]) => {
+    try {
+      // Only store the most recent items for PWA
+      const recentHistory = history.slice(0, MAX_LOCAL_HISTORY);
+      localStorage.setItem(LOCAL_STORAGE_HISTORY_KEY, JSON.stringify(recentHistory));
+    } catch (error) {
+      console.error('Error saving local watch history:', error);
+    }
+  }, []);
+
+  const fetchWatchHistory = useCallback(async (isInitial: boolean = false) => {
+    if (!user) {
+      setWatchHistory(loadLocalWatchHistory());
+      setHasMore(false);
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      const historyRef = collection(db, 'watchHistory');
+      let historyQuery;
+
+      if (isInitial) {
+        historyQuery = query(
+          historyRef,
+          where('user_id', '==', user.uid),
+          orderBy('created_at', 'desc'),
+          limit(ITEMS_PER_PAGE)
+        );
+      } else if (lastVisible) {
+        historyQuery = query(
+          historyRef,
+          where('user_id', '==', user.uid),
+          orderBy('created_at', 'desc'),
+          startAfter(lastVisible),
+          limit(ITEMS_PER_PAGE)
+        );
+      } else {
         return;
       }
+
+      const historySnapshot = await getDocs(historyQuery);
       
-      if (!navigator.onLine) {
-        setWatchHistory(loadLocalWatchHistory()); // Load from local storage if offline
-        setIsLoading(false);
+      if (historySnapshot.empty) {
+        setHasMore(false);
         return;
       }
 
-      try {
-        setIsLoading(true);
-        
-        // Fetch watch history from Firestore
-        const historyRef = collection(db, 'watchHistory');
-        const historyQuery = query(historyRef, where('user_id', '==', user.uid));
-        const historySnapshot = await getDocs(historyQuery);
-        const historyData = historySnapshot.docs.map(doc => {
-          const data = doc.data();
-          // Ensure created_at is a valid ISO string
-          if (!data.created_at || typeof data.created_at !== 'string') {
-            data.created_at = new Date().toISOString();
-          }
-          return {
-            id: doc.id,
-            ...data
-          };
-        }) as WatchHistoryItem[];
-        
-        // Fetch favorites and ensure added_at is valid
-        const favoritesRef = collection(db, 'favorites');
-        const favoritesQuery = query(favoritesRef, where('user_id', '==', user.uid));
-        const favoritesSnapshot = await getDocs(favoritesQuery);
-        const favoritesData = favoritesSnapshot.docs.map(doc => {
-          const data = doc.data();
-          if (!data.added_at || typeof data.added_at !== 'string') {
-            data.added_at = new Date().toISOString();
-          }
-          return {
-            id: doc.id,
-            ...data
-          };
-        }) as FavoriteItem[];
-        
-        // Fetch watchlist and ensure added_at is valid
-        const watchlistRef = collection(db, 'watchlist');
-        const watchlistQuery = query(watchlistRef, where('user_id', '==', user.uid));
-        const watchlistSnapshot = await getDocs(watchlistQuery);
-        const watchlistData = watchlistSnapshot.docs.map(doc => {
-          const data = doc.data();
-          if (!data.added_at || typeof data.added_at !== 'string') {
-            data.added_at = new Date().toISOString();
-          }
-          return {
-            id: doc.id,
-            ...data
-          };
-        }) as WatchlistItem[];
+      setLastVisible(historySnapshot.docs[historySnapshot.docs.length - 1] as QueryDocumentSnapshot);
+      
+      const historyData = historySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data() as Omit<WatchHistoryItem, 'id'>,
+        created_at: (doc.data() as { created_at?: string })?.created_at || new Date().toISOString()
+      }));
 
-        // Update any invalid timestamps in Firestore
-        const updatePromises = [
-          ...historySnapshot.docs.map(doc => {
-            const data = doc.data();
-            if (!data.created_at || typeof data.created_at !== 'string') {
-              return setDoc(doc.ref, { created_at: new Date().toISOString() }, { merge: true });
-            }
-            return Promise.resolve();
-          }),
-          ...favoritesSnapshot.docs.map(doc => {
-            const data = doc.data();
-            if (!data.added_at || typeof data.added_at !== 'string') {
-              return setDoc(doc.ref, { added_at: new Date().toISOString() }, { merge: true });
-            }
-            return Promise.resolve();
-          }),
-          ...watchlistSnapshot.docs.map(doc => {
-            const data = doc.data();
-            if (!data.added_at || typeof data.added_at !== 'string') {
-              return setDoc(doc.ref, { added_at: new Date().toISOString() }, { merge: true });
-            }
-            return Promise.resolve();
-          })
-        ];
-        
-        // Wait for all updates to complete
-        await Promise.all(updatePromises);
-        
-        setWatchHistory(historyData);
-        setFavorites(favoritesData);
-        setWatchlist(watchlistData);
-      } catch (error) {
-        console.error('Error fetching user data:', error);
-        toast({
-          title: "Error loading watch data",
-          description: "Please make sure you're signed in and try again. If the problem persists, try signing out and back in.",
-          variant: "destructive"
-        });
-        // Set empty arrays as fallback
-        setWatchHistory([]);
-        setFavorites([]);
-        setWatchlist([]);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    fetchData();
-  }, [user, toast]);
+      setWatchHistory(prev => isInitial ? historyData : [...prev, ...historyData]);
+      setHasMore(historySnapshot.docs.length === ITEMS_PER_PAGE);
+    } catch (error) {
+      console.error('Error fetching watch history:', error);
+      toast({
+        title: "Error loading watch history",
+        description: "There was a problem loading your watch history.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [user, lastVisible, loadLocalWatchHistory, toast]);
+
+  // Initial load
+  useEffect(() => {
+    fetchWatchHistory(true);
+  }, [fetchWatchHistory]);
 
   useEffect(() => {
     const migrateWatchHistory = async () => {
@@ -209,67 +195,95 @@ export function WatchHistoryProvider({ children }: { children: ReactNode }) {
     const mediaId = media.id;
     const title = media.title || media.name || '';
 
-    if (!navigator.onLine) {
-      const currentHistory = loadLocalWatchHistory();
-      // For TV shows, look for existing entry of the same show
-      if (mediaType === 'tv') {
-        const existingShowIndex = currentHistory.findIndex(item => 
-          item.media_id === mediaId && item.media_type === 'tv'
-        );
-        if (existingShowIndex > -1) {
-          // Update existing show entry
-          const updatedHistory = [...currentHistory];
-          updatedHistory[existingShowIndex] = {
-            ...updatedHistory[existingShowIndex],
-            watch_position: position,
-            season,
-            episode,
-            created_at: new Date().toISOString(),
-            preferred_source: preferredSource || updatedHistory[existingShowIndex].preferred_source
-          };
-          setWatchHistory(updatedHistory);
-          saveLocalWatchHistory(updatedHistory);
-          return;
-        }
-      }
-      
-      const newItem: WatchHistoryItem = {
-        id: generateId(),
-        user_id: user.uid || 'offline_user',
-        media_id: mediaId,
-        media_type: mediaType,
-        title,
-        poster_path: media.poster_path,
-        backdrop_path: media.backdrop_path,
-        overview: media.overview || null,
-        rating: media.vote_average || 0,
-        watch_position: position,
-        duration,
-        created_at: new Date().toISOString(),
-        preferred_source: preferredSource || '',
-        ...(typeof season === 'number' ? { season } : {}),
-        ...(typeof episode === 'number' ? { episode } : {})
-      };
+    // Generate unique key for this media item
+    const mediaKey = `${mediaId}-${mediaType}-${season || ''}-${episode || ''}`;
+    const now = Date.now();
+    const lastUpdate = lastUpdateTimestamps.get(mediaKey) || 0;
 
-      const updatedHistory = [newItem, ...currentHistory];
-      setWatchHistory(updatedHistory);
-      saveLocalWatchHistory(updatedHistory);
+    // Check if enough time has passed since last update
+    if (now - lastUpdate < MINIMUM_UPDATE_INTERVAL) {
       return;
     }
 
     try {
-      // For TV shows, look for existing entry of the same show
-      if (mediaType === 'tv') {
-        const existingShow = watchHistory.find(item => 
-          item.media_id === mediaId && item.media_type === 'tv'
-        );
-        
-        if (existingShow) {
-          await updateWatchPosition(mediaId, mediaType, position, season, episode, preferredSource);
+      // Find existing entry for this media
+      const existingItem = watchHistory.find(item => {
+        if (mediaType === 'movie') {
+          return item.media_id === mediaId && item.media_type === mediaType;
+        } else {
+          return item.media_id === mediaId && 
+                 item.media_type === mediaType &&
+                 item.season === season &&
+                 item.episode === episode;
+        }
+      });
+
+      if (existingItem) {
+        // Check for significant progress change
+        const progressDifference = Math.abs(existingItem.watch_position - position);
+        if (progressDifference < SIGNIFICANT_PROGRESS) {
           return;
         }
+
+        const updatedItemData = {
+          watch_position: position,
+          created_at: new Date().toISOString(),
+          preferred_source: preferredSource || existingItem.preferred_source
+        };
+
+        // Update timestamp for rate limiting
+        lastUpdateTimestamps.set(mediaKey, now);
+
+        // Check rate limiter before Firestore operation
+        if (!rateLimiter.canExecute()) {
+          console.log('Rate limit exceeded. Updating local state only.');
+          const updatedHistory = watchHistory.map(h => 
+            h.id === existingItem.id ? { ...h, ...updatedItemData } : h
+          );
+          setWatchHistory(updatedHistory);
+          saveLocalWatchHistory(updatedHistory);
+          return;
+        }
+
+        // Update Firestore and local state
+        const historyRef = doc(db, 'watchHistory', existingItem.id);
+        await setDoc(historyRef, updatedItemData, { merge: true });
+        
+        const updatedHistory = watchHistory.map(h => 
+          h.id === existingItem.id ? { ...h, ...updatedItemData } : h
+        );
+        setWatchHistory(updatedHistory);
+        saveLocalWatchHistory(updatedHistory);
+        return;
       }
 
+      // Check rate limiter before creating new entry
+      if (!rateLimiter.canExecute()) {
+        console.log('Rate limit exceeded. New entry will be stored locally.');
+        const newItem: WatchHistoryItem = {
+          id: generateId(),
+          user_id: user.uid,
+          media_id: mediaId,
+          media_type: mediaType,
+          title,
+          poster_path: media.poster_path,
+          backdrop_path: media.backdrop_path,
+          overview: media.overview || null,
+          rating: media.vote_average || 0,
+          watch_position: position,
+          duration,
+          created_at: new Date().toISOString(),
+          preferred_source: preferredSource || '',
+          ...(typeof season === 'number' ? { season } : {}),
+          ...(typeof episode === 'number' ? { episode } : {})
+        };
+        
+        setWatchHistory(prev => [newItem, ...prev]);
+        saveLocalWatchHistory([newItem, ...watchHistory]);
+        return;
+      }
+
+      // Create new entry with rate limit check passed
       const newItem: WatchHistoryItem = {
         id: generateId(),
         user_id: user.uid,
@@ -287,14 +301,17 @@ export function WatchHistoryProvider({ children }: { children: ReactNode }) {
         ...(typeof season === 'number' ? { season } : {}),
         ...(typeof episode === 'number' ? { episode } : {})
       };
-      
+
+      // Update timestamp for rate limiting
+      lastUpdateTimestamps.set(mediaKey, now);
+
       // Save to Firestore
       const historyRef = doc(db, 'watchHistory', newItem.id);
       await setDoc(historyRef, newItem);
-      
-      const updatedHistory = [newItem, ...watchHistory];
-      setWatchHistory(updatedHistory);
-      saveLocalWatchHistory(updatedHistory);
+
+      // Update local state
+      setWatchHistory(prev => [newItem, ...prev]);
+      saveLocalWatchHistory([newItem, ...watchHistory]);
     } catch (error) {
       console.error('Error adding to watch history:', error);
       toast({
@@ -315,71 +332,66 @@ export function WatchHistoryProvider({ children }: { children: ReactNode }) {
   ) => {
     if (!user) return;
 
+    // Generate unique key for this media item
+    const mediaKey = `${mediaId}-${mediaType}-${season || ''}-${episode || ''}`;
+    const now = Date.now();
+    const lastUpdate = lastUpdateTimestamps.get(mediaKey) || 0;
+
+    // Check if enough time has passed since last update
+    if (now - lastUpdate < MINIMUM_UPDATE_INTERVAL) {
+      return;
+    }
+
+    // Update timestamp
+    lastUpdateTimestamps.set(mediaKey, now);
+
     const updatedItemData = {
       watch_position: position,
-      created_at: new Date().toISOString(), // Always update timestamp to keep show at top of history
+      created_at: new Date().toISOString(),
       ...(typeof season === 'number' ? { season } : {}),
       ...(typeof episode === 'number' ? { episode } : {}),
       ...(preferredSource ? { preferred_source: preferredSource } : {})
     };
     
-    if (!navigator.onLine) {
-      // Offline mode: Update in local storage
-      const currentHistory = loadLocalWatchHistory();
-      // For TV shows, find the existing show entry regardless of episode
-      const itemIndex = currentHistory.findIndex(item => 
-        item.media_id === mediaId && 
-        item.media_type === mediaType
-      );
-      if (itemIndex > -1) {
-        const updatedHistory = [...currentHistory];
-        updatedHistory[itemIndex] = { 
-          ...updatedHistory[itemIndex], 
-          ...updatedItemData,
-          // Move to top of history
-          created_at: new Date().toISOString()
-        };
-        setWatchHistory(updatedHistory);
-        saveLocalWatchHistory(updatedHistory);
-      }
-      return;
-    }
-    
     try {
-      // For TV shows, find the existing show entry regardless of episode
-      const item = watchHistory.find(item => 
+      // Find existing item
+      const existingItem = watchHistory.find(item => 
         item.media_id === mediaId && 
-        item.media_type === mediaType
+        item.media_type === mediaType &&
+        item.season === season &&
+        item.episode === episode
       );
-      
-      if (item) {
-        // Only update if significant progress has been made (more than 20 minutes)
-        const TWENTY_MINUTES = 1200;
-        if (Math.abs(item.watch_position - position) < TWENTY_MINUTES) {
+
+      if (!rateLimiter.canExecute()) {
+        console.log('Rate limit exceeded. Skipping Firestore update.');
+        // Only update local state
+        if (existingItem) {
+          const updatedHistory = watchHistory.map(h => 
+            h.id === existingItem.id ? { ...h, ...updatedItemData } : h
+          );
+          setWatchHistory(updatedHistory);
+          saveLocalWatchHistory(updatedHistory);
+        }
+        return;
+      }
+
+      if (existingItem) {
+        // Check if progress change is significant
+        const progressDifference = Math.abs(existingItem.watch_position - position);
+        if (progressDifference < SIGNIFICANT_PROGRESS) {
           return;
         }
 
-        // Check rate limiter before updating Firestore
-        if (!rateLimiter.canExecute()) {
-          console.log('Rate limit exceeded. Skipping Firestore update.');
-          return;
-        }
-        
-        // Update in Firestore using merge to update only changed fields
-        const historyRef = doc(db, 'watchHistory', item.id);
+        // Update in Firestore
+        const historyRef = doc(db, 'watchHistory', existingItem.id);
         await setDoc(historyRef, updatedItemData, { merge: true });
-        
+
+        // Batch local state updates
         const updatedHistory = watchHistory.map(h => 
-          h.id === item.id ? { ...h, ...updatedItemData } : h
+          h.id === existingItem.id ? { ...h, ...updatedItemData } : h
         );
-        
-        // Sort history to ensure updated item appears at the top
-        const sortedHistory = [...updatedHistory].sort((a, b) => 
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-        );
-        
-        setWatchHistory(sortedHistory);
-        saveLocalWatchHistory(sortedHistory);
+        setWatchHistory(updatedHistory);
+        saveLocalWatchHistory(updatedHistory);
       }
     } catch (error) {
       console.error('Error updating watch position:', error);
@@ -464,13 +476,25 @@ export function WatchHistoryProvider({ children }: { children: ReactNode }) {
     if (!user || ids.length === 0) return;
     
     try {
-      // Delete all selected items from Firestore
-      const deletePromises = ids.map(id => {
+      // Check rate limiter for bulk operation
+      if (!rateLimiter.canExecute()) {
+        console.log('Rate limit exceeded. Please try again later.');
+        toast({
+          title: "Rate limit exceeded",
+          description: "Too many operations in a short time. Please try again later.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Use batched writes for better performance
+      const batch = writeBatch(db);
+      ids.forEach(id => {
         const historyRef = doc(db, 'watchHistory', id);
-        return deleteDoc(historyRef);
+        batch.delete(historyRef);
       });
       
-      await Promise.all(deletePromises);
+      await batch.commit();
       
       // Update local state
       const updatedHistory = watchHistory.filter(item => !ids.includes(item.id));
@@ -562,6 +586,74 @@ export function WatchHistoryProvider({ children }: { children: ReactNode }) {
     return favorites.some(item => item.media_id === mediaId && item.media_type === mediaType);
   };
 
+  const deleteFavoriteItem = async (id: string) => {
+    if (!user) return;
+    
+    try {
+      // Delete from Firestore
+      const favoriteRef = doc(db, 'favorites', id);
+      await deleteDoc(favoriteRef);
+      
+      // Update local state
+      const updatedFavorites = favorites.filter(item => item.id !== id);
+      setFavorites(updatedFavorites);
+      
+      toast({
+        title: "Item removed",
+        description: "The item has been removed from your favorites."
+      });
+    } catch (error) {
+      console.error('Error deleting favorite item:', error);
+      toast({
+        title: "Error removing item",
+        description: "There was a problem removing the item from your favorites.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const deleteSelectedFavorites = async (ids: string[]) => {
+    if (!user || ids.length === 0) return;
+    
+    try {
+      // Check rate limiter for bulk operation
+      if (!rateLimiter.canExecute()) {
+        console.log('Rate limit exceeded. Please try again later.');
+        toast({
+          title: "Rate limit exceeded",
+          description: "Too many operations in a short time. Please try again later.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Use batched writes for better performance
+      const batch = writeBatch(db);
+      ids.forEach(id => {
+        const favoriteRef = doc(db, 'favorites', id);
+        batch.delete(favoriteRef);
+      });
+      
+      await batch.commit();
+      
+      // Update local state
+      const updatedFavorites = favorites.filter(item => !ids.includes(item.id));
+      setFavorites(updatedFavorites);
+      
+      toast({
+        title: "Items removed",
+        description: `${ids.length} ${ids.length === 1 ? 'item has' : 'items have'} been removed from your favorites.`
+      });
+    } catch (error) {
+      console.error('Error deleting favorite items:', error);
+      toast({
+        title: "Error removing items",
+        description: "There was a problem removing the items from your favorites.",
+        variant: "destructive"
+      });
+    }
+  };
+
   const addToWatchlist = async (item: MediaBaseItem) => {
     if (!user) return;
     
@@ -633,62 +725,6 @@ export function WatchHistoryProvider({ children }: { children: ReactNode }) {
     return watchlist.some(item => item.media_id === mediaId && item.media_type === mediaType);
   };
 
-  const deleteFavoriteItem = async (id: string) => {
-    if (!user) return;
-    
-    try {
-      // Delete from Firestore
-      const favoriteRef = doc(db, 'favorites', id);
-      await deleteDoc(favoriteRef);
-      
-      // Update local state
-      const updatedFavorites = favorites.filter(item => item.id !== id);
-      setFavorites(updatedFavorites);
-      
-      toast({
-        title: "Item removed",
-        description: "The item has been removed from your favorites."
-      });
-    } catch (error) {
-      console.error('Error deleting favorite item:', error);
-      toast({
-        title: "Error removing item",
-        description: "There was a problem removing the item from your favorites.",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const deleteSelectedFavorites = async (ids: string[]) => {
-    if (!user || ids.length === 0) return;
-    
-    try {
-      // Delete all selected items from Firestore
-      const deletePromises = ids.map(id => {
-        const favoriteRef = doc(db, 'favorites', id);
-        return deleteDoc(favoriteRef);
-      });
-      
-      await Promise.all(deletePromises);
-      
-      // Update local state
-      const updatedFavorites = favorites.filter(item => !ids.includes(item.id));
-      setFavorites(updatedFavorites);
-      
-      toast({
-        title: "Items removed",
-        description: `${ids.length} ${ids.length === 1 ? 'item has' : 'items have'} been removed from your favorites.`
-      });
-    } catch (error) {
-      console.error('Error deleting favorite items:', error);
-      toast({
-        title: "Error removing items",
-        description: "There was a problem removing the items from your favorites.",
-        variant: "destructive"
-      });
-    }
-  };
-
   const deleteWatchlistItem = async (id: string) => {
     if (!user) return;
     
@@ -719,13 +755,25 @@ export function WatchHistoryProvider({ children }: { children: ReactNode }) {
     if (!user || ids.length === 0) return;
     
     try {
-      // Delete all selected items from Firestore
-      const deletePromises = ids.map(id => {
+      // Check rate limiter for bulk operation
+      if (!rateLimiter.canExecute()) {
+        console.log('Rate limit exceeded. Please try again later.');
+        toast({
+          title: "Rate limit exceeded",
+          description: "Too many operations in a short time. Please try again later.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Use batched writes for better performance
+      const batch = writeBatch(db);
+      ids.forEach(id => {
         const watchlistRef = doc(db, 'watchlist', id);
-        return deleteDoc(watchlistRef);
+        batch.delete(watchlistRef);
       });
       
-      await Promise.all(deletePromises);
+      await batch.commit();
       
       // Update local state
       const updatedWatchlist = watchlist.filter(item => !ids.includes(item.id));
@@ -750,6 +798,9 @@ export function WatchHistoryProvider({ children }: { children: ReactNode }) {
       watchHistory,
       favorites,
       watchlist,
+      hasMore,
+      isLoading,
+      loadMore: () => fetchWatchHistory(false),
       addToWatchHistory,
       updateWatchPosition,
       clearWatchHistory,
@@ -764,8 +815,7 @@ export function WatchHistoryProvider({ children }: { children: ReactNode }) {
       isInFavorites,
       addToWatchlist,
       removeFromWatchlist,
-      isInWatchlist,
-      isLoading
+      isInWatchlist
     }}>
       {children}
     </WatchHistoryContext.Provider>

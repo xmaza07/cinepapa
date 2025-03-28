@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { getMovieDetails, getTVDetails, videoSources, getSeasonDetails } from '@/utils/api';
 import { MovieDetails, TVDetails, VideoSource, Episode } from '@/utils/types';
@@ -17,6 +17,9 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useWatchHistory } from '@/hooks/watch-history';
 import { useAuth } from '@/hooks';
 import { useUserPreferences } from '@/hooks/user-preferences';
+
+const DEBOUNCE_DELAY = 5000; // 5 seconds
+const MIN_WATCH_TIME = 30; // 30 seconds minimum before recording
 
 const Player = () => {
   const { id, season, episode } = useParams<{
@@ -54,6 +57,9 @@ const Player = () => {
   const [isFavorite, setIsFavorite] = useState(false);
   const [isInMyWatchlist, setIsInMyWatchlist] = useState(false);
 
+  const lastUpdateRef = useRef(0);
+  const lastPositionRef = useRef(0);
+
   // Effect to check favorites and watchlist status
   useEffect(() => {
     if (user && id && mediaType) {
@@ -84,32 +90,67 @@ const Player = () => {
     
     if (url) {
       setIframeUrl(url);
-      // Only add to watch history when the video URL is actually set
-      if (user && mediaDetails) {
-        const duration = mediaType === 'movie' 
-          ? (mediaDetails as MovieDetails).runtime * 60
-          : ((mediaDetails as TVDetails).episode_run_time[0] || 30) * 60;
-          
-        addToWatchHistory(
-          {
-            id: mediaId,
-            title: (mediaDetails as MovieDetails).title || (mediaDetails as TVDetails).name || '',
-            poster_path: mediaDetails.poster_path,
-            backdrop_path: mediaDetails.backdrop_path,
-            overview: mediaDetails.overview,
-            vote_average: mediaDetails.vote_average,
-            media_type: mediaType,
-            genre_ids: mediaDetails.genres.map(g => g.id)
-          },
-          0,
-          duration,
-          seasonNum,
-          episodeNum,
-          selectedSource
-        );
-      }
     }
-  }, [selectedSource, mediaType, user, mediaDetails, addToWatchHistory]);
+  }, [selectedSource, mediaType]);
+
+  // New function to handle watch progress updates
+  const handleWatchProgress = useCallback((position: number) => {
+    if (!user || !mediaDetails || !id) return;
+
+    const now = Date.now();
+    const timeSinceLastUpdate = now - lastUpdateRef.current;
+    const positionDifference = Math.abs(position - lastPositionRef.current);
+
+    // Only update if:
+    // 1. It's been at least DEBOUNCE_DELAY since last update
+    // 2. Position has changed significantly (more than 30 seconds)
+    // 3. Watch time is more than MIN_WATCH_TIME seconds
+    if (timeSinceLastUpdate >= DEBOUNCE_DELAY && 
+        positionDifference >= 30 && 
+        position >= MIN_WATCH_TIME) {
+
+      const duration = mediaType === 'movie' 
+        ? (mediaDetails as MovieDetails).runtime * 60
+        : ((mediaDetails as TVDetails).episode_run_time[0] || 30) * 60;
+
+      const mediaId = parseInt(id, 10);
+      
+      // Update the refs
+      lastUpdateRef.current = now;
+      lastPositionRef.current = position;
+
+      // Add to watch history
+      addToWatchHistory(
+        {
+          id: mediaId,
+          title: (mediaDetails as MovieDetails).title || (mediaDetails as TVDetails).name || '',
+          poster_path: mediaDetails.poster_path,
+          backdrop_path: mediaDetails.backdrop_path,
+          overview: mediaDetails.overview,
+          vote_average: mediaDetails.vote_average,
+          media_type: mediaType,
+          genre_ids: mediaDetails.genres.map(g => g.id)
+        },
+        position,
+        duration,
+        season ? parseInt(season, 10) : undefined,
+        episode ? parseInt(episode, 10) : undefined,
+        selectedSource
+      );
+    }
+  }, [user, mediaDetails, id, mediaType, season, episode, selectedSource, addToWatchHistory]);
+
+  // Message handler for iframe communication
+  const handleMessage = useCallback((event: MessageEvent) => {
+    if (typeof event.data === 'object' && event.data.type === 'watchProgress') {
+      handleWatchProgress(event.data.position);
+    }
+  }, [handleWatchProgress]);
+
+  useEffect(() => {
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [handleMessage]);
 
   // Primary effect: Fetch media details when route params change
   useEffect(() => {

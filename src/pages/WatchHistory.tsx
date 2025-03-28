@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { History, Clock, Trash2, Bookmark, Heart } from 'lucide-react';
+import { History, Clock, Trash2, Bookmark, Heart, Loader2 } from 'lucide-react';
 import { useWatchHistory } from '@/hooks/watch-history';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -24,13 +24,47 @@ const WatchHistory = () => {
     deleteWatchlistItem,
     deleteSelectedWatchlist,
     removeFromFavorites,
-    removeFromWatchlist 
+    removeFromWatchlist,
+    hasMore,
+    isLoading,
+    loadMore 
   } = useWatchHistory();
   const { toast } = useToast();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
   const [activeTab, setActiveTab] = useState<'history' | 'favorites' | 'watchlist'>('history');
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const loader = useRef(null);
+
+  const handleLoadMore = useCallback(async () => {
+    setIsLoadingMore(true);
+    await loadMore();
+    setIsLoadingMore(false);
+  }, [loadMore]);
+
+  useEffect(() => {
+    const currentLoader = loader.current;
+    const currentObserver = new IntersectionObserver(
+      (entries) => {
+        const target = entries[0];
+        if (target.isIntersecting && hasMore && !isLoadingMore && activeTab === 'history') {
+          handleLoadMore();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (currentLoader) {
+      currentObserver.observe(currentLoader);
+    }
+
+    return () => {
+      if (currentLoader) {
+        currentObserver.unobserve(currentLoader);
+      }
+    };
+  }, [hasMore, isLoadingMore, activeTab, handleLoadMore]);
 
   const handleClearHistory = () => {
     clearWatchHistory();
@@ -64,7 +98,7 @@ const WatchHistory = () => {
     deleteSelectedWatchlist(ids);
   };
 
-  // Sort watch history based on selected option
+  // Sort watch history based on selected option (only for current page)
   const sortedWatchHistory = [...watchHistory].sort((a, b) => {
     const dateA = new Date(a.created_at).getTime();
     const dateB = new Date(b.created_at).getTime();
@@ -210,13 +244,23 @@ const WatchHistory = () => {
             
             <TabsContent value="history" className="mt-0">
               {watchHistory.length > 0 ? (
-                <MediaGrid 
-                  media={watchHistoryMedia} 
-                  listView
-                  selectable
-                  onDelete={handleDeleteWatchHistoryItem}
-                  onDeleteSelected={handleDeleteSelectedWatchHistory}
-                />
+                <>
+                  <MediaGrid 
+                    media={watchHistoryMedia} 
+                    listView
+                    selectable
+                    onDelete={handleDeleteWatchHistoryItem}
+                    onDeleteSelected={handleDeleteSelectedWatchHistory}
+                  />
+                  {(hasMore || isLoadingMore) && (
+                    <div 
+                      ref={loader}
+                      className="w-full flex justify-center py-4"
+                    >
+                      <Loader2 className="h-6 w-6 animate-spin text-accent" />
+                    </div>
+                  )}
+                </>
               ) : (
                 <div className="glass p-8 rounded-lg text-center">
                   <History className="h-12 w-12 mx-auto mb-4 text-white/50" />

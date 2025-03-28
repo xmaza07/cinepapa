@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/hooks';
 import { useWatchHistory } from '@/hooks/watch-history';
 import { useUserPreferences } from '@/hooks/user-preferences';
-import { User, History, Settings, Check } from 'lucide-react';
+import { User, History, Settings, Check, Loader2 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import MediaGrid from '@/components/MediaGrid';
@@ -19,11 +19,19 @@ import { videoSources } from '@/utils/api';
 
 const Profile = () => {
   const { user, logout } = useAuth();
-  const { watchHistory, clearWatchHistory } = useWatchHistory();
+  const { watchHistory, clearWatchHistory, hasMore, isLoading, loadMore } = useWatchHistory();
   const { userPreferences, toggleWatchHistory, updatePreferences } = useUserPreferences();
   const [activeTab, setActiveTab] = useState('history');
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const loader = useRef(null);
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  const handleLoadMore = useCallback(async () => {
+    setIsLoadingMore(true);
+    await loadMore();
+    setIsLoadingMore(false);
+  }, [loadMore]);
 
   useEffect(() => {
     // Redirect to home if not logged in
@@ -31,6 +39,29 @@ const Profile = () => {
       navigate('/');
     }
   }, [user, navigate]);
+
+  useEffect(() => {
+    const currentLoader = loader.current;
+    const currentObserver = new IntersectionObserver(
+      (entries) => {
+        const target = entries[0];
+        if (target.isIntersecting && hasMore && !isLoadingMore && activeTab === 'history') {
+          handleLoadMore();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (currentLoader) {
+      currentObserver.observe(currentLoader);
+    }
+
+    return () => {
+      if (currentLoader) {
+        currentObserver.unobserve(currentLoader);
+      }
+    };
+  }, [hasMore, isLoadingMore, activeTab, handleLoadMore]);
 
   const handleClearHistory = () => {
     clearWatchHistory();
@@ -60,6 +91,7 @@ const Profile = () => {
   // Convert watch history items to Media format for the MediaGrid
   const watchHistoryMedia = watchHistory.map(item => ({
     id: item.media_id,
+    media_id: item.media_id,
     title: item.title,
     name: item.title,
     poster_path: item.poster_path,
@@ -141,7 +173,17 @@ const Profile = () => {
             </div>
             
             {watchHistory.length > 0 ? (
-              <MediaGrid media={watchHistoryMedia} listView />
+              <>
+                <MediaGrid media={watchHistoryMedia} listView />
+                {(hasMore || isLoadingMore) && (
+                  <div 
+                    ref={loader}
+                    className="w-full flex justify-center py-4"
+                  >
+                    <Loader2 className="h-6 w-6 animate-spin text-accent" />
+                  </div>
+                )}
+              </>
             ) : (
               <div className="glass p-8 rounded-lg text-center">
                 <History className="h-12 w-12 mx-auto mb-4 text-white/50" />

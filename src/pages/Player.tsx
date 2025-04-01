@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { getMovieDetails, getTVDetails, videoSources, getSeasonDetails } from '@/utils/api';
 import { MovieDetails, TVDetails, VideoSource, Episode } from '@/utils/types';
 import Navbar from '@/components/Navbar';
+import VideoPlayer from '@/components/VideoPlayer';
 import { Button } from '@/components/ui/button';
 import { 
   Select,
@@ -60,7 +61,6 @@ const Player = () => {
   const lastUpdateRef = useRef(0);
   const lastPositionRef = useRef(0);
 
-  // Effect to check favorites and watchlist status
   useEffect(() => {
     if (user && id && mediaType) {
       const mediaId = parseInt(id, 10);
@@ -69,14 +69,12 @@ const Player = () => {
     }
   }, [user, id, mediaType, isInFavorites, isInWatchlist]);
 
-  // Effect to initialize selected source from preferences
   useEffect(() => {
     if (userPreferences?.preferred_source) {
       setSelectedSource(userPreferences.preferred_source);
     }
   }, [userPreferences?.preferred_source]);
 
-  // Memoized function to update the iframe URL
   const updateIframeUrl = useCallback((mediaId: number, seasonNum?: number, episodeNum?: number) => {
     const source = videoSources.find(src => src.key === selectedSource);
     if (!source) return;
@@ -93,7 +91,6 @@ const Player = () => {
     }
   }, [selectedSource, mediaType]);
 
-  // New function to handle watch progress updates
   const handleWatchProgress = useCallback((position: number) => {
     if (!user || !mediaDetails || !id) return;
 
@@ -101,10 +98,6 @@ const Player = () => {
     const timeSinceLastUpdate = now - lastUpdateRef.current;
     const positionDifference = Math.abs(position - lastPositionRef.current);
 
-    // Only update if:
-    // 1. It's been at least DEBOUNCE_DELAY since last update
-    // 2. Position has changed significantly (more than 30 seconds)
-    // 3. Watch time is more than MIN_WATCH_TIME seconds
     if (timeSinceLastUpdate >= DEBOUNCE_DELAY && 
         positionDifference >= 30 && 
         position >= MIN_WATCH_TIME) {
@@ -115,11 +108,9 @@ const Player = () => {
 
       const mediaId = parseInt(id, 10);
       
-      // Update the refs
       lastUpdateRef.current = now;
       lastPositionRef.current = position;
 
-      // Add to watch history
       addToWatchHistory(
         {
           id: mediaId,
@@ -140,7 +131,6 @@ const Player = () => {
     }
   }, [user, mediaDetails, id, mediaType, season, episode, selectedSource, addToWatchHistory]);
 
-  // Message handler for iframe communication
   const handleMessage = useCallback((event: MessageEvent) => {
     if (typeof event.data === 'object' && event.data.type === 'watchProgress') {
       handleWatchProgress(event.data.position);
@@ -152,7 +142,6 @@ const Player = () => {
     return () => window.removeEventListener('message', handleMessage);
   }, [handleMessage]);
 
-  // Primary effect: Fetch media details when route params change
   useEffect(() => {
     let isMounted = true;
     
@@ -170,14 +159,12 @@ const Player = () => {
         setMediaType(isTV ? 'tv' : 'movie');
         
         if (!isTV) {
-          // Movie handling
           const movieDetails = await getMovieDetails(mediaId);
           if (movieDetails && isMounted) {
             setTitle(movieDetails.title || 'Untitled Movie');
             setMediaDetails(movieDetails);
           }
         } else if (isTV && season && episode) {
-          // TV show handling
           const tvDetails = await getTVDetails(mediaId);
           if (tvDetails && isMounted) {
             const seasonData = await getSeasonDetails(mediaId, parseInt(season, 10));
@@ -218,7 +205,6 @@ const Player = () => {
     };
   }, [id, season, episode, navigate, toast]);
 
-  // Secondary effect: Update iframe URL after data is fetched
   useEffect(() => {
     if (!id || !hasInitialized || !mediaDetails) return;
     
@@ -233,7 +219,6 @@ const Player = () => {
   const handleSourceChange = async (sourceKey: string) => {
     setSelectedSource(sourceKey);
     
-    // Save the preference if user is logged in
     if (user) {
       await updatePreferences({
         preferred_source: sourceKey
@@ -345,7 +330,6 @@ const Player = () => {
       <Navbar />
       
       <div className="pt-16 px-4 md:px-6">
-        {/* Back button and title */}
         <div className="max-w-6xl mx-auto mb-4 flex flex-wrap items-center gap-3">
           <button 
             onClick={() => navigate(-1)}
@@ -404,20 +388,16 @@ const Player = () => {
           </div>
         ) : (
           <>
-            {/* Player */}
             <div className="max-w-6xl mx-auto rounded-lg overflow-hidden shadow-xl bg-black">
               <div className="relative w-full aspect-video">
-                <iframe
-                  src={iframeUrl}
-                  allowFullScreen
-                  className="absolute inset-0 w-full h-full"
+                <VideoPlayer 
+                  url={iframeUrl}
                   title={title}
-                  loading="lazy"
-                ></iframe>
+                  posterPath={mediaDetails?.backdrop_path}
+                />
               </div>
             </div>
             
-            {/* Episode navigation - Show only for TV */}
             {mediaType === 'tv' && episodes.length > 1 && (
               <div className="max-w-6xl mx-auto mt-4 flex justify-center gap-4">
                 <Button
@@ -444,7 +424,6 @@ const Player = () => {
               </div>
             )}
             
-            {/* Video source selector */}
             <div className="max-w-6xl mx-auto mt-6 mb-8">
               <div className="glass p-4 rounded-lg">
                 <h3 className="text-white font-medium mb-3">Video Sources</h3>

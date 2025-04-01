@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -5,6 +6,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import PageTransition from '@/components/PageTransition';
 import { getMatchStreams } from '@/utils/sports-api';
+import VideoPlayer from '@/components/VideoPlayer';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 
 const SportMatchPlayer = () => {
@@ -67,14 +69,10 @@ const SportMatchPlayer = () => {
             {/* Video Player */}
             <div className="aspect-video bg-black rounded-lg">
               {embedUrl ? (
-                <iframe
-                  src={embedUrl}
-                  width="100%"
-                  height="100%"
-                  frameBorder="0"
-                  allowFullScreen
-                  title="Video Player"
-                ></iframe>
+                <VideoPlayer 
+                  url={embedUrl}
+                  title={matchId || 'Sport Match'}
+                />
               ) : (
                 <div>No streams available for this match.</div>
               )}

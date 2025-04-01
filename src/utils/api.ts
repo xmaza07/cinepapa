@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { Media, MovieDetails, TVDetails, Episode, Review, Genre, Company, MovieImagesResponse } from './types';
 
+// Add interface for video response
 interface TMDBVideo {
   id: string;
   key: string;
@@ -17,6 +18,7 @@ interface TMDBVideoResponse {
   results: TMDBVideo[];
 }
 
+// Create axios instance for TMDB
 const tmdb = axios.create({
   baseURL: 'https://api.themoviedb.org/3',
   params: {
@@ -95,6 +97,7 @@ interface TMDBTVDetailsResult extends TMDBTVResult {
   };
 }
 
+
 const API_KEY = '297f1b91919bae59d50ed815f8d2e14c';
 const BASE_URL = 'https://api.themoviedb.org/3';
 const IMAGE_BASE_URL = 'https://image.tmdb.org/t/p';
@@ -114,13 +117,6 @@ export const backdropSizes = {
 };
 
 export const videoSources = [
-  {
-    key: 'vidsrcHLS',
-    name: 'VidSrc HLS',
-    getMovieUrl: (id: number) => `vidsrcHLS:${id}`,
-    getTVUrl: (id: number, season: number, episode: number) => 
-      `vidsrcHLS:${id}:${season}:${episode}`,
-  },
   {
     key: 'vidlink',
     name: 'VidLink',
@@ -288,6 +284,7 @@ const formatMediaItem = (item: TMDBMovieResult | TMDBTVResult): Media => {
   };
 };
 
+// Get trending media (movies and TV shows)
 export const getTrending = async (timeWindow: 'day' | 'week' = 'week', page: number = 1): Promise<Media[]> => {
   try {
     console.log('Fetching trending media...');
@@ -304,6 +301,7 @@ export const getTrending = async (timeWindow: 'day' | 'week' = 'week', page: num
   }
 };
 
+// Get popular movies
 export const getPopularMovies = async (page: number = 1): Promise<Media[]> => {
   try {
     const response = await fetch(
@@ -317,6 +315,7 @@ export const getPopularMovies = async (page: number = 1): Promise<Media[]> => {
   }
 };
 
+// Get popular TV shows
 export const getPopularTVShows = async (page: number = 1): Promise<Media[]> => {
   try {
     const response = await fetch(
@@ -330,6 +329,7 @@ export const getPopularTVShows = async (page: number = 1): Promise<Media[]> => {
   }
 };
 
+// Get top rated movies
 export const getTopRatedMovies = async (page: number = 1): Promise<Media[]> => {
   try {
     const response = await fetch(
@@ -343,6 +343,7 @@ export const getTopRatedMovies = async (page: number = 1): Promise<Media[]> => {
   }
 };
 
+// Get top rated TV shows
 export const getTopRatedTVShows = async (page: number = 1): Promise<Media[]> => {
   try {
     const response = await fetch(
@@ -356,6 +357,7 @@ export const getTopRatedTVShows = async (page: number = 1): Promise<Media[]> => 
   }
 };
 
+// Get movie details
 export const getMovieDetails = async (id: number): Promise<MovieDetails | null> => {
   try {
     const [detailsResponse, imagesResponse] = await Promise.all([
@@ -409,6 +411,7 @@ export const getMovieDetails = async (id: number): Promise<MovieDetails | null> 
   }
 };
 
+// Get TV show details
 export const getTVDetails = async (id: number): Promise<TVDetails | null> => {
   try {
     const [detailsResponse, imagesResponse] = await Promise.all([
@@ -463,6 +466,7 @@ export const getTVDetails = async (id: number): Promise<TVDetails | null> => {
   }
 };
 
+// Get TV show season details
 export const getSeasonDetails = async (
   id: number,
   seasonNumber: number
@@ -479,6 +483,7 @@ export const getSeasonDetails = async (
   }
 };
 
+// Get reviews for movie or TV show
 export const getReviews = async (
   id: number,
   mediaType: 'movie' | 'tv'
@@ -501,6 +506,7 @@ export const getReviews = async (
   }
 };
 
+// Get movie recommendations
 export const getMovieRecommendations = async (id: number): Promise<Media[]> => {
   try {
     const response = await fetch(
@@ -514,6 +520,7 @@ export const getMovieRecommendations = async (id: number): Promise<Media[]> => {
   }
 };
 
+// Get TV show recommendations
 export const getTVRecommendations = async (id: number): Promise<Media[]> => {
   try {
     const response = await fetch(
@@ -527,6 +534,7 @@ export const getTVRecommendations = async (id: number): Promise<Media[]> => {
   }
 };
 
+// Search for movies and TV shows
 export const searchMedia = async (query: string, page: number = 1): Promise<Media[]> => {
   try {
     const response = await fetch(

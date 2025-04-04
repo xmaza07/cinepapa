@@ -4,6 +4,23 @@ import { getStorageUsageSummary } from './cache-cleanup';
 // Avoid flooding analytics in development
 const isDev = process.env.NODE_ENV === 'development';
 
+// Add proper type definitions for Google Analytics
+interface GtagParams {
+  event_category?: string;
+  event_label?: string;
+  value?: number;
+}
+
+interface Gtag {
+  (command: 'event', action: string, params: GtagParams): void;
+}
+
+interface CustomWindow extends Window {
+  gtag?: Gtag;
+}
+
+declare let window: CustomWindow;
+
 interface AnalyticsEvent {
   category: string;
   action: string;
@@ -35,20 +52,30 @@ class ServiceWorkerAnalytics {
   }
 
   private initializeAnalytics() {
-    if (!isDev) {
+    // Only initialize in browser environment and production
+    if (!isDev && typeof window !== 'undefined') {
       // Start periodic reporting
       this.scheduleMetricsReport();
       
-      // Listen for specific events
-      window.addEventListener('online', () => this.trackEvent({
-        category: 'Connectivity',
-        action: 'Online'
-      }));
-      
-      window.addEventListener('offline', () => this.trackEvent({
-        category: 'Connectivity',
-        action: 'Offline'
-      }));
+      // Listen for specific events - ensure window exists
+      if ('addEventListener' in window) {
+        // Bind the method to preserve this context
+        const boundTrackEvent = this.trackEvent.bind(this);
+        
+        window.addEventListener('online', () => {
+          boundTrackEvent({
+            category: 'Connectivity',
+            action: 'Online'
+          });
+        });
+        
+        window.addEventListener('offline', () => {
+          boundTrackEvent({
+            category: 'Connectivity',
+            action: 'Offline'
+          });
+        });
+      }
     }
   }
 
@@ -121,15 +148,15 @@ class ServiceWorkerAnalytics {
     this.lastReportTime = now;
 
     try {
-      if ('gtag' in window) {
-        (window as any).gtag('event', event.action, {
+      if (typeof window !== 'undefined' && window.gtag) {
+        window.gtag('event', event.action, {
           event_category: event.category,
           event_label: event.label,
           value: event.value
         });
       }
     } catch (error) {
-      console.error('Error tracking analytics event:', error);
+      console.warn('Error tracking analytics event:', error);
     }
   }
 
@@ -143,11 +170,26 @@ class ServiceWorkerAnalytics {
   }
 
   trackNetworkEvent(success: boolean, url: string) {
-    this.trackEvent({
-      category: 'Network',
-      action: success ? 'Success' : 'Failure',
-      label: new URL(url).hostname
-    });
+    try {
+      // Check if the URL is valid first
+      let hostname = '';
+      if (url.startsWith('http')) {
+        hostname = new URL(url).hostname;
+      } else if (url.includes('_')) {
+        // Handle metric names that use underscores (like TTFB_123)
+        hostname = url;
+      } else {
+        hostname = 'unknown';
+      }
+
+      this.trackEvent({
+        category: 'Network',
+        action: success ? 'Success' : 'Failure',
+        label: hostname
+      });
+    } catch (error) {
+      console.warn('Error tracking network event:', error);
+    }
   }
 
   trackStorageCleanup(bytesFreed: number) {

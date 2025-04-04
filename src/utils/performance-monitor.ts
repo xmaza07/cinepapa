@@ -19,7 +19,7 @@ class PerformanceMonitor {
   private isEnabled: boolean;
 
   private constructor() {
-    this.isEnabled = 'performance' in window && process.env.NODE_ENV === 'production';
+    this.isEnabled = typeof window !== 'undefined' && 'performance' in window && process.env.NODE_ENV === 'production';
   }
 
   static getInstance(): PerformanceMonitor {
@@ -109,25 +109,29 @@ class PerformanceMonitor {
   measureNavigationTiming() {
     if (!this.isEnabled) return;
 
-    const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
-    if (navigation) {
-      // Time to First Byte (TTFB)
-      swAnalytics.trackNetworkEvent(
-        true,
-        `TTFB_${Math.round(navigation.responseStart - navigation.requestStart)}`
-      );
+    try {
+      const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
+      if (navigation) {
+        // Time to First Byte (TTFB)
+        const ttfb = Math.round(navigation.responseStart - navigation.requestStart);
+        if (ttfb > 0) {
+          swAnalytics.trackNetworkEvent(true, `TTFB_${ttfb}`);
+        }
 
-      // DOM Interactive
-      swAnalytics.trackNetworkEvent(
-        true,
-        `DOMInteractive_${Math.round(navigation.domInteractive)}`
-      );
+        // DOM Interactive
+        const domInteractive = Math.round(navigation.domInteractive);
+        if (domInteractive > 0) {
+          swAnalytics.trackNetworkEvent(true, `DOMInteractive_${domInteractive}`);
+        }
 
-      // DOM Complete
-      swAnalytics.trackNetworkEvent(
-        true,
-        `DOMComplete_${Math.round(navigation.domComplete)}`
-      );
+        // DOM Complete
+        const domComplete = Math.round(navigation.domComplete);
+        if (domComplete > 0) {
+          swAnalytics.trackNetworkEvent(true, `DOMComplete_${domComplete}`);
+        }
+      }
+    } catch (error) {
+      console.warn('Error measuring navigation timing:', error);
     }
   }
 

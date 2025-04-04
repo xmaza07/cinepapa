@@ -38,8 +38,32 @@ export function initServiceWorkerMessaging() {
 
 export function sendMessageToSW(message: ServiceWorkerMessage) {
   if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-    navigator.serviceWorker.controller.postMessage(message);
+    try {
+      const channel = new MessageChannel();
+      
+      // Return a promise that resolves when the message is acknowledged
+      return new Promise((resolve, reject) => {
+        channel.port1.onmessage = (event) => {
+          if (event.data.error) {
+            reject(event.data.error);
+          } else {
+            resolve(event.data);
+          }
+        };
+
+        navigator.serviceWorker.controller.postMessage(message, [channel.port2]);
+
+        // Add timeout to prevent hanging
+        setTimeout(() => {
+          reject(new Error('Service worker message timeout'));
+        }, 3000);
+      });
+    } catch (error) {
+      console.warn('Failed to send message to Service Worker:', error);
+      return Promise.reject(error);
+    }
   }
+  return Promise.reject(new Error('Service Worker not available'));
 }
 
 // Function to get metrics summary

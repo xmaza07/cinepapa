@@ -242,4 +242,28 @@ define(['./workbox-d4260423'], (function (workbox) { 'use strict';
     }
   });
 
+  // Add message handler
+  self.addEventListener('message', (event) => {
+    // Ensure there's a MessagePort to respond to
+    if (event.ports && event.ports[0]) {
+      // Acknowledge receipt of the message
+      event.ports[0].postMessage({ received: true });
+    }
+
+    // Handle specific message types
+    if (event.data && event.data.type) {
+      switch (event.data.type) {
+        case 'SKIP_WAITING':
+          self.skipWaiting();
+          break;
+        // Handle other message types as needed
+        default:
+          // For unknown message types, just acknowledge receipt
+          if (event.ports && event.ports[0]) {
+            event.ports[0].postMessage({ error: 'Unknown message type' });
+          }
+      }
+    }
+  });
+
 }));

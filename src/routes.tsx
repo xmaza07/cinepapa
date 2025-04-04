@@ -17,6 +17,7 @@ const TVDetails = lazy(() => import('./pages/TVDetails'));
 const SportMatch = lazy(() => import('./pages/SportMatch'));
 const Player = lazy(() => import('./pages/Player'));
 const NotFound = lazy(() => import('./pages/NotFound'));
+const Trending = lazy(() => import('./pages/Trending'));
 
 // Legal pages
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
@@ -47,6 +48,7 @@ export default function AppRoutes() {
         <Route path="/sports/:id" element={<SportMatch />} />
         <Route path="/watch/:type/:id" element={<Player />} />
         <Route path="/search" element={<Search />} />
+        <Route path="/trending" element={<Trending />} />
 
         {/* Legal routes */}
         <Route path="/privacy" element={<PrivacyPolicy />} />

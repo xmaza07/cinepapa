@@ -81,7 +81,7 @@ export default defineConfig(({ mode }) => ({
         display: 'standalone',
         scope: '/',
         start_url: '/',
-        orientation: 'portrait',
+        orientation: 'any',
         icons: [
           {
             src: '/manifest-icon-192.maskable.png',

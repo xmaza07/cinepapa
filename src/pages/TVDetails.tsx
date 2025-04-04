@@ -117,7 +117,7 @@ const TVDetailsPage = () => {
   
   const handlePlayEpisode = (seasonNumber: number, episodeNumber: number) => {
     if (tvShow) {
-      navigate(`/player/tv/${tvShow.id}/${seasonNumber}/${episodeNumber}`);
+      navigate(`/watch/tv/${tvShow.id}/${seasonNumber}/${episodeNumber}`);
     }
   };
 

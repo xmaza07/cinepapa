@@ -98,7 +98,7 @@ const MovieDetailsPage = () => {
 
   const handlePlayMovie = () => {
     if (movie) {
-      navigate(`/player/movie/${movie.id}`);
+      navigate(`/watch/movie/${movie.id}`);
     }
   };
 

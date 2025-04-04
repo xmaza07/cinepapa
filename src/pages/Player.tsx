@@ -22,10 +22,11 @@ const DEBOUNCE_DELAY = 5000; // 5 seconds
 const MIN_WATCH_TIME = 30; // 30 seconds minimum before recording
 
 const Player = () => {
-  const { id, season, episode } = useParams<{
+  const { id, season, episode, type } = useParams<{
     id: string;
     season?: string;
     episode?: string;
+    type: string;
   }>();
   const { userPreferences, updatePreferences } = useUserPreferences();
   const [title, setTitle] = useState<string>('');
@@ -75,6 +76,13 @@ const Player = () => {
       setSelectedSource(userPreferences.preferred_source);
     }
   }, [userPreferences?.preferred_source]);
+
+  // Update media type based on URL parameter
+  useEffect(() => {
+    if (type === 'movie' || type === 'tv') {
+      setMediaType(type);
+    }
+  }, [type]);
 
   // Memoized function to update the iframe URL
   const updateIframeUrl = useCallback((mediaId: number, seasonNum?: number, episodeNum?: number) => {
@@ -157,7 +165,7 @@ const Player = () => {
     let isMounted = true;
     
     const fetchMediaDetails = async () => {
-      if (!id) return;
+      if (!id || !type) return;
       
       setIsLoading(true);
       setMediaDetails(null);
@@ -166,8 +174,7 @@ const Player = () => {
       
       try {
         const mediaId = parseInt(id, 10);
-        const isTV = season !== undefined && episode !== undefined;
-        setMediaType(isTV ? 'tv' : 'movie');
+        const isTV = type === 'tv';
         
         if (!isTV) {
           // Movie handling
@@ -216,7 +223,7 @@ const Player = () => {
     return () => {
       isMounted = false;
     };
-  }, [id, season, episode, navigate, toast]);
+  }, [id, type, season, episode, navigate, toast]);
 
   // Secondary effect: Update iframe URL after data is fetched
   useEffect(() => {
@@ -258,7 +265,7 @@ const Player = () => {
     }
     
     const nextEpisode = episodes[currentEpisodeIndex + 1];
-    navigate(`/player/tv/${id}/${season}/${nextEpisode.episode_number}`);
+    navigate(`/watch/tv/${id}/${season}/${nextEpisode.episode_number}`);
     
     toast({
       title: "Navigation",
@@ -272,7 +279,7 @@ const Player = () => {
     }
     
     const prevEpisode = episodes[currentEpisodeIndex - 1];
-    navigate(`/player/tv/${id}/${season}/${prevEpisode.episode_number}`);
+    navigate(`/watch/tv/${id}/${season}/${prevEpisode.episode_number}`);
     
     toast({
       title: "Navigation",

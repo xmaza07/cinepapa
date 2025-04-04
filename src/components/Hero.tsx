@@ -130,9 +130,9 @@ const Hero = ({ media, className }: HeroProps) => {
     const id = featuredMedia.id;
 
     if (mediaType === 'tv') {
-      navigate(`/player/tv/${id}/1/1`);
+      navigate(`/watch/tv/${id}/1/1`);
     } else {
-      navigate(`/player/${mediaType}/${id}`);
+      navigate(`/watch/${mediaType}/${id}`);
     }
   };
 

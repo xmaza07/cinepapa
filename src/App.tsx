@@ -1,101 +1,46 @@
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from "react-router-dom";
-import { AnimatePresence } from "framer-motion";
-import { AuthProvider } from "@/hooks";
-import { WatchHistoryProvider } from "@/contexts/watch-history";
-import { UserPreferencesProvider } from "@/contexts/user-preferences";
-import { ProtectedRoute } from "@/components/ProtectedRoute";
-import Index from "./pages/Index";
-import Movies from "./pages/Movies";
-import TVShows from "./pages/TVShows";
-import Trending from "./pages/Trending";
-import MovieDetails from "./pages/MovieDetails";
-import TVDetails from "./pages/TVDetails";
-import Player from "./pages/Player";
-import Search from "./pages/Search";
-import Profile from "./pages/Profile";
-import WatchHistory from "./pages/WatchHistory";
-import NotFound from "./pages/NotFound";
-import Login from "./pages/Login";
-import Signup from "./pages/Signup";
-import TermsOfService from "./pages/TermsOfService";
-import PrivacyPolicy from "./pages/PrivacyPolicy";
-import DMCANotice from "./pages/DMCANotice";
-import ContentRemoval from "./pages/ContentRemoval";
-import Sports from "./pages/Sports";
-import SportMatchPlayer from "./pages/SportMatchPlayer";
+import { BrowserRouter } from 'react-router-dom';
+import { Toaster } from './components/ui/toaster';
+import { ThemeProvider } from './contexts/theme';
+import { UserPreferencesProvider } from './contexts/user-preferences';
+import { WatchHistoryProvider } from './contexts/watch-history';
+import { ServiceWorkerErrorBoundary } from './components/ServiceWorkerErrorBoundary';
+import { ServiceWorkerDebugPanel } from './components/ServiceWorkerDebugPanel';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { AuthProvider } from '@/hooks';
+import AppRoutes from './routes.tsx';
+import './App.css';
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5, // 5 minutes
+      retry: 2,
+    },
+  },
+});
 
-// AnimatedRoutes component to handle route transitions
-const AnimatedRoutes = () => {
-  const location = useLocation();
-  
+function App() {
+  const isDevelopment = import.meta.env.DEV;
+
   return (
-    <AnimatePresence mode="wait">
-      <Routes location={location} key={location.pathname}>
-        {/* Public Routes */}
-        <Route path="/" element={<Index />} />
-        <Route path="/movie" element={<Movies />} />
-        <Route path="/movies" element={<Navigate to="/movie" replace />} />
-        <Route path="/tv" element={<TVShows />} />
-        <Route path="/trending" element={<Trending />} />
-        <Route path="/sports" element={<Sports />} />
-        <Route path="/sports/player/:matchId" element={<SportMatchPlayer />} />
-        <Route path="/movie/:id" element={<MovieDetails />} />
-        <Route path="/tv/:id" element={<TVDetails />} />
-        <Route path="/player/movie/:id" element={
-          <ProtectedRoute>
-            <Player />
-          </ProtectedRoute>
-        } />
-        <Route path="/player/tv/:id/:season/:episode" element={
-          <ProtectedRoute>
-            <Player />
-          </ProtectedRoute>
-        } />
-        <Route path="/search" element={<Search />} />
-        <Route path="/profile" element={
-          <ProtectedRoute>
-            <Profile />
-          </ProtectedRoute>
-        } />
-        <Route path="/watch-history" element={
-          <ProtectedRoute>
-            <WatchHistory />
-          </ProtectedRoute>
-        } />
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
-        <Route path="/terms" element={<TermsOfService />} />
-        <Route path="/privacy" element={<PrivacyPolicy />} />
-        <Route path="/dmca" element={<DMCANotice />} />
-        <Route path="/content-removal" element={<ContentRemoval />} />
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-    </AnimatePresence>
-  );
-};
-
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
+    <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <UserPreferencesProvider>
-          <WatchHistoryProvider>
-            <Toaster />
-            <Sonner />
-            <Router>
-              <AnimatedRoutes />
-            </Router>
-          </WatchHistoryProvider>
-        </UserPreferencesProvider>
+        <ThemeProvider>
+          <UserPreferencesProvider>
+            <WatchHistoryProvider>
+              <ServiceWorkerErrorBoundary>
+                <BrowserRouter>
+                  <AppRoutes />
+                  <Toaster />
+                  {isDevelopment && <ServiceWorkerDebugPanel />}
+                </BrowserRouter>
+              </ServiceWorkerErrorBoundary>
+            </WatchHistoryProvider>
+          </UserPreferencesProvider>
+        </ThemeProvider>
       </AuthProvider>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+    </QueryClientProvider>
+  );
+}
 
 export default App;

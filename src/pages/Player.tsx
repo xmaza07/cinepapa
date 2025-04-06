@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { getMovieDetails, getTVDetails, videoSources, getSeasonDetails } from '@/utils/api';
 import { MovieDetails, TVDetails, VideoSource, Episode } from '@/utils/types';
@@ -17,9 +17,6 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useWatchHistory } from '@/hooks/watch-history';
 import { useAuth } from '@/hooks';
 import { useUserPreferences } from '@/hooks/user-preferences';
-
-const DEBOUNCE_DELAY = 5000; // 5 seconds
-const MIN_WATCH_TIME = 30; // 30 seconds minimum before recording
 
 const Player = () => {
   const { id, season, episode, type } = useParams<{
@@ -57,9 +54,6 @@ const Player = () => {
 
   const [isFavorite, setIsFavorite] = useState(false);
   const [isInMyWatchlist, setIsInMyWatchlist] = useState(false);
-
-  const lastUpdateRef = useRef(0);
-  const lastPositionRef = useRef(0);
 
   // Effect to check favorites and watchlist status
   useEffect(() => {
@@ -101,66 +95,7 @@ const Player = () => {
     }
   }, [selectedSource, mediaType]);
 
-  // New function to handle watch progress updates
-  const handleWatchProgress = useCallback((position: number) => {
-    if (!user || !mediaDetails || !id) return;
-
-    const now = Date.now();
-    const timeSinceLastUpdate = now - lastUpdateRef.current;
-    const positionDifference = Math.abs(position - lastPositionRef.current);
-
-    // Only update if:
-    // 1. It's been at least DEBOUNCE_DELAY since last update
-    // 2. Position has changed significantly (more than 30 seconds)
-    // 3. Watch time is more than MIN_WATCH_TIME seconds
-    if (timeSinceLastUpdate >= DEBOUNCE_DELAY && 
-        positionDifference >= 30 && 
-        position >= MIN_WATCH_TIME) {
-
-      const duration = mediaType === 'movie' 
-        ? (mediaDetails as MovieDetails).runtime * 60
-        : ((mediaDetails as TVDetails).episode_run_time[0] || 30) * 60;
-
-      const mediaId = parseInt(id, 10);
-      
-      // Update the refs
-      lastUpdateRef.current = now;
-      lastPositionRef.current = position;
-
-      // Add to watch history
-      addToWatchHistory(
-        {
-          id: mediaId,
-          title: (mediaDetails as MovieDetails).title || (mediaDetails as TVDetails).name || '',
-          poster_path: mediaDetails.poster_path,
-          backdrop_path: mediaDetails.backdrop_path,
-          overview: mediaDetails.overview,
-          vote_average: mediaDetails.vote_average,
-          media_type: mediaType,
-          genre_ids: mediaDetails.genres.map(g => g.id)
-        },
-        position,
-        duration,
-        season ? parseInt(season, 10) : undefined,
-        episode ? parseInt(episode, 10) : undefined,
-        selectedSource
-      );
-    }
-  }, [user, mediaDetails, id, mediaType, season, episode, selectedSource, addToWatchHistory]);
-
-  // Message handler for iframe communication
-  const handleMessage = useCallback((event: MessageEvent) => {
-    if (typeof event.data === 'object' && event.data.type === 'watchProgress') {
-      handleWatchProgress(event.data.position);
-    }
-  }, [handleWatchProgress]);
-
-  useEffect(() => {
-    window.addEventListener('message', handleMessage);
-    return () => window.removeEventListener('message', handleMessage);
-  }, [handleMessage]);
-
-  // Primary effect: Fetch media details when route params change
+  // Primary effect: Fetch media details when route params change and update watch history
   useEffect(() => {
     let isMounted = true;
     
@@ -182,6 +117,28 @@ const Player = () => {
           if (movieDetails && isMounted) {
             setTitle(movieDetails.title || 'Untitled Movie');
             setMediaDetails(movieDetails);
+            
+            // Track movie view in watch history
+            if (user) {
+              const duration = (movieDetails.runtime || 120) * 60; // Convert to seconds
+              addToWatchHistory(
+                {
+                  id: mediaId,
+                  title: movieDetails.title,
+                  poster_path: movieDetails.poster_path,
+                  backdrop_path: movieDetails.backdrop_path,
+                  overview: movieDetails.overview,
+                  vote_average: movieDetails.vote_average,
+                  media_type: 'movie',
+                  genre_ids: movieDetails.genres.map(g => g.id)
+                },
+                0, // Initial position
+                duration,
+                undefined,
+                undefined,
+                selectedSource
+              );
+            }
           }
         } else if (isTV && season && episode) {
           // TV show handling
@@ -197,14 +154,36 @@ const Player = () => {
               const episodeTitle = seasonData.find(ep => ep.episode_number === currentEpisodeNumber)?.name || '';
               setTitle(`${tvDetails.name || 'Untitled Show'} - Season ${season} Episode ${episode}${episodeTitle ? ': ' + episodeTitle : ''}`);
               setMediaDetails(tvDetails);
+              
+              // Track TV episode view in watch history
+              if (user) {
+                const duration = (tvDetails.episode_run_time[0] || 30) * 60; // Convert to seconds
+                addToWatchHistory(
+                  {
+                    id: mediaId,
+                    title: tvDetails.name,
+                    poster_path: tvDetails.poster_path,
+                    backdrop_path: tvDetails.backdrop_path,
+                    overview: tvDetails.overview,
+                    vote_average: tvDetails.vote_average,
+                    media_type: 'tv',
+                    genre_ids: tvDetails.genres.map(g => g.id)
+                  },
+                  0, // Initial position
+                  duration,
+                  parseInt(season, 10),
+                  currentEpisodeNumber,
+                  selectedSource
+                );
+              }
             }
           }
         }
       } catch (error) {
-        console.error('Error fetching media details:', error);
+        console.error('Error loading media:', error);
         if (isMounted) {
           toast({
-            title: "Error loading content",
+            title: "Error",
             description: "There was a problem loading the media. Please try again.",
             variant: "destructive"
           });
@@ -223,7 +202,7 @@ const Player = () => {
     return () => {
       isMounted = false;
     };
-  }, [id, type, season, episode, navigate, toast]);
+  }, [id, type, season, episode, navigate, toast, user, addToWatchHistory, selectedSource]);
 
   // Secondary effect: Update iframe URL after data is fetched
   useEffect(() => {

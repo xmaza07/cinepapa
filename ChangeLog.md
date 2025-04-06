@@ -1,5 +1,5 @@
 # ChangeLog
-## [Unreleased]
+## [released]
 ### Added
 
 
@@ -66,4 +66,11 @@ The service worker is now ready for more advanced features. Would you like to co
 
 ```
 
+
+### Changed strategy for watch history tracking:
+```
+Remove the previous logic that attempted to track watch progress using postMessage from the embedded video source, as this was identified as the likely reason history wasn't being recorded (the sources weren't sending the required messages).
+Implement the "Track on Player Load" strategy: Now, when the player successfully loads the details for a movie or TV episode, it automatically calls addToWatchHistory with a position of 0. This ensures that the watch history is updated even if the user doesn't interact with the player.
+This change should help ensure that the watch history is recorded correctly and consistently, even if the user doesn't manually trigger the tracking function. The new logic will also help reduce the number of unnecessary calls to addToWatchHistory when the user is not actively watching content. This should improve performance and reduce the risk of hitting rate limits on the Firestore database. 
+```
 

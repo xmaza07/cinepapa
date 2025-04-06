@@ -5,8 +5,8 @@
   "start_url": "/",
   "id": "/",
   "display": "standalone",
-  "display_override": ["window-controls-overlay"],
-  "orientation": "natural",
+  "display_override": ["window-controls-overlay", "minimal-ui", "fullscreen", "browser", "standalone"],
+  "orientation": "any",
   "background_color": "#0f0f0f",
   "theme_color": "#3b82f6",
   "icons": [

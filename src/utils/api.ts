@@ -22,7 +22,7 @@ interface TMDBVideoResponse {
 const tmdb = axios.create({
   baseURL: 'https://api.themoviedb.org/3',
   params: {
-    api_key: '297f1b91919bae59d50ed815f8d2e14c',
+    api_key: import.meta.env.VITE_TMDB_API_KEY,
     language: 'en-US'
   }
 });
@@ -98,7 +98,7 @@ interface TMDBTVDetailsResult extends TMDBTVResult {
 }
 
 
-const API_KEY = '297f1b91919bae59d50ed815f8d2e14c';
+const API_KEY = import.meta.env.VITE_TMDB_API_KEY;
 const BASE_URL = 'https://api.themoviedb.org/3';
 const IMAGE_BASE_URL = 'https://image.tmdb.org/t/p';
 

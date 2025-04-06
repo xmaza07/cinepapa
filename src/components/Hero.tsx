@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Media } from '@/utils/types';
 import { backdropSizes } from '@/utils/api';
 import { Button } from '@/components/ui/button';
-import { Play, Info, Star, Calendar } from 'lucide-react';
+import { Play, Info, Star, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
 import Spinner from '@/components/ui/spinner';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -16,80 +16,112 @@ const Hero = ({ media, className }: HeroProps) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLoaded, setIsLoaded] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
   const navigate = useNavigate();
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   
   const filteredMedia = useMemo(() => 
     media.filter(item => item.backdrop_path), 
     [media]
   );
   
-  const featuredMedia = filteredMedia[currentIndex];
+  const featuredMedia = useMemo(() => 
+    filteredMedia[currentIndex],
+    [filteredMedia, currentIndex]
+  );
 
-  // Required minimum distance between touch start and touch end to be detected as swipe
   const minSwipeDistance = 50;
 
-  const onTouchStart = (e: React.TouchEvent) => {
+  const handleImageError = useCallback(() => {
+    setError('Failed to load image');
+    setIsLoaded(true);
+  }, []);
+
+  const handleNavigation = useCallback((direction: 'next' | 'prev') => {
+    setIsTransitioning(true);
+    setTimeout(() => {
+      setIsLoaded(false);
+      setCurrentIndex(prev => {
+        if (direction === 'next') {
+          return (prev + 1) % filteredMedia.length;
+        } else {
+          return (prev - 1 + filteredMedia.length) % filteredMedia.length;
+        }
+      });
+    }, 300);
+  }, [filteredMedia.length]);
+
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    if (e.key === 'ArrowLeft') {
+      handleNavigation('prev');
+    } else if (e.key === 'ArrowRight') {
+      handleNavigation('next');
+    }
+  }, [handleNavigation]);
+
+  const onTouchStart = useCallback((e: React.TouchEvent) => {
     setTouchEnd(null);
     setTouchStart(e.targetTouches[0].clientX);
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
     }
-  };
+  }, []);
 
-  const onTouchMove = (e: React.TouchEvent) => {
+  const onTouchMove = useCallback((e: React.TouchEvent) => {
     setTouchEnd(e.targetTouches[0].clientX);
-  };
+  }, []);
 
-  const onTouchEnd = () => {
+  const onTouchEnd = useCallback(() => {
     if (!touchStart || !touchEnd) return;
 
     const distance = touchStart - touchEnd;
     const isLeftSwipe = distance > minSwipeDistance;
     const isRightSwipe = distance < -minSwipeDistance;
 
-    if (isLeftSwipe || isRightSwipe) {
-      setIsTransitioning(true);
-      setTimeout(() => {
-        setIsLoaded(false);
-        if (isLeftSwipe) {
-          setCurrentIndex((prev) => (prev + 1) % filteredMedia.length);
-        } else if (isRightSwipe) {
-          setCurrentIndex((prev) => (prev - 1 + filteredMedia.length) % filteredMedia.length);
-        }
-      }, 300);
+    if (isLeftSwipe) {
+      handleNavigation('next');
+    } else if (isRightSwipe) {
+      handleNavigation('prev');
     }
 
-    // Restart the interval after touch end
     if (filteredMedia.length > 1) {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
       }
       startInterval();
     }
-  };
+  }, [touchStart, touchEnd, handleNavigation, filteredMedia.length]);
 
   const startInterval = useCallback(() => {
+    if (filteredMedia.length <= 1) return;
+    
     intervalRef.current = setInterval(() => {
-      setIsTransitioning(true);
-      setTimeout(() => {
-        setIsLoaded(false);
-        setCurrentIndex((prevIndex) => (prevIndex + 1) % filteredMedia.length);
-      }, 500);
+      handleNavigation('next');
     }, 10000);
-  }, [filteredMedia.length]);
+  }, [filteredMedia.length, handleNavigation]);
 
   useEffect(() => {
-    if (filteredMedia.length <= 1) return;
-    startInterval();
+    const container = containerRef.current;
+    if (container) {
+      container.focus();
+    }
+
+    if (filteredMedia.length > 1) {
+      startInterval();
+    }
+
+    document.addEventListener('keydown', handleKeyDown);
+    
     return () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
       }
+      document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [filteredMedia, startInterval]);
+  }, [filteredMedia, startInterval, handleKeyDown]);
 
   useEffect(() => {
     if (isLoaded) {
@@ -97,27 +129,15 @@ const Hero = ({ media, className }: HeroProps) => {
     }
   }, [isLoaded]);
 
-  const handleMouseEnter = () => {
+  const handleMouseEnter = useCallback(() => {
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
     }
-  };
+  }, []);
 
-  const handleMouseLeave = () => {
-    if (filteredMedia.length <= 1) return;
-    
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-    }
-    
-    intervalRef.current = setInterval(() => {
-      setIsTransitioning(true);
-      setTimeout(() => {
-        setIsLoaded(false);
-        setCurrentIndex((prevIndex) => (prevIndex + 1) % filteredMedia.length);
-      }, 500);
-    }, 10000);
-  };
+  const handleMouseLeave = useCallback(() => {
+    startInterval();
+  }, [startInterval]);
 
   if (!featuredMedia) return null;
 
@@ -128,38 +148,39 @@ const Hero = ({ media, className }: HeroProps) => {
   const handlePlay = () => {
     const mediaType = featuredMedia.media_type;
     const id = featuredMedia.id;
-
-    if (mediaType === 'tv') {
-      navigate(`/watch/tv/${id}/1/1`);
-    } else {
-      navigate(`/watch/${mediaType}/${id}`);
-    }
+    navigate(mediaType === 'tv' ? `/watch/tv/${id}/1/1` : `/watch/${mediaType}/${id}`);
   };
 
   const handleMoreInfo = () => {
-    const mediaType = featuredMedia.media_type;
-    const id = featuredMedia.id;
-
+    const { media_type: mediaType, id } = featuredMedia;
     navigate(`/${mediaType}/${id}`);
   };
 
   return (
     <div 
+      ref={containerRef}
       className={`relative w-full h-[75vh] md:h-[85vh] overflow-hidden ${className}`}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
+      tabIndex={0}
+      role="region"
+      aria-label="Featured content carousel"
     >
       <AnimatePresence>
-        {!isLoaded && (
+        {(!isLoaded || error) && (
           <motion.div 
             initial={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="absolute inset-0 bg-background flex items-center justify-center z-10"
           >
-            <Spinner size="lg" className="text-accent" />
+            {error ? (
+              <p className="text-accent">{error}</p>
+            ) : (
+              <Spinner size="lg" className="text-accent" />
+            )}
           </motion.div>
         )}
       </AnimatePresence>
@@ -179,15 +200,35 @@ const Hero = ({ media, className }: HeroProps) => {
         >
           <img
             src={`${backdropSizes.original}${featuredMedia.backdrop_path}`}
-            alt={title}
+            alt={`Backdrop for ${title}`}
             className="w-full h-full object-cover"
             onLoad={() => setIsLoaded(true)}
+            onError={handleImageError}
           />
 
           <div className="absolute inset-0 hero-gradient-enhanced" />
           <div className="absolute inset-0 md:w-1/2 hero-side-gradient" />
         </motion.div>
       </AnimatePresence>
+
+      {filteredMedia.length > 1 && (
+        <>
+          <button
+            onClick={() => handleNavigation('prev')}
+            className="absolute left-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/40 text-white hover:bg-black/60 transition-all z-10"
+            aria-label="Previous slide"
+          >
+            <ChevronLeft className="w-6 h-6" />
+          </button>
+          <button
+            onClick={() => handleNavigation('next')}
+            className="absolute right-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/40 text-white hover:bg-black/60 transition-all z-10"
+            aria-label="Next slide"
+          >
+            <ChevronRight className="w-6 h-6" />
+          </button>
+        </>
+      )}
 
       <AnimatePresence mode="wait">
         <motion.div 
@@ -273,7 +314,11 @@ const Hero = ({ media, className }: HeroProps) => {
       </AnimatePresence>
 
       {filteredMedia.length > 1 && (
-        <div className="absolute bottom-6 right-6 md:bottom-12 md:right-12 flex space-x-2 z-10">
+        <div 
+          className="absolute bottom-6 right-6 md:bottom-12 md:right-12 flex space-x-2 z-10"
+          role="tablist"
+          aria-label="Choose slide to display"
+        >
           {filteredMedia.slice(0, 5).map((_, index) => (
             <button
               key={index}
@@ -289,7 +334,9 @@ const Hero = ({ media, className }: HeroProps) => {
                   setCurrentIndex(index);
                 }, 300);
               }}
-              aria-label={`View featured item ${index + 1}`}
+              role="tab"
+              aria-selected={index === currentIndex}
+              aria-label={`Slide ${index + 1}`}
             />
           ))}
         </div>

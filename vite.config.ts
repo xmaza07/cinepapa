@@ -14,11 +14,33 @@ export default defineConfig({
         'masked-icon.svg'
       ],
       manifest: {
-        name: 'Flicker Dreams Factory',
-        short_name: 'FlickerDF',
+        name: 'Lets Stream V2.0',
+        short_name: 'LetsStream',
         description: 'Watch your favorite movies and TV shows',
-        theme_color: '#ffffff',
+        theme_color: '#3b82f6',
+        orientation: 'any',
+        display_override: ['window-controls-overlay', 'browser', 'minimal-ui','fullscreen','standalone'],
         start_url: '/',
+        screenshots: [
+          {
+            src: 'screenshot1.png',
+            sizes: '1280x720',
+            type: 'image/png',
+            label: 'Screenshot 1',
+            platform: 'any'
+          },
+          {
+            src: 'screenshot2.png',
+            sizes: '1280x720',
+            type: 'image/png',
+            label: 'Screenshot 2',
+            platform: 'any'
+          }
+        ],
+        categories: ["entertainment", "movies", "tv shows", "streaming"],
+        prefer_related_applications: false,
+        launch_handler: { client_mode: ['navigate-existing', 'auto'] },
+        dir: 'ltr',
         icons: [
           {
             src: 'manifest-icon-192.maskable.png',
@@ -33,7 +55,7 @@ export default defineConfig({
             purpose: 'any'
           }
         ],
-        background_color: '#ffffff',
+        background_color: '#0f0f0f',
         display: 'standalone',
         scope: '/'
       },

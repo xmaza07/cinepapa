@@ -104,6 +104,14 @@ class ServiceWorkerAnalytics {
       console.warn('Error tracking network event:', error);
     }
   }
+
+  trackCacheEvent(success: boolean, eventName: string) {
+    this.trackEvent({
+      category: 'Cache',
+      action: success ? 'Success' : 'Failure',
+      label: eventName
+    });
+  }
 }
 
 export const swAnalytics = ServiceWorkerAnalytics.getInstance();

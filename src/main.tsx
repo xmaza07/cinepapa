@@ -1,12 +1,13 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+import { BrowserRouter } from 'react-router-dom';
 import App from './App';
 import './index.css';
 import { registerSW } from 'virtual:pwa-register';
-import { initServiceWorkerMessaging, initMetricsLogging } from './utils/sw-messaging';
-import { initCacheCleanup } from './utils/cache-cleanup';
+import { initServiceWorkerMessaging } from './utils/sw-messaging';
 import { performanceMonitor } from './utils/performance-monitor';
 import { ServiceWorkerUpdateNotification } from './components/ServiceWorkerUpdateNotification';
+import { swManager } from './utils/sw-manager';
 
 // Start performance monitoring as early as possible
 performanceMonitor.initializeMonitoring();
@@ -18,62 +19,51 @@ const registerServiceWorker = async () => {
       const updateSW = registerSW({
         immediate: true,
         onNeedRefresh() {
-          const root = document.createElement('div');
-          root.id = 'sw-update-root';
-          document.body.appendChild(root);
-
-          ReactDOM.createRoot(root).render(
-            <React.StrictMode>
+          const root = document.getElementById('sw-update-root');
+          if (root) {
+            ReactDOM.createRoot(root).render(
               <ServiceWorkerUpdateNotification 
-                onAcceptUpdate={() => {
-                  updateSW(true);
-                  root.remove();
+                onAcceptUpdate={async () => {
+                  // Clean up expired caches before update
+                  await swManager.cleanupExpiredCaches();
+                  await updateSW();
                 }}
                 onDismiss={() => {
-                  root.remove();
+                  // Optional: Schedule cleanup for later
+                  setTimeout(() => swManager.cleanupExpiredCaches(), 60000);
                 }}
               />
-            </React.StrictMode>
-          );
-        },
-        onOfflineReady() {
-          console.log('App ready to work offline');
+            );
+          }
         },
         onRegistered(swRegistration) {
           if (swRegistration) {
-            console.log('Service Worker registered successfully');
-            
-            // Initialize SW monitoring systems
+            // Initialize service worker messaging
             initServiceWorkerMessaging();
-            initMetricsLogging();
-            initCacheCleanup();
-            
-            // Check for updates every hour
+
+            // Setup periodic cache cleanup
             setInterval(() => {
-              swRegistration.update();
-            }, 60 * 60 * 1000);
+              swManager.cleanupExpiredCaches();
+            }, 3600000); // Run every hour
           }
         },
         onRegisterError(error) {
-          console.error('Service Worker registration failed:', error);
-          // Retry registration after 5 seconds
-          setTimeout(registerServiceWorker, 5000);
+          console.error('Service Worker registration error:', error);
         }
       });
     }
   } catch (error) {
     console.error('Service Worker registration error:', error);
-    // Retry registration after 5 seconds
-    setTimeout(registerServiceWorker, 5000);
   }
 };
 
 // Initialize service worker
 registerServiceWorker();
 
-// Mount React app
-ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
+ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <App />
+    <BrowserRouter>
+      <App />
+    </BrowserRouter>
   </React.StrictMode>
 );

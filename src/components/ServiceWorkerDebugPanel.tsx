@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
+import { swManager } from '../utils/sw-manager';
 
 export function ServiceWorkerDebugPanel() {
   const [registration, setRegistration] = useState<ServiceWorkerRegistration | null>(null);
   const [waiting, setWaiting] = useState(false);
   const [controllerState, setControllerState] = useState<string>('');
+  const [isCleaning, setIsCleaning] = useState(false);
 
   useEffect(() => {
     // Don't run effect in production
@@ -39,6 +41,15 @@ export function ServiceWorkerDebugPanel() {
     window.location.reload();
   };
 
+  const handleCleanupExpired = async () => {
+    setIsCleaning(true);
+    try {
+      await swManager.cleanupExpiredCaches();
+    } finally {
+      setIsCleaning(false);
+    }
+  };
+
   // Return null in production or if no registration
   if (!import.meta.env.DEV || !registration) {
     return null;
@@ -49,16 +60,24 @@ export function ServiceWorkerDebugPanel() {
       <div className="space-y-2">
         <h3 className="font-semibold">Service Worker Debug Panel</h3>
         <p className="text-sm text-muted-foreground">
-          Controller: {controllerState}
+          Status: {controllerState}
           {waiting && ' (update available)'}
         </p>
       </div>
-      <div className="flex gap-2">
+      <div className="flex flex-col gap-2">
         {waiting && (
           <Button size="sm" onClick={handleSkipWaiting}>
             Apply Update
           </Button>
         )}
+        <Button 
+          size="sm" 
+          variant="secondary"
+          onClick={handleCleanupExpired}
+          disabled={isCleaning}
+        >
+          {isCleaning ? 'Cleaning...' : 'Clean Expired Caches'}
+        </Button>
         <Button size="sm" variant="outline" onClick={handleUnregister}>
           Unregister
         </Button>

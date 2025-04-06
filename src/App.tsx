@@ -1,4 +1,3 @@
-import { BrowserRouter } from 'react-router-dom';
 import { Toaster } from './components/ui/toaster';
 import { ThemeProvider } from './contexts/theme';
 import { UserPreferencesProvider } from './contexts/user-preferences';
@@ -29,11 +28,9 @@ function App() {
           <UserPreferencesProvider>
             <WatchHistoryProvider>
               <ServiceWorkerErrorBoundary>
-                <BrowserRouter>
-                  <AppRoutes />
-                  <Toaster />
-                  {isDevelopment && <ServiceWorkerDebugPanel />}
-                </BrowserRouter>
+                <AppRoutes />
+                <Toaster />
+                {isDevelopment && <ServiceWorkerDebugPanel />}
               </ServiceWorkerErrorBoundary>
             </WatchHistoryProvider>
           </UserPreferencesProvider>

@@ -42,6 +42,7 @@ export default function AppRoutes() {
 
         {/* Content routes */}
         <Route path="/movies" element={<Movies />} />
+        <Route path="/movie/:id" element={<MovieDetails />} />
         <Route path="/movies/:id" element={<MovieDetails />} />
         <Route path="/tv" element={<TVShows />} />
         <Route path="/tv/:id" element={<TVDetails />} />

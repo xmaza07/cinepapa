@@ -1,25 +1,5 @@
-import { getServiceWorkerMetrics } from './sw-messaging';
-import { getStorageUsageSummary } from './cache-cleanup';
-
 // Avoid flooding analytics in development
 const isDev = process.env.NODE_ENV === 'development';
-
-// Add proper type definitions for Google Analytics
-interface GtagParams {
-  event_category?: string;
-  event_label?: string;
-  value?: number;
-}
-
-interface Gtag {
-  (command: 'event', action: string, params: GtagParams): void;
-}
-
-interface CustomWindow extends Window {
-  gtag?: Gtag;
-}
-
-declare let window: CustomWindow;
 
 interface AnalyticsEvent {
   category: string;
@@ -28,17 +8,21 @@ interface AnalyticsEvent {
   value?: number;
 }
 
-interface PerformanceMetrics {
-  cacheHitRate: number;
-  networkSuccessRate: number;
-  storageUtilization: number;
-  timestamp: number;
+interface CustomWindow extends Window {
+  gtag?: (command: string, action: string, params: {
+    event_category?: string;
+    event_label?: string;
+    value?: number;
+    [key: string]: unknown;
+  }) => void;
 }
+
+declare let window: CustomWindow;
 
 class ServiceWorkerAnalytics {
   private static instance: ServiceWorkerAnalytics;
   private lastReportTime: number = 0;
-  private REPORT_INTERVAL = 15 * 60 * 1000; // 15 minutes
+  private readonly REPORT_INTERVAL = 15 * 60 * 1000; // 15 minutes
 
   private constructor() {
     this.initializeAnalytics();
@@ -54,9 +38,6 @@ class ServiceWorkerAnalytics {
   private initializeAnalytics() {
     // Only initialize in browser environment and production
     if (!isDev && typeof window !== 'undefined') {
-      // Start periodic reporting
-      this.scheduleMetricsReport();
-      
       // Listen for specific events - ensure window exists
       if ('addEventListener' in window) {
         // Bind the method to preserve this context
@@ -76,66 +57,6 @@ class ServiceWorkerAnalytics {
           });
         });
       }
-    }
-  }
-
-  private async calculatePerformanceMetrics(): Promise<PerformanceMetrics> {
-    const [swMetrics, storageData] = await Promise.all([
-      getServiceWorkerMetrics(),
-      getStorageUsageSummary()
-    ]);
-
-    const totalCacheAttempts = Object.values(swMetrics.cacheMetrics).reduce((acc, curr) => {
-      return acc + curr.hits + curr.misses;
-    }, 0);
-
-    const totalCacheHits = Object.values(swMetrics.cacheMetrics).reduce((acc, curr) => {
-      return acc + curr.hits;
-    }, 0);
-
-    const totalNetworkRequests = 
-      swMetrics.networkMetrics.successes + 
-      swMetrics.networkMetrics.failures + 
-      swMetrics.networkMetrics.timeouts;
-
-    return {
-      cacheHitRate: totalCacheAttempts ? (totalCacheHits / totalCacheAttempts) * 100 : 0,
-      networkSuccessRate: totalNetworkRequests ? 
-        (swMetrics.networkMetrics.successes / totalNetworkRequests) * 100 : 0,
-      storageUtilization: storageData ? 
-        parseFloat(storageData.percentageUsed.replace('%', '')) : 0,
-      timestamp: Date.now()
-    };
-  }
-
-  private async scheduleMetricsReport() {
-    try {
-      const metrics = await this.calculatePerformanceMetrics();
-      
-      // Report metrics
-      this.trackEvent({
-        category: 'Performance',
-        action: 'CacheHitRate',
-        value: Math.round(metrics.cacheHitRate)
-      });
-
-      this.trackEvent({
-        category: 'Performance',
-        action: 'NetworkSuccessRate',
-        value: Math.round(metrics.networkSuccessRate)
-      });
-
-      this.trackEvent({
-        category: 'Storage',
-        action: 'Utilization',
-        value: Math.round(metrics.storageUtilization)
-      });
-
-      // Schedule next report
-      setTimeout(() => this.scheduleMetricsReport(), this.REPORT_INTERVAL);
-      
-    } catch (error) {
-      console.error('Error reporting service worker metrics:', error);
     }
   }
 
@@ -161,14 +82,6 @@ class ServiceWorkerAnalytics {
   }
 
   // Public methods for tracking specific events
-  trackCacheEvent(success: boolean, cacheType: string) {
-    this.trackEvent({
-      category: 'Cache',
-      action: success ? 'Hit' : 'Miss',
-      label: cacheType
-    });
-  }
-
   trackNetworkEvent(success: boolean, url: string) {
     try {
       // Check if the URL is valid first
@@ -176,7 +89,7 @@ class ServiceWorkerAnalytics {
       if (url.startsWith('http')) {
         hostname = new URL(url).hostname;
       } else if (url.includes('_')) {
-        // Handle metric names that use underscores (like TTFB_123)
+        // Handle metric names that use underscores
         hostname = url;
       } else {
         hostname = 'unknown';
@@ -190,14 +103,6 @@ class ServiceWorkerAnalytics {
     } catch (error) {
       console.warn('Error tracking network event:', error);
     }
-  }
-
-  trackStorageCleanup(bytesFreed: number) {
-    this.trackEvent({
-      category: 'Storage',
-      action: 'Cleanup',
-      value: Math.round(bytesFreed / 1024) // Convert to KB
-    });
   }
 }
 

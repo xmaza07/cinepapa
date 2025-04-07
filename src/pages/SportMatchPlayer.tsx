@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import Navbar from '@/components/Navbar';
@@ -10,6 +11,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 const SportMatchPlayer = () => {
   const { matchId } = useParams();
   const [selectedSource, setSelectedSource] = useState<string | null>(null);
+  const [isPlayerLoaded, setIsPlayerLoaded] = useState(false);
   const { data: streams, isLoading, error } = useQuery({
     queryKey: ['match-streams', matchId],
     queryFn: () => getMatchStreams(null, matchId), // Fetch all sources
@@ -24,9 +26,15 @@ const SportMatchPlayer = () => {
 
   const handleSourceChange = (source) => {
     setSelectedSource(source);
+    setIsPlayerLoaded(false); // Reset player loaded state when changing source
   };
 
   const embedUrl = streams && selectedSource ? streams.find(s => s.source === selectedSource)?.embedUrl : '';
+
+  // Handle iframe load event
+  const handleIframeLoad = () => {
+    setIsPlayerLoaded(true);
+  };
 
   if (isLoading) {
     return <div>Loading video player...</div>;
@@ -74,6 +82,7 @@ const SportMatchPlayer = () => {
                   frameBorder="0"
                   allowFullScreen
                   title="Video Player"
+                  onLoad={handleIframeLoad}
                 ></iframe>
               ) : (
                 <div>No streams available for this match.</div>

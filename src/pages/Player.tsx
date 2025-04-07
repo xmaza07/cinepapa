@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { getMovieDetails, getTVDetails, videoSources, getSeasonDetails } from '@/utils/api';
@@ -18,7 +19,6 @@ import { useWatchHistory } from '@/hooks/watch-history';
 import { useAuth } from '@/hooks';
 import { useUserPreferences } from '@/hooks/user-preferences';
 
-const DEBOUNCE_DELAY = 5000; // 5 seconds
 const MIN_WATCH_TIME = 30; // 30 seconds minimum before recording
 
 const Player = () => {
@@ -40,6 +40,8 @@ const Player = () => {
   const [episodes, setEpisodes] = useState<Episode[]>([]);
   const [currentEpisodeIndex, setCurrentEpisodeIndex] = useState<number>(0);
   const [hasInitialized, setHasInitialized] = useState(false);
+  const [isPlayerLoaded, setIsPlayerLoaded] = useState(false);
+  const watchHistoryRecorded = useRef(false);
 
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -57,9 +59,6 @@ const Player = () => {
 
   const [isFavorite, setIsFavorite] = useState(false);
   const [isInMyWatchlist, setIsInMyWatchlist] = useState(false);
-
-  const lastUpdateRef = useRef(0);
-  const lastPositionRef = useRef(0);
 
   // Effect to check favorites and watchlist status
   useEffect(() => {
@@ -98,36 +97,25 @@ const Player = () => {
     
     if (url) {
       setIframeUrl(url);
+      setIsPlayerLoaded(true);
     }
   }, [selectedSource, mediaType]);
 
-  // New function to handle watch progress updates
-  const handleWatchProgress = useCallback((position: number) => {
-    if (!user || !mediaDetails || !id) return;
+  // Handle player load and record watch history
+  useEffect(() => {
+    if (!isPlayerLoaded || !user || !mediaDetails || !id || watchHistoryRecorded.current) return;
 
-    const now = Date.now();
-    const timeSinceLastUpdate = now - lastUpdateRef.current;
-    const positionDifference = Math.abs(position - lastPositionRef.current);
-
-    // Only update if:
-    // 1. It's been at least DEBOUNCE_DELAY since last update
-    // 2. Position has changed significantly (more than 30 seconds)
-    // 3. Watch time is more than MIN_WATCH_TIME seconds
-    if (timeSinceLastUpdate >= DEBOUNCE_DELAY && 
-        positionDifference >= 30 && 
-        position >= MIN_WATCH_TIME) {
-
+    // Only record once per player load session
+    if (!watchHistoryRecorded.current) {
+      const mediaId = parseInt(id, 10);
       const duration = mediaType === 'movie' 
         ? (mediaDetails as MovieDetails).runtime * 60
-        : ((mediaDetails as TVDetails).episode_run_time[0] || 30) * 60;
-
-      const mediaId = parseInt(id, 10);
+        : ((mediaDetails as TVDetails).episode_run_time?.[0] || 30) * 60;
       
-      // Update the refs
-      lastUpdateRef.current = now;
-      lastPositionRef.current = position;
-
-      // Add to watch history
+      watchHistoryRecorded.current = true;
+      
+      // Add to watch history with initial position of 0
+      console.log('Recording initial watch history on player load');
       addToWatchHistory(
         {
           id: mediaId,
@@ -139,30 +127,22 @@ const Player = () => {
           media_type: mediaType,
           genre_ids: mediaDetails.genres.map(g => g.id)
         },
-        position,
+        0, // Initial position
         duration,
         season ? parseInt(season, 10) : undefined,
         episode ? parseInt(episode, 10) : undefined,
         selectedSource
       );
     }
-  }, [user, mediaDetails, id, mediaType, season, episode, selectedSource, addToWatchHistory]);
-
-  // Message handler for iframe communication
-  const handleMessage = useCallback((event: MessageEvent) => {
-    if (typeof event.data === 'object' && event.data.type === 'watchProgress') {
-      handleWatchProgress(event.data.position);
-    }
-  }, [handleWatchProgress]);
-
-  useEffect(() => {
-    window.addEventListener('message', handleMessage);
-    return () => window.removeEventListener('message', handleMessage);
-  }, [handleMessage]);
+  }, [isPlayerLoaded, user, mediaDetails, id, mediaType, season, episode, selectedSource, addToWatchHistory]);
 
   // Primary effect: Fetch media details when route params change
   useEffect(() => {
     let isMounted = true;
+    
+    // Reset player load state and watch history recorded flag
+    setIsPlayerLoaded(false);
+    watchHistoryRecorded.current = false;
     
     const fetchMediaDetails = async () => {
       if (!id || !type) return;
@@ -239,6 +219,10 @@ const Player = () => {
   
   const handleSourceChange = async (sourceKey: string) => {
     setSelectedSource(sourceKey);
+    
+    // Reset player load state and watch history recorded flag when source changes
+    setIsPlayerLoaded(false);
+    watchHistoryRecorded.current = false;
     
     // Save the preference if user is logged in
     if (user) {
@@ -347,6 +331,11 @@ const Player = () => {
     }
   };
   
+  // Handle iframe load event
+  const handleIframeLoad = () => {
+    setIsPlayerLoaded(true);
+  };
+  
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -420,6 +409,7 @@ const Player = () => {
                   className="absolute inset-0 w-full h-full"
                   title={title}
                   loading="lazy"
+                  onLoad={handleIframeLoad}
                 ></iframe>
               </div>
             </div>

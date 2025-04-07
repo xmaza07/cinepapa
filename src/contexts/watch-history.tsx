@@ -31,7 +31,6 @@ import {
   WatchHistoryContextType 
 } from './types/watch-history';
 import { RateLimiter } from '@/utils/rate-limiter';
-import { useLocation } from 'react-router-dom';
 
 // Constants for configuration
 const LOCAL_STORAGE_HISTORY_KEY = 'fdf_watch_history';
@@ -94,7 +93,6 @@ export function WatchHistoryProvider({ children }: { children: ReactNode }) {
   const [watchlist, setWatchlist] = useState<WatchlistItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
-  const location = useLocation();
 
   // Process watch position queue
   const processWatchPositionQueue = useCallback(async () => {
@@ -165,27 +163,6 @@ export function WatchHistoryProvider({ children }: { children: ReactNode }) {
       window.removeEventListener('offline', handleOffline);
     };
   }, []);
-
-  // Add cleanup on route change
-  useEffect(() => {
-    const cleanup = () => {
-      // Clear in-memory queues
-      watchPositionQueue.clear();
-      pendingOperations.length = 0;
-      
-      // Reset loading states
-      setIsLoading(false);
-      setHasMore(true);
-      setLastVisible(null);
-    };
-
-    // Clean up on route change
-    cleanup();
-
-    return () => {
-      cleanup();
-    };
-  }, [location.pathname]);
 
   const loadLocalWatchHistory = useCallback(() => {
     try {

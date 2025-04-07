@@ -67,46 +67,203 @@ if (!self.define) {
     });
   };
 }
-importScripts('workbox-54d0af47.js');
-self.skipWaiting();
-workbox.clientsClaim();
+define(['./workbox-d4260423'], (function (workbox) { 'use strict';
 
-const registerRoute = workbox.registerRoute;
+  workbox.enable();
+  self.skipWaiting();
+  workbox.clientsClaim();
 
-// Use NetworkFirst strategy for API routes
-registerRoute(
-  /^https:\/\/api\.themoviedb\.org\/3\/.*/i,
-  new workbox.NetworkFirst({
-    networkTimeoutSeconds: 3
-  }),
-  'GET'
-);
+  /**
+   * The precacheAndRoute() method efficiently caches and responds to
+   * requests for URLs in the manifest.
+   * See https://goo.gl/S9QRab
+   */
+  workbox.precacheAndRoute([{
+    "url": "registerSW.js",
+    "revision": "3ca0b8505b4bec776b69afdba2768812"
+  }, {
+    "url": "index.html",
+    "revision": "0.cd009lkegto"
+  }], {});
+  workbox.cleanupOutdatedCaches();
+  workbox.registerRoute(new workbox.NavigationRoute(workbox.createHandlerBoundToURL("index.html"), {
+    allowlist: [/^\/$/]
+  }));
+  workbox.registerRoute(({
+    request
+  }) => request.mode === "navigate", new workbox.NetworkFirst({
+    "cacheName": "pages-cache-v0.0.0",
+    "networkTimeoutSeconds": 3,
+    plugins: [{
+      handlerDidError: async ({
+        request
+      }) => {
+        try {
+          const cache = await self.caches.open(CACHE_NAMES.pages);
+          const response = await cache.match("/offline.html");
+          if (response) return response;
+          const offlineResponse = await fetch("/offline.html");
+          if (offlineResponse.ok) {
+            await cache.put("/offline.html", offlineResponse.clone());
+            return offlineResponse;
+          }
+          return void 0;
+        } catch (error) {
+          console.error("Error serving offline page:", error);
+          return void 0;
+        }
+      }
+    }]
+  }), 'GET');
+  workbox.registerRoute(/\.(css|js|woff2|ttf)$/i, new workbox.CacheFirst({
+    "cacheName": "static-assets-v0.0.0",
+    plugins: [new workbox.ExpirationPlugin({
+      maxEntries: 200,
+      maxAgeSeconds: 2592000
+    }), new workbox.CacheableResponsePlugin({
+      statuses: [0, 200]
+    })]
+  }), 'GET');
+  workbox.registerRoute(/\.(?:png|jpg|jpeg|svg|gif|webp)$/i, new workbox.CacheFirst({
+    "cacheName": "images-v0.0.0",
+    plugins: [new workbox.ExpirationPlugin({
+      maxEntries: 500,
+      maxAgeSeconds: 2592000
+    }), new workbox.CacheableResponsePlugin({
+      statuses: [0, 200]
+    }), {
+      handlerDidError: async ({
+        request
+      }) => {
+        const cache = await self.caches.open(CACHE_NAMES.static);
+        return cache.match("/placeholder.svg");
+      }
+    }]
+  }), 'GET');
+  workbox.registerRoute(/^https:\/\/api\.themoviedb\.org\/3\/.*/i, new workbox.NetworkFirst({
+    "cacheName": "tmdb-api-v0.0.0",
+    "networkTimeoutSeconds": 3,
+    plugins: [{
+      cacheWillUpdate: async ({
+        response
+      }) => {
+        if (response && response.status === 200) {
+          try {
+            const clonedResponse = response.clone();
+            const data = await clonedResponse.json();
+            if (data && !data.error) {
+              return response;
+            }
+          } catch (error) {
+            console.error("Error parsing TMDB response:", error);
+          }
+        }
+        return null;
+      }
+    }, new workbox.ExpirationPlugin({
+      maxEntries: 100,
+      maxAgeSeconds: 3600
+    })]
+  }), 'GET');
+  workbox.registerRoute(/^https:\/\/image\.tmdb\.org\/t\/p\/.*/i, new workbox.CacheFirst({
+    "cacheName": "tmdb-images-v0.0.0",
+    "matchOptions": {
+      "ignoreVary": true
+    },
+    plugins: [new workbox.ExpirationPlugin({
+      maxEntries: 500,
+      maxAgeSeconds: 2592000
+    }), new workbox.CacheableResponsePlugin({
+      statuses: [0, 200]
+    }), {
+      handlerDidError: async () => {
+        const cache = await self.caches.open(CACHE_NAMES.static);
+        return cache.match("/placeholder.svg");
+      }
+    }]
+  }), 'GET');
+  workbox.registerRoute(({
+    url
+  }) => {
+    return url.hostname.includes("firestore.googleapis.com") || url.hostname.includes("firebase.googleapis.com") || url.hostname.includes("firebaseio.com");
+  }, new workbox.NetworkFirst({
+    "cacheName": "firebase-data-v0.0.0",
+    "networkTimeoutSeconds": 3,
+    "matchOptions": {
+      "ignoreVary": true,
+      "ignoreSearch": false
+    },
+    plugins: [{
+      cacheWillUpdate: async ({
+        response
+      }) => {
+        return response && response.status === 200 ? response : null;
+      },
+      cacheDidUpdate: async ({
+        cacheName,
+        request,
+        oldResponse,
+        newResponse
+      }) => {
+        try {
+          if (oldResponse) {
+            const cache = await self.caches.open(cacheName);
+            const keys = await cache.keys();
+            const oldKeys = keys.filter(key => key.url.includes(request.url) && key !== request);
+            await Promise.all(oldKeys.map(key => cache.delete(key)));
+          }
+        } catch (error) {
+          console.error("Error cleaning up Firebase cache:", error);
+        }
+      }
+    }, new workbox.ExpirationPlugin({
+      maxEntries: 100,
+      maxAgeSeconds: 3600
+    })]
+  }), 'GET');
+  workbox.registerRoute(/^https:\/\/(apis\.google\.com|www\.googleapis\.com)\/.*/i, new workbox.NetworkFirst({
+    "cacheName": "google-apis-v0.0.0",
+    "networkTimeoutSeconds": 3,
+    plugins: [new workbox.ExpirationPlugin({
+      maxEntries: 50,
+      maxAgeSeconds: 3600
+    }), {
+      handlerDidError: async ({
+        request
+      }) => {
+        console.error("Google API request failed:", request.url);
+        return void 0;
+      }
+    }]
+  }), 'GET');
+  workbox.initialize({
+    parameterOverrides: {
+      cd1: 'offline'
+    }
+  });
 
-// Use NetworkFirst strategy for Firebase routes
-registerRoute(
-  ({url}) => {
-    return url.hostname.includes("firestore.googleapis.com") ||
-           url.hostname.includes("firebase.googleapis.com") ||
-           url.hostname.includes("firebaseio.com");
-  },
-  new workbox.NetworkFirst({
-    networkTimeoutSeconds: 3
-  }),
-  'GET'
-);
+  // Add message handler
+  self.addEventListener('message', (event) => {
+    // Ensure there's a MessagePort to respond to
+    if (event.ports && event.ports[0]) {
+      // Acknowledge receipt of the message
+      event.ports[0].postMessage({ received: true });
+    }
 
-// Use NetworkFirst for Google APIs
-registerRoute(
-  /^https:\/\/(apis\.google\.com|www\.googleapis\.com)\/.*/i,
-  new workbox.NetworkFirst({
-    networkTimeoutSeconds: 3
-  }),
-  'GET'
-);
+    // Handle specific message types
+    if (event.data && event.data.type) {
+      switch (event.data.type) {
+        case 'SKIP_WAITING':
+          self.skipWaiting();
+          break;
+        // Handle other message types as needed
+        default:
+          // For unknown message types, just acknowledge receipt
+          if (event.ports && event.ports[0]) {
+            event.ports[0].postMessage({ error: 'Unknown message type' });
+          }
+      }
+    }
+  });
 
-// Default fallback for other routes
-registerRoute(
-  /^https:\/\/.*/i,
-  new workbox.NetworkFirst(),
-  'GET'
-);
+}));

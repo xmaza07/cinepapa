@@ -1,3 +1,4 @@
+
 import { BrowserRouter } from 'react-router-dom';
 import { Toaster } from './components/ui/toaster';
 import { ThemeProvider } from './contexts/theme';
@@ -7,6 +8,8 @@ import { ServiceWorkerErrorBoundary } from './components/ServiceWorkerErrorBound
 import { ServiceWorkerDebugPanel } from './components/ServiceWorkerDebugPanel';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from '@/hooks';
+import { ChatbotProvider } from './contexts/chatbot-context';
+import Chatbot from './components/Chatbot';
 import AppRoutes from './routes.tsx';
 import './App.css';
 
@@ -28,13 +31,16 @@ function App() {
         <ThemeProvider>
           <UserPreferencesProvider>
             <WatchHistoryProvider>
-              <ServiceWorkerErrorBoundary>
-                <BrowserRouter>
-                  <AppRoutes />
-                  <Toaster />
-                  {isDevelopment && <ServiceWorkerDebugPanel />}
-                </BrowserRouter>
-              </ServiceWorkerErrorBoundary>
+              <ChatbotProvider>
+                <ServiceWorkerErrorBoundary>
+                  <BrowserRouter>
+                    <AppRoutes />
+                    <Chatbot />
+                    <Toaster />
+                    {isDevelopment && <ServiceWorkerDebugPanel />}
+                  </BrowserRouter>
+                </ServiceWorkerErrorBoundary>
+              </ChatbotProvider>
             </WatchHistoryProvider>
           </UserPreferencesProvider>
         </ThemeProvider>

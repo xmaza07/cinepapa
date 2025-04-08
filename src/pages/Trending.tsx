@@ -29,9 +29,12 @@ const Trending = () => {
   useEffect(() => {
     if (trendingQuery.data) {
       setAllTrending(prev => {
-        const newItems = trendingQuery.data.filter(
-          item => !prev.some(p => p.id === item.id)
-        );
+        const newItems = trendingQuery.data
+          .filter(item => !prev.some(p => p.id === item.id))
+          .map(item => ({
+            ...item,
+            media_type: item.media_type as "movie" | "tv"
+          }));
         return [...prev, ...newItems];
       });
     }

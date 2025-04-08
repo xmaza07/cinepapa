@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { getPopularMovies, getTopRatedMovies } from '@/utils/api';
-import { Media } from '@/utils/types';
+import { Media, ensureExtendedMediaArray } from '@/utils/types';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import MediaGrid from '@/components/MediaGrid';
@@ -39,22 +39,19 @@ const Movies = () => {
     placeholderData: keepPreviousData,
   });
 
-  // Update all movies when new data arrives with proper ID mapping
   useEffect(() => {
     if (popularMoviesQuery.data) {
       console.log('Raw Popular Movies Data:', popularMoviesQuery.data);
       setAllPopularMovies(prev => {
         const newMovies = popularMoviesQuery.data
-          .filter(movie => !prev.some(p => p.id === (movie.id || movie.media_id || movie.tmdb_id)))
+          .filter(movie => !prev.some(p => p.id === (movie.id || movie.media_id)))
           .map(movie => {
-            const transformedMovie = {
+            return {
               ...movie,
-              id: movie.id || movie.media_id || movie.tmdb_id, // Replace with correct field
-              media_id: movie.id || movie.media_id || movie.tmdb_id, // Ensure media_id is set
-              media_type: 'movie', // Explicitly set for movies
+              id: movie.id || movie.media_id || 0,
+              media_id: movie.id || movie.media_id || 0,
+              media_type: 'movie' as 'movie',
             };
-            console.log('Transformed Popular Movie:', transformedMovie);
-            return transformedMovie;
           });
         return [...prev, ...newMovies];
       });
@@ -66,23 +63,20 @@ const Movies = () => {
       console.log('Raw Top Rated Movies Data:', topRatedMoviesQuery.data);
       setAllTopRatedMovies(prev => {
         const newMovies = topRatedMoviesQuery.data
-          .filter(movie => !prev.some(p => p.id === (movie.id || movie.media_id || movie.tmdb_id)))
+          .filter(movie => !prev.some(p => p.id === (movie.id || movie.media_id)))
           .map(movie => {
-            const transformedMovie = {
+            return {
               ...movie,
-              id: movie.id || movie.media_id || movie.tmdb_id, // Replace with correct field
-              media_id: movie.id || movie.media_id || movie.tmdb_id, // Ensure media_id is set
-              media_type: 'movie', // Explicitly set for movies
+              id: movie.id || movie.media_id || 0,
+              media_id: movie.id || movie.media_id || 0,
+              media_type: 'movie' as 'movie',
             };
-            console.log('Transformed Top Rated Movie:', transformedMovie);
-            return transformedMovie;
           });
         return [...prev, ...newMovies];
       });
     }
   }, [topRatedMoviesQuery.data]);
 
-  // Prefetch next pages
   useEffect(() => {
     if (popularMoviesQuery.data?.length === ITEMS_PER_PAGE) {
       queryClient.prefetchQuery({
@@ -101,18 +95,15 @@ const Movies = () => {
     }
   }, [topRatedPage, queryClient, topRatedMoviesQuery.data]);
 
-  // Filter and sort movies
   const applyFiltersAndSort = (movies: Media[]) => {
     let filteredMovies = [...movies];
 
-    // Apply genre filter
     if (genreFilter !== 'all') {
       filteredMovies = filteredMovies.filter(movie => 
         movie.genre_ids?.includes(parseInt(genreFilter))
       );
     }
 
-    // Apply sorting
     switch (sortBy) {
       case 'title':
         filteredMovies.sort((a, b) => a.title.localeCompare(b.title));
@@ -164,7 +155,10 @@ const Movies = () => {
               </div>
               
               <div className="flex items-center gap-4 pt-6">
-                <Select value={sortBy} onValueChange={setSortBy}>
+                <Select 
+                  value={sortBy} 
+                  onValueChange={(value: 'default' | 'title' | 'release_date' | 'rating') => setSortBy(value)}
+                >
                   <SelectTrigger className="w-[180px] border-white/10 text-white bg-transparent">
                     <SelectValue placeholder="Sort By" />
                   </SelectTrigger>
@@ -228,7 +222,7 @@ const Movies = () => {
                   <div className="py-12 text-center text-white">Error loading movies. Please try again.</div>
                 ) : (
                   <>
-                    <MediaGrid media={filteredPopularMovies} title="Popular Movies" listView={viewMode === 'list'} />
+                    <MediaGrid media={ensureExtendedMediaArray(filteredPopularMovies)} title="Popular Movies" listView={viewMode === 'list'} />
                     
                     {hasMorePopular && (
                       <div className="flex justify-center my-8">
@@ -256,7 +250,7 @@ const Movies = () => {
                   <div className="py-12 text-center text-white">Error loading movies. Please try again.</div>
                 ) : (
                   <>
-                    <MediaGrid media={filteredTopRatedMovies} title="Top Rated Movies" listView={viewMode === 'list'} />
+                    <MediaGrid media={ensureExtendedMediaArray(filteredTopRatedMovies)} title="Top Rated Movies" listView={viewMode === 'list'} />
                     
                     {hasMoreTopRated && (
                       <div className="flex justify-center my-8">

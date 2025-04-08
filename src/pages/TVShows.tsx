@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { getPopularTVShows, getTopRatedTVShows } from '@/utils/api';
-import { Media } from '@/utils/types';
+import { Media, ensureExtendedMediaArray } from '@/utils/types';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import MediaGrid from '@/components/MediaGrid';
@@ -44,16 +44,14 @@ const TVShows = () => {
       console.log('Raw Popular TV Data:', popularTVQuery.data);
       setAllPopularShows(prev => {
         const newShows = popularTVQuery.data
-          .filter(show => !prev.some(p => p.id === (show.id || show.media_id || show.tmdb_id)))
+          .filter(show => !prev.some(p => p.id === (show.id || show.media_id)))
           .map(show => {
-            const transformedShow = {
+            return {
               ...show,
-              id: show.id || show.media_id || show.tmdb_id, // Replace with correct field
-              media_id: show.id || show.media_id || show.tmdb_id, // Replace with correct field
-              media_type: 'tv',
+              id: show.id || show.media_id || 0,
+              media_id: show.id || show.media_id || 0,
+              media_type: 'tv' as 'tv',
             };
-            console.log('Transformed Popular Show:', transformedShow);
-            return transformedShow;
           });
         return [...prev, ...newShows];
       });
@@ -65,16 +63,14 @@ const TVShows = () => {
       console.log('Raw Top Rated TV Data:', topRatedTVQuery.data);
       setAllTopRatedShows(prev => {
         const newShows = topRatedTVQuery.data
-          .filter(show => !prev.some(p => p.id === (show.id || show.media_id || show.tmdb_id)))
+          .filter(show => !prev.some(p => p.id === (show.id || show.media_id)))
           .map(show => {
-            const transformedShow = {
+            return {
               ...show,
-              id: show.id || show.media_id || show.tmdb_id, // Replace with correct field
-              media_id: show.id || show.media_id || show.tmdb_id, // Replace with correct field
-              media_type: 'tv',
+              id: show.id || show.media_id || 0,
+              media_id: show.id || show.media_id || 0,
+              media_type: 'tv' as 'tv',
             };
-            console.log('Transformed Top Rated Show:', transformedShow);
-            return transformedShow;
           });
         return [...prev, ...newShows];
       });
@@ -145,7 +141,10 @@ const TVShows = () => {
                 <h1 className="text-3xl font-bold text-white">TV Shows</h1>
               </div>
               <div className="flex items-center gap-4 pt-6">
-                <Select value={sortBy} onValueChange={setSortBy}>
+                <Select 
+                  value={sortBy} 
+                  onValueChange={(value: 'default' | 'name' | 'first_air_date' | 'rating') => setSortBy(value)}
+                >
                   <SelectTrigger className="w-[180px] border-white/10 text-white bg-transparent">
                     <SelectValue placeholder="Sort By" />
                   </SelectTrigger>
@@ -205,7 +204,7 @@ const TVShows = () => {
                   <div className="py-12 text-center text-white">Error loading TV shows. Please try again.</div>
                 ) : (
                   <>
-                    <MediaGrid media={filteredPopularShows} title="Popular TV Shows" listView={viewMode === 'list'} />
+                    <MediaGrid media={ensureExtendedMediaArray(filteredPopularShows)} title="Popular TV Shows" listView={viewMode === 'list'} />
                     {hasMorePopular && (
                       <div className="flex justify-center my-8">
                         <Button
@@ -231,7 +230,7 @@ const TVShows = () => {
                   <div className="py-12 text-center text-white">Error loading TV shows. Please try again.</div>
                 ) : (
                   <>
-                    <MediaGrid media={filteredTopRatedShows} title="Top Rated TV Shows" listView={viewMode === 'list'} />
+                    <MediaGrid media={ensureExtendedMediaArray(filteredTopRatedShows)} title="Top Rated TV Shows" listView={viewMode === 'list'} />
                     {hasMoreTopRated && (
                       <div className="flex justify-center my-8">
                         <Button

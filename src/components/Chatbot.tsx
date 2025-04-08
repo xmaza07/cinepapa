@@ -3,7 +3,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { MessageCircle, X, Send, Search, Minimize2, Maximize2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Spinner } from '@/components/ui/spinner';
+import Spinner from '@/components/ui/spinner';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import { useChatbot } from '@/contexts/chatbot-context';

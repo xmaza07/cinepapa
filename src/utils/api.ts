@@ -1,3 +1,4 @@
+
 import axios from 'axios';
 import { Media, MovieDetails, TVDetails, Episode, Review, Genre, Company, MovieImagesResponse } from './types';
 
@@ -398,6 +399,7 @@ export const getMovieDetails = async (id: number): Promise<MovieDetails | null> 
     return {
       ...formattedData,
       title: formattedData.title || detailsData.title || 'Unknown Movie',  // Ensure title is never undefined
+      release_date: formattedData.release_date || detailsData.release_date || '',  // Ensure release_date is never undefined
       runtime: detailsData.runtime || 0,
       genres: detailsData.genres || [],
       status: detailsData.status || '',
@@ -456,6 +458,7 @@ export const getTVDetails = async (id: number): Promise<TVDetails | null> => {
     return {
       ...formattedData,
       name: formattedData.name || detailsData.name || 'Unknown TV Show',  // Ensure name is never undefined
+      first_air_date: formattedData.first_air_date || detailsData.first_air_date || '',  // Ensure first_air_date is never undefined
       episode_run_time: detailsData.episode_run_time || [],
       genres: detailsData.genres || [],
       status: detailsData.status || '',

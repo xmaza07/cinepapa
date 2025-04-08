@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { searchMedia } from '@/utils/api';
@@ -62,6 +63,7 @@ const Search = () => {
     return saved ? JSON.parse(saved) : [];
   });
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+  const [mediaSuggestions, setMediaSuggestions] = useState<Media[]>([]);
 
   // Register keyboard shortcut for search focus
   useEffect(() => {
@@ -96,12 +98,18 @@ const Search = () => {
   const generateSuggestions = useCallback(async (input: string) => {
     if (!input || input.length < 2) {
       setSuggestions([]);
+      setMediaSuggestions([]);
       return;
     }
 
     try {
       // Get API suggestions
       const results = await searchMedia(input);
+      
+      // Set media suggestions
+      setMediaSuggestions(results.slice(0, 4));
+      
+      // Extract text suggestions
       const apiSuggestions = results.slice(0, 3).map(item => 
         item.title || item.name || ''
       );
@@ -241,10 +249,30 @@ const Search = () => {
     }
   };
 
-  const handleSuggestionClick = (suggestion: string) => {
-    setQuery(suggestion);
+  const handleSuggestionClick = (suggestion: string | Media) => {
+    if (typeof suggestion === 'string') {
+      // For string suggestions, perform a search
+      setQuery(suggestion);
+      updateSearchHistory(suggestion);
+      navigate(`/search?q=${encodeURIComponent(suggestion)}`);
+    } else {
+      // For Media objects, navigate directly to the content page
+      navigate(`/${suggestion.media_type}/${suggestion.id}`);
+      
+      // Show a toast notification
+      toast({
+        title: "Navigating...",
+        description: `Going to ${suggestion.title || suggestion.name}`,
+        duration: 2000,
+      });
+      
+      // Update search history with the title/name
+      const term = suggestion.title || suggestion.name || '';
+      if (term) {
+        updateSearchHistory(term);
+      }
+    }
     setShowSuggestions(false);
-    navigate(`/search?q=${encodeURIComponent(suggestion)}`);
   };
 
   const handleShowMore = () => {
@@ -303,11 +331,22 @@ const Search = () => {
               )}
               
               {/* Search suggestions dropdown */}
-              {showSuggestions && suggestions.length > 0 && (
-                <SearchSuggestions 
-                  suggestions={suggestions} 
-                  onSuggestionClick={handleSuggestionClick} 
-                />
+              {showSuggestions && (
+                mediaSuggestions.length > 0 ? (
+                  <SearchSuggestions 
+                    suggestions={mediaSuggestions} 
+                    onSuggestionClick={handleSuggestionClick}
+                    searchQuery={query}
+                    onViewAllResults={handleSearch}
+                  />
+                ) : suggestions.length > 0 ? (
+                  <SearchSuggestions 
+                    suggestions={suggestions} 
+                    onSuggestionClick={handleSuggestionClick}
+                    searchQuery={query}
+                    onViewAllResults={handleSearch}
+                  />
+                ) : null
               )}
             </div>
             

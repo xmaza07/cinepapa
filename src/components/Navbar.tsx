@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -7,6 +8,15 @@ import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from '@/hooks';
 import { searchMedia } from '@/utils/api';
 import { Media } from '@/utils/types';
+import {
+  NavigationMenu,
+  NavigationMenuContent,
+  NavigationMenuItem,
+  NavigationMenuLink,
+  NavigationMenuList,
+  NavigationMenuTrigger,
+  navigationMenuTriggerStyle,
+} from "@/components/ui/navigation-menu";
 
 interface NavItem {
   title: string;
@@ -115,6 +125,7 @@ const Navbar = () => {
     if (searchQuery.trim()) {
       navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
       setSearchQuery('');
+      setShowSuggestions(false);
       setIsMobileMenuOpen(false);
 
       toast({
@@ -123,6 +134,21 @@ const Navbar = () => {
         duration: 2000,
       });
     }
+  };
+
+  const handleSuggestionClick = (item: Media) => {
+    // Navigate to the specific media page
+    navigate(`/${item.media_type}/${item.id}`);
+    setSearchQuery('');
+    setShowSuggestions(false);
+    setIsMobileMenuOpen(false);
+    
+    // Show a notification
+    toast({
+      title: "Navigating...",
+      description: `Going to ${item.title || item.name}`,
+      duration: 2000,
+    });
   };
 
   const showKeyboardShortcutToast = () => {
@@ -135,7 +161,9 @@ const Navbar = () => {
   };
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 transition-all duration-300">
+    <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+      isScrolled ? 'bg-background/95 backdrop-blur-md shadow-md' : 'bg-gradient-to-b from-background to-transparent'
+    }`}>
       <div className="container mx-auto px-4 md:px-6">
         <div className="flex items-center justify-between">
           <Link
@@ -164,18 +192,14 @@ const Navbar = () => {
                   className="absolute top-full left-0 right-0 mt-1 bg-black/95 backdrop-blur-lg border border-white/10 rounded-md shadow-lg z-50"
                 >
                   {searchSuggestions.map((item) => (
-                    <Link
+                    <button
                       key={`${item.media_type}-${item.id}`}
-                      to={`/${item.media_type}/${item.id}`}
-                      className="flex items-center px-4 py-2 hover:bg-white/10 text-white/90 text-sm"
-                      onClick={() => {
-                        setShowSuggestions(false);
-                        setSearchQuery('');
-                      }}
+                      className="flex items-center w-full px-4 py-2 hover:bg-white/10 text-white/90 text-sm text-left"
+                      onClick={() => handleSuggestionClick(item)}
                     >
                       <span className="mr-2">{item.media_type === 'movie' ? <Film className="h-4 w-4" /> : <Tv className="h-4 w-4" />}</span>
                       <span>{item.title || item.name}</span>
-                    </Link>
+                    </button>
                   ))}
                   <button
                     onClick={handleSearch}
@@ -238,22 +262,19 @@ const Navbar = () => {
                   className="absolute top-full right-0 mt-1 w-[300px] bg-black/95 backdrop-blur-lg border border-white/10 rounded-md shadow-lg z-50"
                 >
                   {searchSuggestions.map((item) => (
-                    <Link
+                    <button
                       key={`${item.media_type}-${item.id}`}
-                      to={`/${item.media_type}/${item.id}`}
-                      className="flex items-center px-4 py-2 hover:bg-white/10 text-white/90 text-sm"
-                      onClick={() => {
-                        setShowSuggestions(false);
-                        setSearchQuery('');
-                      }}
+                      className="flex items-center w-full px-4 py-2 hover:bg-white/10 text-white/90 text-sm text-left transition-colors"
+                      onClick={() => handleSuggestionClick(item)}
                     >
                       <span className="mr-2">{item.media_type === 'movie' ? <Film className="h-4 w-4" /> : <Tv className="h-4 w-4" />}</span>
-                      <span>{item.title || item.name}</span>
-                    </Link>
+                      <span className="flex-1 truncate">{item.title || item.name}</span>
+                      <span className="ml-2 text-xs text-white/50">⏎</span>
+                    </button>
                   ))}
                   <button
                     onClick={handleSearch}
-                    className="w-full px-4 py-2 text-left text-sm text-accent hover:bg-white/10 border-t border-white/10"
+                    className="w-full px-4 py-2 text-left text-sm text-accent hover:bg-white/10 border-t border-white/10 transition-colors"
                   >
                     View all results for "{searchQuery}"
                   </button>

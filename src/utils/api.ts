@@ -97,7 +97,6 @@ interface TMDBTVDetailsResult extends TMDBTVResult {
   };
 }
 
-
 const API_KEY = import.meta.env.VITE_TMDB_API_KEY;
 const BASE_URL = 'https://api.themoviedb.org/3';
 const IMAGE_BASE_URL = 'https://image.tmdb.org/t/p';
@@ -393,15 +392,19 @@ export const getMovieDetails = async (id: number): Promise<MovieDetails | null> 
       }
     }
     
+    // Ensure all required properties are present, and fall back to sensible defaults when needed
+    const formattedData = formatMediaItem({...detailsData, media_type: 'movie'});
+    
     return {
-      ...formatMediaItem({...detailsData, media_type: 'movie'}),
-      runtime: detailsData.runtime,
-      genres: detailsData.genres,
-      status: detailsData.status,
-      tagline: detailsData.tagline,
-      budget: detailsData.budget,
-      revenue: detailsData.revenue,
-      production_companies: detailsData.production_companies,
+      ...formattedData,
+      title: formattedData.title || detailsData.title || 'Unknown Movie',  // Ensure title is never undefined
+      runtime: detailsData.runtime || 0,
+      genres: detailsData.genres || [],
+      status: detailsData.status || '',
+      tagline: detailsData.tagline || '',
+      budget: detailsData.budget || 0,
+      revenue: detailsData.revenue || 0,
+      production_companies: detailsData.production_companies || [],
       certification: certification,
       logo_path: bestLogo ? bestLogo.file_path : null,
     };
@@ -447,16 +450,20 @@ export const getTVDetails = async (id: number): Promise<TVDetails | null> => {
       }
     }
     
+    // Ensure all required properties are present, and fall back to sensible defaults when needed
+    const formattedData = formatMediaItem({...detailsData, media_type: 'tv'});
+    
     return {
-      ...formatMediaItem({...detailsData, media_type: 'tv'}),
-      episode_run_time: detailsData.episode_run_time,
-      genres: detailsData.genres,
-      status: detailsData.status,
-      tagline: detailsData.tagline,
-      number_of_episodes: detailsData.number_of_episodes,
-      number_of_seasons: detailsData.number_of_seasons,
-      seasons: detailsData.seasons,
-      production_companies: detailsData.production_companies,
+      ...formattedData,
+      name: formattedData.name || detailsData.name || 'Unknown TV Show',  // Ensure name is never undefined
+      episode_run_time: detailsData.episode_run_time || [],
+      genres: detailsData.genres || [],
+      status: detailsData.status || '',
+      tagline: detailsData.tagline || '',
+      number_of_episodes: detailsData.number_of_episodes || 0,
+      number_of_seasons: detailsData.number_of_seasons || 0,
+      seasons: detailsData.seasons || [],
+      production_companies: detailsData.production_companies || [],
       certification: certification,
       logo_path: bestLogo ? bestLogo.file_path : null,
     };

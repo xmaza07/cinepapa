@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { searchMedia } from '@/utils/api';
@@ -65,10 +64,8 @@ const Search = () => {
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [mediaSuggestions, setMediaSuggestions] = useState<Media[]>([]);
 
-  // Register keyboard shortcut for search focus
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Focus search input when "/" is pressed, unless user is already typing in an input
       if (e.key === '/' && document.activeElement?.tagName !== 'INPUT' && 
           document.activeElement?.tagName !== 'TEXTAREA') {
         e.preventDefault();
@@ -85,7 +82,6 @@ const Search = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [toast]);
 
-  // Add debounce effect for search term
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearchTerm(query);
@@ -94,7 +90,6 @@ const Search = () => {
     return () => clearTimeout(timer);
   }, [query]);
 
-  // Generate suggestions based on actual API data and search history
   const generateSuggestions = useCallback(async (input: string) => {
     if (!input || input.length < 2) {
       setSuggestions([]);
@@ -103,23 +98,18 @@ const Search = () => {
     }
 
     try {
-      // Get API suggestions
       const results = await searchMedia(input);
       
-      // Set media suggestions
       setMediaSuggestions(results.slice(0, 4));
       
-      // Extract text suggestions
       const apiSuggestions = results.slice(0, 3).map(item => 
         item.title || item.name || ''
       );
 
-      // Combine with relevant search history
       const historySuggestions = searchHistory
         .filter(h => h.toLowerCase().includes(input.toLowerCase()))
         .slice(0, 2);
 
-      // Combine and remove duplicates
       const combinedSuggestions = [...new Set([...historySuggestions, ...apiSuggestions])];
       setSuggestions(combinedSuggestions);
     } catch (error) {
@@ -127,7 +117,6 @@ const Search = () => {
     }
   }, [searchHistory]);
 
-  // Fetch search results when search params change
   useEffect(() => {
     const searchQuery = searchParams.get('q');
     if (!searchQuery) {
@@ -144,13 +133,11 @@ const Search = () => {
         
         const results = await searchMedia(searchQuery);
         
-        // Filter and transform results to match ExtendedMedia type
         let filteredResults = results.map(item => ({
           ...item,
           id: item.id,
-          media_id: item.id, // Ensure media_id is always set and matches id
+          media_id: item.id,
           media_type: item.media_type,
-          // Include all other required fields from ExtendedMedia
           title: item.title || '',
           name: item.name || '',
           poster_path: item.poster_path,
@@ -166,7 +153,6 @@ const Search = () => {
           filteredResults = filteredResults.filter(item => item.media_type === type);
         }
         
-        // Sort results
         const sortedResults = [...filteredResults];
         if (sort === 'rating') {
           sortedResults.sort((a, b) => b.vote_average - a.vote_average);
@@ -179,7 +165,6 @@ const Search = () => {
         }
         
         setAllResults(sortedResults);
-        // Initialize with first page of results
         setDisplayedResults(sortedResults.slice(0, RESULTS_PER_PAGE));
         setPage(1);
       } catch (error) {
@@ -202,7 +187,6 @@ const Search = () => {
     setSortBy(searchParams.get('sort') || 'popularity');
   }, [searchParams, toast]);
 
-  // Update search history
   const updateSearchHistory = useCallback((term: string) => {
     setSearchHistory(prev => {
       const newHistory = [term, ...prev.filter(h => h !== term)].slice(0, 5);
@@ -211,13 +195,15 @@ const Search = () => {
     });
   }, []);
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSearch = (e?: React.FormEvent) => {
+    if (e) {
+      e.preventDefault();
+    }
+    
     if (!query.trim()) return;
     
     let searchUrl = `/search?q=${encodeURIComponent(query.trim())}`;
     
-    // Add advanced search parameters if enabled
     if (advancedSearch) {
       if (mediaType !== 'all') {
         searchUrl += `&type=${mediaType}`;
@@ -251,22 +237,18 @@ const Search = () => {
 
   const handleSuggestionClick = (suggestion: string | Media) => {
     if (typeof suggestion === 'string') {
-      // For string suggestions, perform a search
       setQuery(suggestion);
       updateSearchHistory(suggestion);
       navigate(`/search?q=${encodeURIComponent(suggestion)}`);
     } else {
-      // For Media objects, navigate directly to the content page
       navigate(`/${suggestion.media_type}/${suggestion.id}`);
       
-      // Show a toast notification
       toast({
         title: "Navigating...",
         description: `Going to ${suggestion.title || suggestion.name}`,
         duration: 2000,
       });
       
-      // Update search history with the title/name
       const term = suggestion.title || suggestion.name || '';
       if (term) {
         updateSearchHistory(term);
@@ -288,7 +270,6 @@ const Search = () => {
     setAdvancedSearch(!advancedSearch);
   };
 
-  // Clear search history
   const clearSearchHistory = () => {
     setSearchHistory([]);
     localStorage.removeItem('searchHistory');
@@ -330,21 +311,20 @@ const Search = () => {
                 </button>
               )}
               
-              {/* Search suggestions dropdown */}
               {showSuggestions && (
                 mediaSuggestions.length > 0 ? (
                   <SearchSuggestions 
                     suggestions={mediaSuggestions} 
                     onSuggestionClick={handleSuggestionClick}
                     searchQuery={query}
-                    onViewAllResults={handleSearch}
+                    onViewAllResults={() => handleSearch()}
                   />
                 ) : suggestions.length > 0 ? (
                   <SearchSuggestions 
                     suggestions={suggestions} 
                     onSuggestionClick={handleSuggestionClick}
                     searchQuery={query}
-                    onViewAllResults={handleSearch}
+                    onViewAllResults={() => handleSearch()}
                   />
                 ) : null
               )}
@@ -370,7 +350,6 @@ const Search = () => {
               </Button>
             </div>
             
-            {/* Advanced search options */}
             {advancedSearch && (
               <div className="p-4 rounded-md bg-white/5 animate-fade-in">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -413,7 +392,6 @@ const Search = () => {
           </div>
         </form>
 
-        {/* Search History */}
         {!searchParams.get('q') && searchHistory.length > 0 && (
           <div className="mb-8">
             <div className="flex items-center justify-between mb-4">
@@ -460,7 +438,6 @@ const Search = () => {
                   title={`Results for "${searchParams.get('q')}"`} 
                 />
                 
-                {/* Show More Button */}
                 {hasMoreResults && (
                   <div className="flex justify-center my-8">
                     <Button 
@@ -473,7 +450,6 @@ const Search = () => {
                   </div>
                 )}
                 
-                {/* Results Pagination */}
                 {allResults.length > 0 && (
                   <Pagination className="my-8">
                     <PaginationContent>
@@ -486,7 +462,6 @@ const Search = () => {
                   </Pagination>
                 )}
                 
-                {/* Search Tips */}
                 {allResults.length > 0 && (
                   <Accordion type="single" collapsible className="mb-8">
                     <AccordionItem value="search-tips" className="border-white/10">

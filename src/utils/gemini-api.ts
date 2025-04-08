@@ -3,7 +3,7 @@ import { Media } from '@/utils/types';
 import { transformApiMediaToMedia } from '@/utils/media-utils';
 
 const GEMINI_API_KEY = 'AIzaSyBpTyVYegzYlwFPM_K_9tOkUgS2qGgLOz0';
-const API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent';
+const API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.0-pro:generateContent';
 
 // Interface for chat message
 export interface ChatMessage {

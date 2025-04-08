@@ -1,3 +1,4 @@
+
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
@@ -7,6 +8,7 @@ import { initServiceWorkerMessaging, initMetricsLogging } from './utils/sw-messa
 import { initCacheCleanup } from './utils/cache-cleanup';
 import { performanceMonitor } from './utils/performance-monitor';
 import { ServiceWorkerUpdateNotification } from './components/ServiceWorkerUpdateNotification';
+import { syncOfflineCache } from './utils/supabase';
 
 // Start performance monitoring as early as possible
 performanceMonitor.initializeMonitoring();
@@ -47,6 +49,12 @@ const registerServiceWorker = async () => {
             initServiceWorkerMessaging();
             initMetricsLogging();
             initCacheCleanup();
+            
+            // Sync offline cache to Firestore when coming back online
+            window.addEventListener('online', () => {
+              console.log('Online event detected, syncing caches...');
+              syncOfflineCache();
+            });
             
             // Check for updates every hour
             setInterval(() => {

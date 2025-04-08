@@ -1,7 +1,8 @@
+
 import { useState, useEffect } from 'react';
 import { useQuery, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { getTrending } from '@/utils/api';
-import { Media } from '@/utils/types';
+import { Media, ensureExtendedMediaArray } from '@/utils/types';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import MediaGrid from '@/components/MediaGrid';
@@ -59,6 +60,9 @@ const Trending = () => {
     setPage(1);
     setAllTrending([]);
   };
+
+  // Convert Media[] to ExtendedMedia[] for MediaGrid
+  const extendedMedia = ensureExtendedMediaArray(allTrending);
   
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -84,7 +88,7 @@ const Trending = () => {
                 <div className="py-12 text-center text-white">Error loading trending content. Please try again.</div>
               ) : (
                 <>
-                  <MediaGrid media={allTrending} title="Trending Today" />
+                  <MediaGrid media={extendedMedia} title="Trending Today" />
                   
                   {hasMore && (
                     <div className="flex justify-center my-8">
@@ -112,7 +116,7 @@ const Trending = () => {
                 <div className="py-12 text-center text-white">Error loading trending content. Please try again.</div>
               ) : (
                 <>
-                  <MediaGrid media={allTrending} title="Trending This Week" />
+                  <MediaGrid media={extendedMedia} title="Trending This Week" />
                   
                   {hasMore && (
                     <div className="flex justify-center my-8">

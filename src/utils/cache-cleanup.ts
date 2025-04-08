@@ -1,20 +1,20 @@
 
 import { swMonitor } from './sw-monitor';
 import { swAnalytics } from './sw-analytics';
-import { saveLocalData, getLocalData } from './supabase';
+import { saveLocalData, getLocalData, cleanupCache, getStorageStats } from './supabase';
 
 // Optimized cache size limits in bytes (reduced from previous values)
 const DEFAULT_CACHE_LIMITS = {
-  total: 30 * 1024 * 1024, // 30MB total (down from 50MB)
-  images: 15 * 1024 * 1024, // 15MB for images (down from 30MB)
-  static: 5 * 1024 * 1024,  // 5MB for static assets (down from 10MB)
-  api: 2 * 1024 * 1024,     // 2MB for API responses (down from 5MB)
+  total: 30 * 1024 * 1024, // 30MB total
+  images: 15 * 1024 * 1024, // 15MB for images
+  static: 5 * 1024 * 1024,  // 5MB for static assets
+  api: 2 * 1024 * 1024,     // 2MB for API responses
 };
 
-// More frequent cache cleanup (15 minutes instead of 30)
+// Cache cleanup frequency (15 minutes)
 export async function initCacheCleanup(checkIntervalMs = 15 * 60 * 1000) {
   // Load previously saved cache metrics if available
-  const savedMetrics = getLocalData('cacheMetrics', null);
+  const savedMetrics = await getLocalData('cacheMetrics', null);
   
   // Initial cleanup (more aggressive if we have previous metrics)
   await performCacheCleanup(savedMetrics ? 70 : 80);
@@ -43,7 +43,7 @@ async function performCacheCleanup(quotaThresholdPercent = 80) {
     const quotaPercentage = (metrics.usage / metrics.quota) * 100;
     
     // Save metrics for trend analysis
-    saveLocalData('cacheMetrics', {
+    await saveLocalData('cacheMetrics', {
       timestamp: Date.now(),
       usage: metrics.usage,
       quota: metrics.quota,
@@ -53,6 +53,9 @@ async function performCacheCleanup(quotaThresholdPercent = 80) {
     if (quotaPercentage > quotaThresholdPercent) {
       console.log(`Storage usage high (${quotaPercentage.toFixed(2)}%), initiating cleanup...`);
       await swMonitor.cleanupCache(DEFAULT_CACHE_LIMITS.total * 0.7); // Clean more aggressively
+      
+      // Also clean up Firestore cache
+      await cleanupCache(DEFAULT_CACHE_LIMITS.total * 0.3);
     }
 
     // Always check individual cache sizes regardless of total usage
@@ -96,15 +99,22 @@ async function performCacheCleanup(quotaThresholdPercent = 80) {
 // Function to get current storage usage summary
 export async function getStorageUsageSummary() {
   const metrics = await swMonitor.getStorageMetrics();
+  const firestoreStats = await getStorageStats();
+  
   if (!metrics) return null;
 
   // Get historical usage data for better analysis
-  const historicalMetrics = getLocalData('cacheMetricHistory', []);
+  const historicalMetrics = await getLocalData('cacheMetricHistory', []);
   
   return {
     totalQuota: formatBytes(metrics.quota),
     usedSpace: formatBytes(metrics.usage),
     percentageUsed: ((metrics.usage / metrics.quota) * 100).toFixed(2) + '%',
+    firestoreCache: {
+      used: formatBytes(firestoreStats.used),
+      items: firestoreStats.items,
+      percentageUsed: ((firestoreStats.used / firestoreStats.total) * 100).toFixed(2) + '%'
+    },
     cacheDetails: Object.entries(metrics.cacheSize).map(([name, size]) => ({
       name,
       size: formatBytes(size),

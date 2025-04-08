@@ -17,9 +17,17 @@ const SportMatchPlayer = () => {
   const [selectedSource, setSelectedSource] = useState<string | null>(null);
   const [isPlayerLoaded, setIsPlayerLoaded] = useState(false);
   const [loadAttempts, setLoadAttempts] = useState(0);
+  const [cachedStreams, setCachedStreams] = useState(null);
   
-  // Use cached stream data if available while fetching fresh data
-  const cachedStreams = getLocalData(`sport-streams-${matchId}`, null);
+  // Load cached stream data if available
+  useEffect(() => {
+    const loadCachedData = async () => {
+      const data = await getLocalData(`sport-streams-${matchId}`, null);
+      setCachedStreams(data);
+    };
+    
+    loadCachedData();
+  }, [matchId]);
   
   const { data: streams, isLoading, error } = useQuery({
     queryKey: ['match-streams', matchId],

@@ -11,7 +11,7 @@ const ChatbotButton: React.FC = () => {
     <Button
       className="fixed bottom-4 right-4 rounded-full w-14 h-14 shadow-lg z-50 flex items-center justify-center"
       onClick={isOpen ? closeChatbot : openChatbot}
-      variant="primary"
+      variant="default"
     >
       {isOpen ? (
         <X className="h-6 w-6" />

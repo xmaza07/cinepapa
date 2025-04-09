@@ -23,7 +23,7 @@ export const getRecommendations = async (
     const genAI = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
     
     // Get the Gemini model - using the correct API method structure
-    const model = genAI.models.generateContent({
+    const response = await genAI.models.generateContent({
       model: "gemini-1.5-flash",
       contents: [
         {
@@ -31,7 +31,7 @@ export const getRecommendations = async (
           parts: [{ text: prompt }]
         }
       ],
-      generationConfig: {
+      config: {
         temperature: 0.7,
         topK: 40,
         topP: 0.95,
@@ -39,14 +39,8 @@ export const getRecommendations = async (
       }
     });
     
-    // Get the response text
-    const response = await model;
-    
-    if (response.response) {
-      return response.response.text();
-    }
-    
-    return "Sorry, I couldn't generate any recommendations.";
+    // Get the response text using the correct property
+    return response.text();
   } catch (error) {
     console.error('Error getting recommendations:', error);
     return 'Sorry, I encountered an error while getting recommendations. Please try again later.';

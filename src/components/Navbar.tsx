@@ -40,7 +40,7 @@ const Navbar = () => {
 
   const navItems: NavItem[] = [
     { title: 'Home', path: '/', icon: <Home className="h-4 w-4 mr-2" /> },
-    { title: 'Movies', path: '/movies', icon: <Film className="h-4 w-4 mr-2" /> },
+    { title: 'Movies', path: '/movie', icon: <Film className="h-4 w-4 mr-2" /> },
     { title: 'TV Shows', path: '/tv', icon: <Tv className="h-4 w-4 mr-2" /> },
     { title: 'Sports', path: '/sports', icon: <TrendingUp className="h-4 w-4 mr-2" /> },
     { title: 'Trending', path: '/trending', icon: <TrendingUp className="h-4 w-4 mr-2" /> },

@@ -22,20 +22,15 @@ export const getRecommendations = async (
     // Initialize the Google Gen AI client with proper options object
     const genAI = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
     
-    // Get the Gemini model - use the correct method to access models
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-    
-    // Format chat history for Gemini API
-    const formattedHistory = chatHistory
-      .slice(-10) // Only include last 10 messages
-      .map((msg) => ({
-        role: msg.role === 'user' ? 'user' : 'model',
-        parts: [{ text: msg.content }]
-      }));
-    
-    // Create a chat session
-    const chat = model.startChat({
-      history: formattedHistory,
+    // Get the Gemini model - using the correct API method structure
+    const model = genAI.models.generateContent({
+      model: "gemini-1.5-flash",
+      contents: [
+        {
+          role: "user",
+          parts: [{ text: prompt }]
+        }
+      ],
       generationConfig: {
         temperature: 0.7,
         topK: 40,
@@ -44,11 +39,14 @@ export const getRecommendations = async (
       }
     });
     
-    // Send the message and get the response
-    const result = await chat.sendMessage(prompt);
-    const response = await result.response;
+    // Get the response text
+    const response = await model;
     
-    return response.text();
+    if (response.response) {
+      return response.response.text();
+    }
+    
+    return "Sorry, I couldn't generate any recommendations.";
   } catch (error) {
     console.error('Error getting recommendations:', error);
     return 'Sorry, I encountered an error while getting recommendations. Please try again later.';

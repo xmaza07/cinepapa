@@ -72,8 +72,22 @@ export const ChatbotProvider: React.FC<ChatbotProviderProps> = ({ children }) =>
         .slice(-5)
         .map(msg => msg.text);
       
+      // Provide formatting guidance to Gemini to make parsing easier
+      const formattedMessage = `
+${message}
+
+When responding with movie or TV show recommendations, please format them as follows:
+1. **Title** (Year) - Brief description about the content.
+Genre: genre1, genre2
+Type: movie or tv
+Rating: X/10
+TMDB_ID: ID number if available
+
+Follow this format to make recommendations easier to understand.
+      `;
+      
       // Send message to Gemini
-      const response = await sendMessageToGemini(message, chatHistory);
+      const response = await sendMessageToGemini(formattedMessage, chatHistory);
       
       // Check if the response contains media items
       const mediaItems = extractMediaItems(response);
@@ -99,8 +113,22 @@ export const ChatbotProvider: React.FC<ChatbotProviderProps> = ({ children }) =>
     setIsLoading(true);
     
     try {
+      // Provide formatting guidance for search results
+      const formattedQuery = `
+Search for: ${query}
+
+When responding with search results, please format them as follows:
+1. **Title** (Year) - Brief description about the content.
+Genre: genre1, genre2
+Type: movie or tv
+Rating: X/10
+TMDB_ID: ID number if available
+
+Follow this format to make the results easier to understand.
+      `;
+      
       // Search using Gemini
-      const results = await searchMedia(query);
+      const results = await searchMedia(formattedQuery);
       
       // Check if the results contain media items
       const mediaItems = extractMediaItems(results);

@@ -40,14 +40,30 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
     navigate(`/${type}/${id}`);
   };
 
+  // Extract initial greeting or explanation text
+  const getIntroText = (text: string): string => {
+    // Find the first numbered item or title pattern
+    const numberedItemIndex = text.search(/\d+\.\s+/);
+    const titlePatternIndex = text.search(/(?:\*\*)?([^*\n(]+)(?:\*\*)?\s*\((\d{4}(?:-\d{4}|\s*-\s*Present)?)\)/);
+    
+    let cutoffIndex = text.length;
+    if (numberedItemIndex > 0) cutoffIndex = numberedItemIndex;
+    if (titlePatternIndex > 0 && titlePatternIndex < cutoffIndex) cutoffIndex = titlePatternIndex;
+    
+    return text.substring(0, cutoffIndex).trim();
+  };
+
   // If this is an AI message with media items, render them as cards
   if (!message.isUser && mediaItems.length > 0) {
+    const introText = getIntroText(message.text);
+    
     return (
       <div className="flex flex-col space-y-4 mb-4">
-        <div className="max-w-[90%] p-3 bg-muted text-foreground rounded-lg rounded-bl-none">
-          {/* Render text before the media items */}
-          {message.text.split(/\d+\.\s+/)[0]}
-        </div>
+        {introText && (
+          <div className="max-w-[90%] p-3 bg-muted text-foreground rounded-lg rounded-bl-none">
+            {introText}
+          </div>
+        )}
         
         {mediaItems.map((media, index) => (
           <Card 

@@ -1,4 +1,4 @@
-
+//src/components/Navbar.tsx
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -213,7 +213,7 @@ const Navbar = () => {
                 </form>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center space-x-1">
+          <nav className="hidden md:flex items-center space-x-1 pt-2">
             {navItems.map((item) => (
               <Link
                 key={item.path}
@@ -245,7 +245,7 @@ const Navbar = () => {
           </nav>
 
           {/* Desktop Search */}
-          <form onSubmit={handleSearch} className="hidden md:flex items-center relative ml-4">
+          <form onSubmit={handleSearch} className="hidden md:flex items-center relative ml-4 pt-2">
             <div className="relative group">
               <Search className="h-4 w-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-white/60" />
               <Input

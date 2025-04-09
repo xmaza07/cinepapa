@@ -100,4 +100,3 @@ export const createMediaObjects = (parsedItems: ParsedMediaItem[]): Media[] => {
     return media;
   });
 };
-

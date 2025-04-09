@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Star, ExternalLink, ThumbsUp } from 'lucide-react';
+import { Star, ExternalLink, ThumbsUp, Film, Tv } from 'lucide-react';
 import { ChatMessage as ChatMessageType } from '@/contexts/chatbot-context';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -57,11 +57,18 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
             <CardContent className="p-4">
               <div className="flex flex-col space-y-2">
                 <div className="flex justify-between items-start">
-                  <h3 className="font-medium">
-                    {media.title || media.name} 
-                    {media.release_date && <span className="text-muted-foreground ml-2">({media.release_date.substring(0, 4)})</span>}
-                    {media.first_air_date && <span className="text-muted-foreground ml-2">({media.first_air_date.substring(0, 4)})</span>}
-                  </h3>
+                  <div className="flex items-center">
+                    {media.media_type === 'movie' ? (
+                      <Film className="h-5 w-5 mr-2 text-primary" />
+                    ) : (
+                      <Tv className="h-5 w-5 mr-2 text-primary" />
+                    )}
+                    <h3 className="font-medium">
+                      {media.title || media.name} 
+                      {media.release_date && <span className="text-muted-foreground ml-2">({media.release_date.substring(0, 4)})</span>}
+                      {media.first_air_date && <span className="text-muted-foreground ml-2">({media.first_air_date.substring(0, 4)})</span>}
+                    </h3>
+                  </div>
                   <Badge variant="outline" className="ml-2">
                     {media.media_type === 'movie' ? 'Movie' : 'TV Show'}
                   </Badge>
@@ -89,10 +96,10 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
                 <Button 
                   onClick={() => navigateToMedia(media.media_type as 'movie' | 'tv', media.id)}
                   className="mt-2 w-full"
-                  variant="secondary"
+                  variant="default"
                 >
                   <ExternalLink className="h-4 w-4 mr-2" />
-                  View Details
+                  View {media.media_type === 'movie' ? 'Movie' : 'Show'} Details
                 </Button>
               </div>
             </CardContent>

@@ -1,9 +1,9 @@
 
+import { GoogleGenAI } from "@google/genai";
 import { Media } from '@/utils/types';
 import { transformApiMediaToMedia } from '@/utils/media-utils';
 
 const GEMINI_API_KEY = 'AIzaSyBpTyVYegzYlwFPM_K_9tOkUgS2qGgLOz0';
-const API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.0-pro:generateContent';
 
 // Interface for chat message
 export interface ChatMessage {
@@ -19,6 +19,12 @@ export const getRecommendations = async (
   chatHistory: ChatMessage[] = []
 ): Promise<string> => {
   try {
+    // Initialize the Google Gen AI client
+    const genAI = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+    
+    // Get the Gemini model
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    
     // Format chat history for Gemini API
     const formattedHistory = chatHistory
       .slice(-10) // Only include last 10 messages
@@ -26,45 +32,23 @@ export const getRecommendations = async (
         role: msg.role === 'user' ? 'user' : 'model',
         parts: [{ text: msg.content }]
       }));
-
-    // Prepare the request payload
-    const payload = {
-      contents: [
-        ...formattedHistory,
-        {
-          role: 'user',
-          parts: [
-            {
-              text: prompt
-            }
-          ]
-        }
-      ],
+    
+    // Create a chat session
+    const chat = model.startChat({
+      history: formattedHistory,
       generationConfig: {
         temperature: 0.7,
         topK: 40,
         topP: 0.95,
         maxOutputTokens: 1000,
       }
-    };
-
-    // Make the API request
-    const response = await fetch(`${API_URL}?key=${GEMINI_API_KEY}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(payload)
     });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      console.error('Gemini API Error:', errorData);
-      throw new Error(`Gemini API error: ${errorData.error?.message || 'Unknown error'}`);
-    }
-
-    const data = await response.json();
-    return data.candidates[0].content.parts[0].text;
+    
+    // Send the message and get the response
+    const result = await chat.sendMessage(prompt);
+    const response = await result.response;
+    
+    return response.text();
   } catch (error) {
     console.error('Error getting recommendations:', error);
     return 'Sorry, I encountered an error while getting recommendations. Please try again later.';

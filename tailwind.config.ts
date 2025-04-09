@@ -1,5 +1,6 @@
 
 import type { Config } from "tailwindcss";
+import tailwindcssAnimate from "tailwindcss-animate";
 
 export default {
 	darkMode: ["class"],
@@ -78,6 +79,15 @@ export default {
 					from: { height: 'var(--radix-accordion-content-height)' },
 					to: { height: '0' }
 				},
+        'gradient-shift': {
+          '0%, 100%': { backgroundPosition: '0% 50%' },
+          '50%': { backgroundPosition: '100% 50%' },
+        },
+        'sparkle': {
+          '0%': { transform: 'scale(0.5)', opacity: '0' },
+          '50%': { opacity: '0.7' },
+          '100%': { transform: 'scale(1.2)', opacity: '0' },
+        },
 				'fade-in': {
 					from: { opacity: '0' },
 					to: { opacity: '1' }
@@ -111,9 +121,14 @@ export default {
 				'slide-up': 'slide-up 0.3s ease-out',
 				'slide-down': 'slide-down 0.3s ease-out',
 				'zoom-in': 'zoom-in 0.3s ease-out',
-				'pulse-slow': 'pulse-slow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
-			}
+				'pulse-slow': 'pulse-slow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+        gradient: 'gradient-shift 3s ease infinite',
+        sparkle: 'sparkle 1.5s ease-out infinite',
+			},
+      backgroundSize: {
+        '300%': '300% 300%',
+      }
 		}
 	},
-	plugins: [require("tailwindcss-animate")],
+	plugins: [tailwindcssAnimate],
 } satisfies Config;

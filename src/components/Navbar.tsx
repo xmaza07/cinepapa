@@ -168,10 +168,39 @@ const Navbar = () => {
         <div className="flex items-center justify-between">
           <Link
             to="/"
-            className="flex items-center text-white text-xl font-bold transition-transform hover:scale-105"
+            className="flex items-center text-xl font-bold group relative overflow-hidden"
           >
-            <span className="text-accent">Let's</span>
-            <span className="ml-1">Stream</span>
+            {/* Text container with z-index */}
+            <div className="relative z-10 flex">
+              <span className="bg-gradient-to-r from-red-400 to-teal-500 bg-clip-text text-transparent animate-gradient bg-300%">
+                Let's
+              </span>
+              <span className="ml-1 bg-gradient-to-r from-purple-500 to-blue-400 bg-clip-text text-transparent animate-gradient bg-300%">
+                Stream
+              </span>
+            </div>
+            
+            {/* Animated background elements */}
+            <div className="absolute inset-0 z-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+              <div className="absolute -inset-2 bg-gradient-to-r from-blue-500/20 to-purple-500/20 transform -rotate-12 scale-125" />
+            </div>
+
+            {/* Optional: Animated sparkles */}
+            <div className="absolute inset-0 z-0 opacity-10 group-hover:opacity-30 transition-opacity duration-300">
+              {[...Array(6)].map((_, i) => (
+                <div
+                  key={i}
+                  className="absolute bg-white/30 rounded-full animate-sparkle"
+                  style={{
+                    width: `${Math.random() * 3 + 1}px`,
+                    height: `${Math.random() * 3 + 1}px`,
+                    top: `${Math.random() * 100}%`,
+                    left: `${Math.random() * 100}%`,
+                    animationDelay: `${i * 0.5}s`,
+                  }}
+                />
+              ))}
+            </div>
           </Link>
 
           {/* Mobile Search Bar */}

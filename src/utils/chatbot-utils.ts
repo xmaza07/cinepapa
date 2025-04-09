@@ -82,8 +82,10 @@ export const createMediaObjects = (parsedItems: ParsedMediaItem[]): Media[] => {
       name: item.title,
       overview: item.description || '',
       poster_path: '', // We don't have this from the AI response
+      backdrop_path: '', // Adding the missing property with an empty string default
       vote_average: 0, // We don't have a numerical rating from the AI
       media_type: item.type || 'movie',
+      genre_ids: [], // Adding the missing property with an empty array default
     };
     
     // Add year as release_date or first_air_date depending on type
@@ -98,3 +100,4 @@ export const createMediaObjects = (parsedItems: ParsedMediaItem[]): Media[] => {
     return media;
   });
 };
+

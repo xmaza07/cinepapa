@@ -175,23 +175,23 @@ const Navbar = () => {
           </Link>
 
           {/* Mobile Search Bar */}
-          <form onSubmit={handleSearch} className="flex-1 mx-4 md:hidden">
-            <div className="relative flex items-center">
-              <Search className="h-4 w-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-white/60" />
-              <Input
-                type="search"
-                placeholder="Search..."
-                className="w-full bg-white/10 border-white/10 pl-9 text-white placeholder:text-white/50 focus:bg-white/15 h-8"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                ref={searchInputRef}
-              />
-              {showSuggestions && searchSuggestions.length > 0 && (
-                <div 
-                  ref={suggestionsRef}
-                  className="absolute top-full left-0 right-0 mt-1 bg-black/95 backdrop-blur-lg border border-white/10 rounded-md shadow-lg z-50"
-                >
-                  {searchSuggestions.map((item) => (
+          <form onSubmit={handleSearch} className="flex-1 mx-4 md:hidden pt-4">
+                <div className="relative flex items-center">
+                  <Search className="h-4 w-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-white/60" />
+                  <Input
+                  type="search"
+                  placeholder="Search..."
+                  className="w-full bg-white/10 border-white/10 pl-9 text-white placeholder:text-white/50 focus:bg-white/15 h-8"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  ref={searchInputRef}
+                  />
+                  {showSuggestions && searchSuggestions.length > 0 && (
+                  <div 
+                    ref={suggestionsRef}
+                    className="absolute top-full left-0 right-0 mt-1 bg-black/95 backdrop-blur-lg border border-white/10 rounded-md shadow-lg z-50"
+                  >
+                    {searchSuggestions.map((item) => (
                     <button
                       key={`${item.media_type}-${item.id}`}
                       className="flex items-center w-full px-4 py-2 hover:bg-white/10 text-white/90 text-sm text-left"
@@ -200,17 +200,17 @@ const Navbar = () => {
                       <span className="mr-2">{item.media_type === 'movie' ? <Film className="h-4 w-4" /> : <Tv className="h-4 w-4" />}</span>
                       <span>{item.title || item.name}</span>
                     </button>
-                  ))}
-                  <button
+                    ))}
+                    <button
                     onClick={handleSearch}
                     className="w-full px-4 py-2 text-left text-sm text-accent hover:bg-white/10 border-t border-white/10"
-                  >
+                    >
                     View all results for "{searchQuery}"
-                  </button>
+                    </button>
+                  </div>
+                  )}
                 </div>
-              )}
-            </div>
-          </form>
+                </form>
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-1">

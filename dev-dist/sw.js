@@ -83,7 +83,7 @@ define(['./workbox-d4260423'], (function (workbox) { 'use strict';
     "revision": "3ca0b8505b4bec776b69afdba2768812"
   }, {
     "url": "index.html",
-    "revision": "0.cd009lkegto"
+    "revision": "0.qfv5h66dmb"
   }], {});
   workbox.cleanupOutdatedCaches();
   workbox.registerRoute(new workbox.NavigationRoute(workbox.createHandlerBoundToURL("index.html"), {
@@ -95,6 +95,22 @@ define(['./workbox-d4260423'], (function (workbox) { 'use strict';
     "cacheName": "pages-cache-v0.0.0",
     "networkTimeoutSeconds": 3,
     plugins: [{
+      requestWillFetch: async ({
+        event
+      }) => {
+        try {
+          if (event.preloadResponse) {
+            const preloadResponse = await event.preloadResponse;
+            if (preloadResponse) {
+              return preloadResponse;
+            }
+          }
+          return event.request;
+        } catch (error) {
+          console.error("Error handling preload response:", error);
+          return event.request;
+        }
+      },
       handlerDidError: async ({
         request
       }) => {
@@ -239,30 +255,6 @@ define(['./workbox-d4260423'], (function (workbox) { 'use strict';
   workbox.initialize({
     parameterOverrides: {
       cd1: 'offline'
-    }
-  });
-
-  // Add message handler
-  self.addEventListener('message', (event) => {
-    // Ensure there's a MessagePort to respond to
-    if (event.ports && event.ports[0]) {
-      // Acknowledge receipt of the message
-      event.ports[0].postMessage({ received: true });
-    }
-
-    // Handle specific message types
-    if (event.data && event.data.type) {
-      switch (event.data.type) {
-        case 'SKIP_WAITING':
-          self.skipWaiting();
-          break;
-        // Handle other message types as needed
-        default:
-          // For unknown message types, just acknowledge receipt
-          if (event.ports && event.ports[0]) {
-            event.ports[0].postMessage({ error: 'Unknown message type' });
-          }
-      }
     }
   });
 

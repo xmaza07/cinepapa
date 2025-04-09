@@ -1,6 +1,7 @@
 
 import React, { createContext, useState, useContext, ReactNode } from 'react';
 import { sendMessageToGemini, searchMedia } from '@/utils/gemini-api';
+import { extractMediaItems } from '@/utils/chatbot-utils';
 
 export interface ChatMessage {
   id: string;
@@ -74,6 +75,10 @@ export const ChatbotProvider: React.FC<ChatbotProviderProps> = ({ children }) =>
       // Send message to Gemini
       const response = await sendMessageToGemini(message, chatHistory);
       
+      // Check if the response contains media items
+      const mediaItems = extractMediaItems(response);
+      console.log('Extracted media items:', mediaItems);
+      
       // Add AI response
       addMessage(response, false);
     } catch (error) {
@@ -97,6 +102,10 @@ export const ChatbotProvider: React.FC<ChatbotProviderProps> = ({ children }) =>
       // Search using Gemini
       const results = await searchMedia(query);
       
+      // Check if the results contain media items
+      const mediaItems = extractMediaItems(results);
+      console.log('Extracted search results:', mediaItems);
+      
       // Add search results
       addMessage(results, false);
     } catch (error) {
@@ -118,7 +127,11 @@ export const ChatbotProvider: React.FC<ChatbotProviderProps> = ({ children }) =>
     // Add feedback to Gemini for better recommendations in the future
     const ratedMessage = messages.find(msg => msg.id === messageId);
     if (ratedMessage) {
-      sendMessage(`I rated the recommendation "${ratedMessage.text.substring(0, 50)}..." as ${rating}/5. Please remember this for future recommendations.`);
+      const ratingMessage = `I rated the recommendation "${ratedMessage.text.substring(0, 50)}..." as ${rating}/5. Please remember this for future recommendations.`;
+      console.log(ratingMessage);
+      
+      // Silently send rating to Gemini without adding to visible chat
+      sendMessageToGemini(ratingMessage, messages.map(msg => msg.text));
     }
   };
 

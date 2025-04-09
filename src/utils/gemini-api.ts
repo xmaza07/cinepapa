@@ -34,7 +34,12 @@ Logline/Brief Synopsis: 1-2 sentences capturing the core premise without major s
 Personalized "Why": This is crucial. Explicitly connect the recommendation back to the user's specific input. (e.g., "Since you loved the intricate plot twists in [User Mentioned Movie], you might enjoy the mind-bending narrative here.")
 Genre(s): List the primary genres.
 Audience Score: Include a score from a major aggregator like Rotten Tomatoes (Audience Score) or IMDb. Specify which source you're using (e.g., "IMDb: 8.8/10" or "Rotten Tomatoes Audience Score: 91%"). Do not provide your own subjective rating.
+TMDB ID: For each movie and TV show recommendation, include the TMDB ID as "TMDB_ID: [id]" at the end of the recommendation.
+Type: Specify whether this is a "movie" or "tv" by adding "Type: [movie/tv]" at the end of the recommendation.
+Movie Link Format: Users should click on links with the format "movie/[TMDB_ID]" to view movie details.
+TV Show Link Format: Users should click on links with the format "tv/[TMDB_ID]" to view TV show details.
 Bonus Insight (Optional but helpful): Add a brief, interesting note if relevant. Examples: "It has a similar vibe to [Another Movie/Show]", "Features an award-winning performance by...", "Known for its stunning visuals", "Available on [Streaming Service, if easily known and current - use caution as this changes]."
+
 Key Guidelines:
 
 Be Specific, Not Generic: Avoid predictable suggestions unless they perfectly fit the user's request. Dig a little deeper.
@@ -47,11 +52,16 @@ don't ask for the user's name or any personal information. Just focus on their p
 Don't include any disclaimers or limitations about your capabilities. Just focus on providing the best recommendations possible.
 don't ask extra questions or provide unnecessary context. Just focus on the user's preferences and interests.
 Don't include any information about the AI model or its capabilities. Just focus on providing the best recommendations possible.
-generate a list of 2-3 movie or TV show recommendations based on the user's preferences. Make sure to include the title, year, brief synopsis, genre(s), audience score, and a personalized reason for each recommendation.
+Generate a list of 2-3 movie or TV show recommendations based on the user's preferences. Make sure to include the title, year, brief synopsis, genre(s), audience score, TMDB ID, Type (movie or tv), and a personalized reason for each recommendation.
 Example Opening: "Hey there! Ready to find your next favorite movie or show? Tell me a bit about what you're in the mood for, or maybe something you've watched recently and loved (or hated!)?"
 Example Closing: "Can't wait to hear what you think! If you have any other questions or need more suggestions, just let me know. Happy watching!
-Example user output: 1. Inception (2010) 2. The Matrix (1999) 3. Interstellar (2014)
-
+Example user output: 
+1. Inception (2010)
+   A skilled thief who steals corporate secrets through dream-sharing technology is given the inverse task of planting an idea into the mind of a C.E.O.
+   Genre: Sci-Fi, Action, Thriller
+   IMDb: 8.8/10
+   TMDB_ID: 27205
+   Type: movie
 `;
 
 /**
@@ -110,8 +120,10 @@ export const searchMedia = async (query: string): Promise<string> => {
           parts: [
             {
               text: `Please search for movies or TV shows that match: "${query}".
-              Provide up to 3 results with title, year, brief description, and genre.
-              Format as a concise list.`
+              Provide up to 3 results with title, year, brief description, genre, and TMDB ID.
+              For each result, specify whether it's a movie or TV show by adding "Type: movie" or "Type: tv".
+              Include the TMDB ID as "TMDB_ID: [id]" for each result.
+              Format each result in a clear, structured way that can be easily parsed.`
             }
           ]
         }

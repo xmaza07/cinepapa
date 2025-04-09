@@ -1,9 +1,13 @@
 
-import React from 'react';
-import { Star } from 'lucide-react';
+import React, { useState } from 'react';
+import { Star, ExternalLink, ThumbsUp } from 'lucide-react';
 import { ChatMessage as ChatMessageType } from '@/contexts/chatbot-context';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { useChatbot } from '@/contexts/chatbot-context';
+import { useNavigate } from 'react-router-dom';
+import { extractMediaItems, createMediaObjects } from '@/utils/chatbot-utils';
 
 interface ChatMessageProps {
   message: ChatMessageType;
@@ -11,7 +15,13 @@ interface ChatMessageProps {
 
 const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
   const { rateRecommendation } = useChatbot();
-  const [showRating, setShowRating] = React.useState(false);
+  const [showRating, setShowRating] = useState(false);
+  const [hasReacted, setHasReacted] = useState(false);
+  const navigate = useNavigate();
+  
+  // Extract media items from the message
+  const parsedItems = !message.isUser ? extractMediaItems(message.text) : [];
+  const mediaItems = createMediaObjects(parsedItems);
   
   // Show rating UI only for AI messages (recommendations)
   const toggleRating = () => {
@@ -23,8 +33,111 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
   const handleRate = (rating: number) => {
     rateRecommendation(message.id, rating);
     setShowRating(false);
+    setHasReacted(true);
+  };
+  
+  const navigateToMedia = (type: 'movie' | 'tv', id: number) => {
+    navigate(`/${type}/${id}`);
   };
 
+  // If this is an AI message with media items, render them as cards
+  if (!message.isUser && mediaItems.length > 0) {
+    return (
+      <div className="flex flex-col space-y-4 mb-4">
+        <div className="max-w-[90%] p-3 bg-muted text-foreground rounded-lg rounded-bl-none">
+          {/* Render text before the media items */}
+          {message.text.split(/\d+\.\s+/)[0]}
+        </div>
+        
+        {mediaItems.map((media, index) => (
+          <Card 
+            key={`${media.id}-${index}`} 
+            className="max-w-[90%] ml-4 bg-muted/50 border-primary/10 hover:border-primary/30 transition-all duration-300"
+          >
+            <CardContent className="p-4">
+              <div className="flex flex-col space-y-2">
+                <div className="flex justify-between items-start">
+                  <h3 className="font-medium">
+                    {media.title || media.name} 
+                    {media.release_date && <span className="text-muted-foreground ml-2">({media.release_date.substring(0, 4)})</span>}
+                    {media.first_air_date && <span className="text-muted-foreground ml-2">({media.first_air_date.substring(0, 4)})</span>}
+                  </h3>
+                  <Badge variant="outline" className="ml-2">
+                    {media.media_type === 'movie' ? 'Movie' : 'TV Show'}
+                  </Badge>
+                </div>
+                
+                {media.overview && (
+                  <p className="text-sm text-muted-foreground line-clamp-2">{media.overview}</p>
+                )}
+                
+                {parsedItems[index]?.genres && (
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {parsedItems[index].genres?.map((genre, i) => (
+                      <Badge key={i} variant="secondary" className="text-xs">{genre}</Badge>
+                    ))}
+                  </div>
+                )}
+                
+                {parsedItems[index]?.rating && (
+                  <div className="flex items-center text-sm">
+                    <Star className="h-4 w-4 mr-1 text-amber-400 fill-amber-400" />
+                    <span>{parsedItems[index].rating}</span>
+                  </div>
+                )}
+                
+                <Button 
+                  onClick={() => navigateToMedia(media.media_type as 'movie' | 'tv', media.id)}
+                  className="mt-2 w-full"
+                  variant="secondary"
+                >
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  View Details
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+        
+        <div className="flex justify-end">
+          {showRating ? (
+            <div className="flex items-center space-x-1">
+              {[1, 2, 3, 4, 5].map((rating) => (
+                <Button
+                  key={rating}
+                  variant="ghost"
+                  size="sm"
+                  className="p-1 h-auto"
+                  onClick={() => handleRate(rating)}
+                >
+                  <Star className={`h-4 w-4 ${rating <= 3 ? 'text-amber-400 fill-amber-400' : 'text-amber-400'}`} />
+                </Button>
+              ))}
+            </div>
+          ) : (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-xs py-1 px-2 h-auto"
+              onClick={toggleRating}
+              disabled={hasReacted}
+            >
+              {hasReacted ? (
+                <span className="flex items-center">
+                  <ThumbsUp className="h-3 w-3 mr-1" /> 
+                  Rated
+                </span>
+              ) : (
+                'Rate this'
+              )}
+            </Button>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Regular message rendering
   return (
     <div
       className={`flex ${message.isUser ? 'justify-end' : 'justify-start'} mb-4`}
@@ -60,8 +173,16 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
                 size="sm"
                 className="text-xs py-1 px-2 h-auto"
                 onClick={toggleRating}
+                disabled={hasReacted}
               >
-                Rate this
+                {hasReacted ? (
+                  <span className="flex items-center">
+                    <ThumbsUp className="h-3 w-3 mr-1" /> 
+                    Rated
+                  </span>
+                ) : (
+                  'Rate this'
+                )}
               </Button>
             )}
           </div>

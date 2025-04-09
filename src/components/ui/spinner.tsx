@@ -20,6 +20,4 @@ const Spinner: React.FC<SpinnerProps> = ({ className, size = 'md' }) => {
   );
 };
 
-// Export both as default and named export to support both import styles
-export { Spinner };
 export default Spinner;

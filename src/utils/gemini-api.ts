@@ -20,10 +20,10 @@ export const getRecommendations = async (
 ): Promise<string> => {
   try {
     // Initialize the Google Gen AI client
-    const genAI = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+    const genAI = new GoogleGenAI(GEMINI_API_KEY);
     
     // Get the Gemini model
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.models("gemini-1.5-flash");
     
     // Format chat history for Gemini API
     const formattedHistory = chatHistory

@@ -81,7 +81,7 @@ export const searchMedia = async (query: string): Promise<string> => {
           ]
         }
       ],
-      generationConfig: {
+      config: {
         temperature: 0.7,
         maxOutputTokens: 1024,
       }

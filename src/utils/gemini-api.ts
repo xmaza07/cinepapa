@@ -19,11 +19,11 @@ export const getRecommendations = async (
   chatHistory: ChatMessage[] = []
 ): Promise<string> => {
   try {
-    // Initialize the Google Gen AI client
-    const genAI = new GoogleGenAI(GEMINI_API_KEY);
+    // Initialize the Google Gen AI client with proper options object
+    const genAI = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
     
-    // Get the Gemini model
-    const model = genAI.models("gemini-1.5-flash");
+    // Get the Gemini model - use the correct method to access models
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
     
     // Format chat history for Gemini API
     const formattedHistory = chatHistory

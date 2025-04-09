@@ -44,25 +44,25 @@ export function ServiceWorkerDebugPanel() {
     return null;
   }
 
-  return (
-    <Card className="fixed bottom-4 right-4 p-4 space-y-4 w-80 z-50 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-      <div className="space-y-2">
-        <h3 className="font-semibold">Service Worker Debug Panel</h3>
-        <p className="text-sm text-muted-foreground">
-          Controller: {controllerState}
-          {waiting && ' (update available)'}
-        </p>
-      </div>
-      <div className="flex gap-2">
-        {waiting && (
-          <Button size="sm" onClick={handleSkipWaiting}>
-            Apply Update
-          </Button>
-        )}
-        <Button size="sm" variant="outline" onClick={handleUnregister}>
-          Unregister
-        </Button>
-      </div>
-    </Card>
-  );
+  return null;  // Uncomment the following lines to display the debug panel
+  //   <Card className="fixed bottom-4 right-4 p-4 space-y-4 w-80 z-50 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+  //     <div className="space-y-2">
+  //       <h3 className="font-semibold">Service Worker Debug Panel</h3>
+  //       <p className="text-sm text-muted-foreground">
+  //         Controller: {controllerState}
+  //         {waiting && ' (update available)'}
+  //       </p>
+  //     </div>
+  //     <div className="flex gap-2">
+  //       {waiting && (
+  //         <Button size="sm" onClick={handleSkipWaiting}>
+  //           Apply Update
+  //         </Button>
+  //       )}
+  //       <Button size="sm" variant="outline" onClick={handleUnregister}>
+  //         Unregister
+  //       </Button>
+  //     </div>
+  //   </Card>
+  // );
 }

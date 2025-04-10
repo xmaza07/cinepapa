@@ -1,0 +1,150 @@
+
+import React, { useState, useRef, useEffect } from 'react';
+import { Search, ArrowRight, Film, Tv } from 'lucide-react';
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { useNavigate } from 'react-router-dom';
+import { useToast } from "@/components/ui/use-toast";
+import { searchMedia } from '@/utils/api';
+import { Media } from '@/utils/types';
+
+interface SearchBarProps {
+  isMobile?: boolean;
+  onSearch?: () => void;
+}
+
+const SearchBar = ({ isMobile = false, onSearch }: SearchBarProps) => {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchSuggestions, setSearchSuggestions] = useState<Media[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const suggestionsRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (e.key === '/' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (suggestionsRef.current && !suggestionsRef.current.contains(event.target as Node)) {
+        setShowSuggestions(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    const fetchSuggestions = async () => {
+      if (searchQuery.trim().length > 0) {
+        try {
+          const results = await searchMedia(searchQuery);
+          setSearchSuggestions(results.slice(0, 6));
+          setShowSuggestions(true);
+        } catch (error) {
+          console.error('Error fetching suggestions:', error);
+        }
+      } else {
+        setSearchSuggestions([]);
+        setShowSuggestions(false);
+      }
+    };
+
+    const debounceTimer = setTimeout(fetchSuggestions, 300);
+    return () => clearTimeout(debounceTimer);
+  }, [searchQuery]);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+      setSearchQuery('');
+      setShowSuggestions(false);
+      if (onSearch) onSearch();
+
+      toast({
+        title: "Searching...",
+        description: `Finding results for "${searchQuery.trim()}"`,
+        duration: 2000,
+      });
+    }
+  };
+
+  const handleSuggestionClick = (item: Media) => {
+    navigate(`/${item.media_type}/${item.id}`);
+    setSearchQuery('');
+    setShowSuggestions(false);
+    if (onSearch) onSearch();
+    
+    toast({
+      title: "Navigating...",
+      description: `Going to ${item.title || item.name}`,
+      duration: 2000,
+    });
+  };
+
+  return (
+    <form onSubmit={handleSearch} className={`search-container ${isMobile ? 'w-full' : 'max-w-xs'}`}>
+      <div className="relative w-full">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/60 w-4 h-4 pointer-events-none" />
+        <Input
+          type="search"
+          placeholder={isMobile ? "Search..." : "Search... (Press /)"}
+          className="search-input"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          ref={searchInputRef}
+        />
+        
+        <Button 
+          type="submit" 
+          size="icon"
+          className="search-button absolute right-1 top-1/2 transform -translate-y-1/2"
+          aria-label="Search"
+        >
+          <ArrowRight className="h-3.5 w-3.5" />
+        </Button>
+        
+        {showSuggestions && searchSuggestions.length > 0 && (
+          <div ref={suggestionsRef} className="search-suggestions">
+            {searchSuggestions.map((item) => (
+              <button
+                key={`${item.media_type}-${item.id}`}
+                className="suggestion-item"
+                onClick={() => handleSuggestionClick(item)}
+              >
+                <span className="mr-2">
+                  {item.media_type === 'movie' ? 
+                    <Film className="h-4 w-4 text-red-400" /> : 
+                    <Tv className="h-4 w-4 text-blue-400" />
+                  }
+                </span>
+                <span className="flex-1 text-left truncate">{item.title || item.name}</span>
+                <span className="ml-2 opacity-50 text-xs bg-white/10 px-1.5 py-0.5 rounded">Enter</span>
+              </button>
+            ))}
+            <button
+              onClick={handleSearch}
+              className="suggestion-item font-medium text-purple-400 justify-center"
+            >
+              View all results for "{searchQuery}"
+            </button>
+          </div>
+        )}
+      </div>
+    </form>
+  );
+};
+
+export default SearchBar;

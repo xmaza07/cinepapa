@@ -1,3 +1,4 @@
+
 import { getServiceWorkerMetrics } from './sw-messaging';
 import { getStorageUsageSummary } from './cache-cleanup';
 
@@ -28,10 +29,18 @@ interface AnalyticsEvent {
   value?: number;
 }
 
+interface PerformanceEvent {
+  name: string;
+  value: number;
+  type: 'web-vital' | 'custom' | 'resource' | 'navigation' | 'sw-status';
+  url?: string;
+}
+
 interface PerformanceMetrics {
   cacheHitRate: number;
   networkSuccessRate: number;
   storageUtilization: number;
+  webVitals: Record<string, number>;
   timestamp: number;
 }
 
@@ -39,6 +48,7 @@ class ServiceWorkerAnalytics {
   private static instance: ServiceWorkerAnalytics;
   private lastReportTime: number = 0;
   private REPORT_INTERVAL = 15 * 60 * 1000; // 15 minutes
+  private webVitalsMetrics: Record<string, number> = {};
 
   private constructor() {
     this.initializeAnalytics();
@@ -104,6 +114,7 @@ class ServiceWorkerAnalytics {
         (swMetrics.networkMetrics.successes / totalNetworkRequests) * 100 : 0,
       storageUtilization: storageData ? 
         parseFloat(storageData.percentageUsed.replace('%', '')) : 0,
+      webVitals: this.webVitalsMetrics,
       timestamp: Date.now()
     };
   }
@@ -129,6 +140,15 @@ class ServiceWorkerAnalytics {
         category: 'Storage',
         action: 'Utilization',
         value: Math.round(metrics.storageUtilization)
+      });
+
+      // Report web vitals metrics
+      Object.entries(metrics.webVitals).forEach(([name, value]) => {
+        this.trackEvent({
+          category: 'WebVitals',
+          action: name,
+          value: Math.round(value)
+        });
       });
 
       // Schedule next report
@@ -158,6 +178,27 @@ class ServiceWorkerAnalytics {
     } catch (error) {
       console.warn('Error tracking analytics event:', error);
     }
+  }
+
+  // Public method for tracking performance events (Web Vitals and custom)
+  trackPerformanceEvent(metric: PerformanceEvent) {
+    if (isDev) return;
+
+    // Store web vitals metrics for later reporting
+    if (metric.type === 'web-vital') {
+      this.webVitalsMetrics[metric.name] = metric.value;
+    }
+
+    // Track as regular analytics event
+    this.trackEvent({
+      category: metric.type === 'web-vital' ? 'WebVitals' : 
+                metric.type === 'custom' ? 'CustomMetrics' :
+                metric.type === 'resource' ? 'ResourceTiming' :
+                metric.type === 'navigation' ? 'NavigationTiming' : 'ServiceWorker',
+      action: metric.name,
+      label: metric.url,
+      value: metric.value
+    });
   }
 
   // Public methods for tracking specific events

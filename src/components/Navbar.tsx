@@ -137,13 +137,11 @@ const Navbar = () => {
   };
 
   const handleSuggestionClick = (item: Media) => {
-    // Navigate to the specific media page
     navigate(`/${item.media_type}/${item.id}`);
     setSearchQuery('');
     setShowSuggestions(false);
     setIsMobileMenuOpen(false);
     
-    // Show a notification
     toast({
       title: "Navigating...",
       description: `Going to ${item.title || item.name}`,
@@ -168,59 +166,66 @@ const Navbar = () => {
         <div className="flex items-center justify-between">
           <Link
             to="/"
-            className="flex items-center text-xl font-bold group relative overflow-hidden"
+            className="flex items-center font-bold group relative py-2"
+            aria-label="Let's Stream"
           >
-            {/* Text container with z-index */}
-            <div className="relative z-10 flex">
-              <span className="bg-gradient-to-r from-red-400 to-teal-500 bg-clip-text text-transparent animate-gradient bg-300%">
-                Let's
-              </span>
-              <span className="ml-1 bg-gradient-to-r from-purple-500 to-blue-400 bg-clip-text text-transparent animate-gradient bg-300%">
-                Stream
-              </span>
+            <div className="relative z-10 flex items-center">
+              <div className="mr-2 relative">
+                <div className="absolute inset-0 bg-red-500 rounded-full blur-sm opacity-70 group-hover:opacity-100 transition-opacity"></div>
+                <div className="relative w-6 h-6 flex items-center justify-center">
+                  <div className="w-0 h-0 border-y-[6px] border-y-transparent border-l-[10px] border-l-white transform translate-x-[2px]"></div>
+                </div>
+              </div>
+              
+              <div className="flex items-baseline">
+                <span className="text-2xl font-extrabold bg-gradient-to-tr from-red-400 via-pink-500 to-purple-500 bg-clip-text text-transparent animate-gradient bg-300% tracking-tight">
+                  Let's
+                </span>
+                <span className="text-2xl font-extrabold ml-2 bg-gradient-to-br from-blue-400 via-teal-400 to-emerald-500 bg-clip-text text-transparent animate-gradient bg-300% tracking-tight">
+                  Stream
+                </span>
+              </div>
             </div>
             
-            {/* Animated background elements */}
             <div className="absolute inset-0 z-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-              <div className="absolute -inset-2 bg-gradient-to-r from-blue-500/20 to-purple-500/20 transform -rotate-12 scale-125" />
+              <div className="absolute -inset-1 bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-pink-500/20 rounded-lg blur-md transform -rotate-6"></div>
             </div>
 
-            {/* Optional: Animated sparkles */}
-            <div className="absolute inset-0 z-0 opacity-10 group-hover:opacity-30 transition-opacity duration-300">
-              {[...Array(6)].map((_, i) => (
+            <div className="absolute inset-0 z-0 opacity-0 group-hover:opacity-80 transition-opacity duration-300">
+              {[...Array(8)].map((_, i) => (
                 <div
                   key={i}
-                  className="absolute bg-white/30 rounded-full animate-sparkle"
+                  className="absolute bg-white rounded-full animate-sparkle"
                   style={{
-                    width: `${Math.random() * 3 + 1}px`,
-                    height: `${Math.random() * 3 + 1}px`,
+                    width: `${Math.random() * 4 + 2}px`,
+                    height: `${Math.random() * 4 + 2}px`,
                     top: `${Math.random() * 100}%`,
                     left: `${Math.random() * 100}%`,
-                    animationDelay: `${i * 0.5}s`,
+                    animationDelay: `${i * 0.2}s`,
+                    animationDuration: `${Math.random() * 1 + 1}s`,
                   }}
                 />
               ))}
             </div>
           </Link>
 
-          {/* Mobile Search Bar */}
           <form onSubmit={handleSearch} className="flex-1 mx-4 md:hidden pt-4">
-                <div className="relative flex items-center">
-                  <Search className="h-4 w-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-white/60" />
-                  <Input
-                  type="search"
-                  placeholder="Search..."
-                  className="w-full bg-white/10 border-white/10 pl-9 text-white placeholder:text-white/50 focus:bg-white/15 h-8"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  ref={searchInputRef}
-                  />
-                  {showSuggestions && searchSuggestions.length > 0 && (
-                  <div 
-                    ref={suggestionsRef}
-                    className="absolute top-full left-0 right-0 mt-1 bg-black/95 backdrop-blur-lg border border-white/10 rounded-md shadow-lg z-50"
-                  >
-                    {searchSuggestions.map((item) => (
+            <div className="relative flex items-center">
+              <Search className="h-4 w-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-white/60" />
+              <Input
+                type="search"
+                placeholder="Search..."
+                className="w-full bg-white/10 border-white/10 pl-9 text-white placeholder:text-white/50 focus:bg-white/15 h-8"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                ref={searchInputRef}
+              />
+              {showSuggestions && searchSuggestions.length > 0 && (
+                <div 
+                  ref={suggestionsRef}
+                  className="absolute top-full left-0 right-0 mt-1 bg-black/95 backdrop-blur-lg border border-white/10 rounded-md shadow-lg z-50"
+                >
+                  {searchSuggestions.map((item) => (
                     <button
                       key={`${item.media_type}-${item.id}`}
                       className="flex items-center w-full px-4 py-2 hover:bg-white/10 text-white/90 text-sm text-left"
@@ -229,19 +234,18 @@ const Navbar = () => {
                       <span className="mr-2">{item.media_type === 'movie' ? <Film className="h-4 w-4" /> : <Tv className="h-4 w-4" />}</span>
                       <span>{item.title || item.name}</span>
                     </button>
-                    ))}
-                    <button
+                  ))}
+                  <button
                     onClick={handleSearch}
                     className="w-full px-4 py-2 text-left text-sm text-accent hover:bg-white/10 border-t border-white/10"
-                    >
+                  >
                     View all results for "{searchQuery}"
-                    </button>
-                  </div>
-                  )}
+                  </button>
                 </div>
-                </form>
+              )}
+            </div>
+          </form>
 
-          {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-1 pt-2">
             {navItems.map((item) => (
               <Link
@@ -273,7 +277,6 @@ const Navbar = () => {
             ))}
           </nav>
 
-          {/* Desktop Search */}
           <form onSubmit={handleSearch} className="hidden md:flex items-center relative ml-4 pt-2">
             <div className="relative group">
               <Search className="h-4 w-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-white/60" />
@@ -345,7 +348,6 @@ const Navbar = () => {
           </button>
         </div>
 
-        {/* Mobile Menu */}
         {isMobileMenuOpen && (
           <div className="md:hidden bg-black/95 backdrop-blur-lg animate-fade-in border-t border-white/10 mt-2">
             <div className="px-4 py-3 space-y-3">

@@ -19,13 +19,13 @@ interface UserMenuProps {
 }
 
 const UserMenu = ({ mobile = false, onAction }: UserMenuProps) => {
-  const { user, signOut } = useAuth();
+  const { user, logout } = useAuth();
   const { toast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
 
   const handleSignOut = async () => {
     try {
-      await signOut();
+      await logout();
       setIsOpen(false);
       if (onAction) onAction();
       toast({

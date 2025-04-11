@@ -134,7 +134,7 @@ const SearchBar = ({
         <Input
           type="search"
           placeholder={isMobile ? "Search..." : "Search... (Press /)"}
-          className="search-input"
+          className="search-input pl-10 pr-12" // Adjusted padding to prevent overlapping
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           ref={searchInputRef}
@@ -143,7 +143,7 @@ const SearchBar = ({
         <Button 
           type="submit" 
           size="icon"
-          className="search-button absolute right-1 top-1/2 transform -translate-y-1/2"
+          className="search-button absolute right-2 top-1/2 transform -translate-y-1/2"
           aria-label="Search"
         >
           <ArrowRight className="h-3.5 w-3.5" />
@@ -157,14 +157,14 @@ const SearchBar = ({
                 className="suggestion-item"
                 onClick={() => handleSuggestionClick(item)}
               >
-                <span className="mr-2">
+                <span className="mr-2 flex-shrink-0">
                   {item.media_type === 'movie' ? 
                     <Film className="h-4 w-4 text-red-400" /> : 
                     <Tv className="h-4 w-4 text-blue-400" />
                   }
                 </span>
                 <span className="flex-1 text-left truncate">{item.title || item.name}</span>
-                <span className="ml-2 opacity-50 text-xs bg-white/10 px-1.5 py-0.5 rounded">Enter</span>
+                <span className="ml-2 opacity-50 text-xs bg-white/10 px-1.5 py-0.5 rounded flex-shrink-0">Enter</span>
               </button>
             ))}
             <button

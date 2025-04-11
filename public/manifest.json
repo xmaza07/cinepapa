@@ -1,3 +1,4 @@
+
 {
   "name": "Let's Stream V2.0",
   "short_name": "Let's Stream",
@@ -11,25 +12,25 @@
   "theme_color": "#3b82f6",
   "icons": [
     {
-      "src": "/manifest-icon-192.maskable.png",
+      "src": "manifest-icon-192.maskable.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/manifest-icon-192.maskable.png",
+      "src": "manifest-icon-192.maskable.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "maskable"
     },
     {
-      "src": "/manifest-icon-512.maskable.png",
+      "src": "manifest-icon-512.maskable.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/manifest-icon-512.maskable.png",
+      "src": "manifest-icon-512.maskable.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
@@ -41,7 +42,7 @@
       "short_name": "Let's Stream",
       "description": "Watch movies and TV shows online",
       "url": "/",
-      "icons": [{ "src": "/manifest-icon-192.maskable.png", "sizes": "192x192" }]
+      "icons": [{ "src": "manifest-icon-192.maskable.png", "sizes": "192x192" }]
     }
   ],
   "screenshots": [

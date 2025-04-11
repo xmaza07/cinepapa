@@ -1,3 +1,4 @@
+
 /// <reference lib="webworker" />
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
@@ -59,6 +60,59 @@ export default defineConfig(({ mode }) => ({
       '.json': 'application/json'
     },
   },
+  build: {
+    // Increase the warning limit to reduce unnecessary warnings
+    chunkSizeWarningLimit: 1000,
+    rollupOptions: {
+      output: {
+        // Implement manual chunks to better organize and optimize bundle size
+        manualChunks: {
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          'ui-components': [
+            '@radix-ui/react-accordion',
+            '@radix-ui/react-alert-dialog',
+            '@radix-ui/react-aspect-ratio',
+            '@radix-ui/react-avatar',
+            '@radix-ui/react-checkbox',
+            '@radix-ui/react-collapsible',
+            '@radix-ui/react-context-menu',
+            '@radix-ui/react-dialog',
+            '@radix-ui/react-dropdown-menu',
+            '@radix-ui/react-hover-card',
+            '@radix-ui/react-label',
+            '@radix-ui/react-menubar',
+            '@radix-ui/react-navigation-menu',
+            '@radix-ui/react-popover',
+            '@radix-ui/react-progress',
+            '@radix-ui/react-radio-group',
+            '@radix-ui/react-scroll-area',
+            '@radix-ui/react-select',
+            '@radix-ui/react-separator',
+            '@radix-ui/react-slider',
+            '@radix-ui/react-slot',
+            '@radix-ui/react-switch',
+            '@radix-ui/react-tabs',
+            '@radix-ui/react-toast',
+            '@radix-ui/react-toggle',
+            '@radix-ui/react-toggle-group',
+            '@radix-ui/react-tooltip'
+          ],
+          'firebase-auth': [
+            'firebase/auth',
+            '@firebase/auth'
+          ],
+          'data-visualization': [
+            'recharts'
+          ],
+          'icons': [
+            'lucide-react',
+            'react-icons',
+            'react-feather'
+          ]
+        }
+      }
+    }
+  },
   plugins: [
     react(),
     mode === 'development' && componentTagger(),
@@ -112,8 +166,8 @@ export default defineConfig(({ mode }) => ({
       },
       workbox: {
         globPatterns: [
-          '**/*.{js,css,html,ico,png,svg,json,woff2,ttf}',
-          'manifest-icon-*.png'
+          '**/*.{js,css,html,ico,png,svg,json,woff2,ttf}'
+          // Removed the 'manifest-icon-*.png' pattern that's causing the warning
         ],
         maximumFileSizeToCacheInBytes: 5000000,
         runtimeCaching: [
@@ -175,7 +229,6 @@ export default defineConfig(({ mode }) => ({
               }
             }
           },
-          // Images
           {
             urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp)$/i,
             handler: 'CacheFirst',
@@ -197,7 +250,6 @@ export default defineConfig(({ mode }) => ({
               }]
             }
           },
-          // TMDB API Responses
           {
             urlPattern: /^https:\/\/api\.themoviedb\.org\/3\/.*/i,
             handler: 'NetworkFirst',
@@ -227,7 +279,6 @@ export default defineConfig(({ mode }) => ({
               }
             }
           },
-          // TMDB Images
           {
             urlPattern: /^https:\/\/image\.tmdb\.org\/t\/p\/.*/i,
             handler: 'CacheFirst',
@@ -252,7 +303,6 @@ export default defineConfig(({ mode }) => ({
               }]
             }
           },
-          // Firebase/Firestore
           {
             urlPattern: ({ url }) => {
               return url.hostname.includes('firestore.googleapis.com') ||
@@ -294,7 +344,6 @@ export default defineConfig(({ mode }) => ({
               }
             }
           },
-          // Google APIs
           {
             urlPattern: /^https:\/\/(apis\.google\.com|www\.googleapis\.com)\/.*/i,
             handler: 'NetworkFirst',

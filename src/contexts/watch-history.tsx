@@ -31,8 +31,12 @@ import {
   WatchHistoryContextType 
 } from './types/watch-history';
 import { RateLimiter } from '@/utils/rate-limiter';
+import { 
+  deduplicateWatchHistory, 
+  filterWatchHistoryDuplicates,
+  isSignificantProgress 
+} from '@/utils/watch-history-utils';
 
-// Constants for configuration
 const LOCAL_STORAGE_HISTORY_KEY = 'fdf_watch_history';
 const ITEMS_PER_PAGE = 20;
 const MAX_LOCAL_HISTORY = 50;
@@ -42,21 +46,17 @@ const MINIMUM_UPDATE_INTERVAL = 30000; // 30 seconds
 const lastUpdateTimestamps = new Map<string, number>();
 const pendingOperations: Array<() => Promise<void>> = [];
 
-// Initialize Firestore
 const app = getApp();
 const db = getFirestore(app);
 
-// Separate rate limiters for different operations
 const readRateLimiter = RateLimiter.getInstance(200, 300000);
 const writeRateLimiter = RateLimiter.getInstance(100, 300000);
 const deleteRateLimiter = RateLimiter.getInstance(50, 300000);
 
-// Queue operation for retry
 const queueOperation = (operation: () => Promise<void>) => {
   pendingOperations.push(operation);
 };
 
-// Process pending operations when online
 const processPendingOperations = async () => {
   while (pendingOperations.length > 0) {
     const operation = pendingOperations.shift();
@@ -77,7 +77,6 @@ interface QueuedUpdate {
   updatedItemData: Partial<WatchHistoryItem>;
 }
 
-// Batch update queue for watch position updates
 const watchPositionQueue = new Map<string, {
   data: QueuedUpdate,
   timestamp: number
@@ -94,7 +93,6 @@ export function WatchHistoryProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
-  // Process watch position queue
   const processWatchPositionQueue = useCallback(async () => {
     if (!navigator.onLine || watchPositionQueue.size === 0) return;
 
@@ -134,13 +132,11 @@ export function WatchHistoryProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  // Add interval to process queue
   useEffect(() => {
     const interval = setInterval(processWatchPositionQueue, MINIMUM_UPDATE_INTERVAL);
     return () => clearInterval(interval);
   }, [processWatchPositionQueue]);
 
-  // Add network status effect
   useEffect(() => {
     const handleOnline = async () => {
       console.log('Back online, processing pending operations...');
@@ -187,7 +183,9 @@ export function WatchHistoryProvider({ children }: { children: ReactNode }) {
 
   const fetchWatchHistory = useCallback(async (isInitial: boolean = false) => {
     if (!user) {
-      setWatchHistory(loadLocalWatchHistory());
+      const localHistory = loadLocalWatchHistory();
+      const deduplicatedHistory = deduplicateWatchHistory(localHistory);
+      setWatchHistory(deduplicatedHistory);
       setHasMore(false);
       return;
     }
@@ -237,7 +235,15 @@ export function WatchHistoryProvider({ children }: { children: ReactNode }) {
         created_at: (doc.data() as { created_at?: string })?.created_at || new Date().toISOString()
       }));
 
-      setWatchHistory(prev => isInitial ? historyData : [...prev, ...historyData]);
+      if (isInitial) {
+        const deduplicatedHistory = deduplicateWatchHistory(historyData);
+        setWatchHistory(deduplicatedHistory);
+      } else {
+        const combinedHistory = [...watchHistory, ...historyData];
+        const deduplicatedHistory = deduplicateWatchHistory(combinedHistory);
+        setWatchHistory(deduplicatedHistory);
+      }
+
       setHasMore(historySnapshot.docs.length === ITEMS_PER_PAGE);
     } catch (error) {
       console.error('Error fetching watch history:', error);
@@ -249,7 +255,7 @@ export function WatchHistoryProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  }, [user, lastVisible, loadLocalWatchHistory, toast]);
+  }, [user, lastVisible, loadLocalWatchHistory, watchHistory, toast]);
 
   const fetchFavorites = useCallback(async () => {
     if (!user) return;
@@ -382,7 +388,7 @@ export function WatchHistoryProvider({ children }: { children: ReactNode }) {
       title,
       poster_path: media.poster_path,
       backdrop_path: media.backdrop_path,
-      overview: media.overview || null,
+      overview: media.overview || undefined,
       rating: media.vote_average || 0,
       watch_position: position,
       duration,
@@ -392,8 +398,16 @@ export function WatchHistoryProvider({ children }: { children: ReactNode }) {
       ...(typeof episode === 'number' ? { episode } : {})
     };
 
-    setWatchHistory(prev => [newItem, ...prev]);
-    saveLocalWatchHistory([newItem, ...watchHistory]);
+    const { items: updatedHistory, existingItem } = filterWatchHistoryDuplicates(watchHistory, newItem);
+    
+    if (existingItem && position > 0) {
+      if (!isSignificantProgress(existingItem.watch_position, position, SIGNIFICANT_PROGRESS)) {
+        return;
+      }
+    }
+    
+    setWatchHistory(updatedHistory);
+    saveLocalWatchHistory(updatedHistory);
     lastUpdateTimestamps.set(mediaKey, now);
 
     if (!navigator.onLine) {
@@ -416,6 +430,11 @@ export function WatchHistoryProvider({ children }: { children: ReactNode }) {
     }
 
     try {
+      if (existingItem) {
+        const existingRef = doc(db, 'watchHistory', existingItem.id);
+        await deleteDoc(existingRef);
+      }
+      
       const historyRef = doc(db, 'watchHistory', newItem.id);
       await setDoc(historyRef, newItem);
     } catch (error) {

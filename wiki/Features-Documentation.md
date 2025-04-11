@@ -30,10 +30,22 @@ This document provides detailed information about Let's Stream V2.0's features a
 
 ### User Features
 - **Watch History**
-  - Automatic tracking
-  - Resume playback
+  - Automatic background tracking
+  - Intelligent resume playback
+  - Duplicate prevention system
   - Clear history option
-  - Toggle tracking on/off
+  - Cross-device synchronization
+  - Responsive viewing cards
+  - Time-based progress tracking
+
+- **Continue Watching**
+  - Visually enhanced cards
+  - Progress indicators
+  - Time remaining display
+  - Quick access to resume playback
+  - Smart duplicate handling
+  - Responsive design for all devices
+  - Cross-device synchronization
 
 - **Favorites & Watchlist**
   - Add/remove favorites
@@ -83,6 +95,69 @@ document.documentElement.style.setProperty('--accent', getHSLFromHex(accentColor
 - Custom UI components
 - Consistent styling
 - Accessibility features
+
+## Continue Watching Implementation
+
+### Basic Usage
+The Continue Watching feature automatically tracks and displays recently watched content:
+
+```tsx
+// Example: Continue Watching component (simplified)
+const ContinueWatching = () => {
+  const { user } = useAuth();
+  const { watchHistory } = useWatchHistory();
+  
+  // Items are filtered, deduplicated and sorted by most recent
+  const processedHistory = useMemo(() => {
+    const uniqueMediaMap = new Map();
+    
+    watchHistory.forEach(item => {
+      // Create a unique key for each media item
+      const key = `${item.media_type}-${item.media_id}${item.media_type === 'tv' ? `-s${item.season}-e${item.episode}` : ''}`;
+      
+      // Only keep the most recent item
+      if (!uniqueMediaMap.has(key) || new Date(item.created_at) > new Date(uniqueMediaMap.get(key).created_at)) {
+        uniqueMediaMap.set(key, item);
+      }
+    });
+    
+    return Array.from(uniqueMediaMap.values()).sort((a, b) => 
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
+  }, [watchHistory]);
+  
+  return (
+    <div className="continue-watching-row">
+      {processedHistory.map(item => (
+        <WatchCard key={item.id} watchItem={item} />
+      ))}
+    </div>
+  );
+};
+```
+
+### Watch History Deduplication
+The system implements a smart deduplication strategy:
+
+```typescript
+// Example: Deduplication utility
+export const deduplicateWatchHistory = (items: WatchHistoryItem[]): WatchHistoryItem[] => {
+  const mediaMap = new Map<string, WatchHistoryItem>();
+  
+  items.forEach(item => {
+    // Create a unique key for TV episodes or movies
+    const key = `${item.media_type}-${item.media_id}${item.media_type === 'tv' ? `-s${item.season}-e${item.episode}` : ''}`;
+    
+    // Keep only the most recent version
+    if (!mediaMap.has(key) || new Date(item.created_at) > new Date(mediaMap.get(key)!.created_at)) {
+      mediaMap.set(key, item);
+    }
+  });
+  
+  return Array.from(mediaMap.values())
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+};
+```
 
 ## Media Playback
 

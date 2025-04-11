@@ -134,7 +134,7 @@ const SearchBar = ({
         <Input
           type="search"
           placeholder={isMobile ? "Search..." : "Search... (Press /)"}
-          className="search-input pl-10 pr-12" // Adjusted padding to prevent overlapping
+          className="search-input pl-10 pr-12 h-10" // Added explicit height
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           ref={searchInputRef}
@@ -143,7 +143,7 @@ const SearchBar = ({
         <Button 
           type="submit" 
           size="icon"
-          className="search-button absolute right-2 top-1/2 transform -translate-y-1/2"
+          className="search-button absolute right-2.5 top-1/2 transform -translate-y-1/2" // Adjusted right position
           aria-label="Search"
         >
           <ArrowRight className="h-3.5 w-3.5" />
@@ -169,7 +169,7 @@ const SearchBar = ({
             ))}
             <button
               onClick={handleSearch}
-              className="suggestion-item font-medium text-purple-400 justify-center"
+              className="suggestion-item font-medium text-accent justify-center"
             >
               View all results for "{searchQuery}"
             </button>

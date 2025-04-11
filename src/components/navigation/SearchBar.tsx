@@ -11,9 +11,18 @@ import { Media } from '@/utils/types';
 interface SearchBarProps {
   isMobile?: boolean;
   onSearch?: () => void;
+  className?: string;
+  expanded?: boolean;
+  onToggleExpand?: () => void;
 }
 
-const SearchBar = ({ isMobile = false, onSearch }: SearchBarProps) => {
+const SearchBar = ({ 
+  isMobile = false, 
+  onSearch,
+  className = '',
+  expanded = false,
+  onToggleExpand
+}: SearchBarProps) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchSuggestions, setSearchSuggestions] = useState<Media[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -26,13 +35,20 @@ const SearchBar = ({ isMobile = false, onSearch }: SearchBarProps) => {
     const handleKeyPress = (e: KeyboardEvent) => {
       if (e.key === '/' && !e.ctrlKey && !e.metaKey && !e.altKey) {
         e.preventDefault();
-        searchInputRef.current?.focus();
+        if (onToggleExpand) onToggleExpand();
+        else searchInputRef.current?.focus();
       }
     };
 
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, []);
+  }, [onToggleExpand]);
+
+  useEffect(() => {
+    if (expanded && searchInputRef.current) {
+      searchInputRef.current.focus();
+    }
+  }, [expanded]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -72,6 +88,7 @@ const SearchBar = ({ isMobile = false, onSearch }: SearchBarProps) => {
       setSearchQuery('');
       setShowSuggestions(false);
       if (onSearch) onSearch();
+      if (onToggleExpand) onToggleExpand();
 
       toast({
         title: "Searching...",
@@ -86,6 +103,7 @@ const SearchBar = ({ isMobile = false, onSearch }: SearchBarProps) => {
     setSearchQuery('');
     setShowSuggestions(false);
     if (onSearch) onSearch();
+    if (onToggleExpand) onToggleExpand();
     
     toast({
       title: "Navigating...",
@@ -94,8 +112,23 @@ const SearchBar = ({ isMobile = false, onSearch }: SearchBarProps) => {
     });
   };
 
+  // For mobile collapsed state (icon only)
+  if (isMobile && !expanded) {
+    return (
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={onToggleExpand}
+        className="text-white hover:bg-white/10"
+        aria-label="Search"
+      >
+        <Search className="h-5 w-5" />
+      </Button>
+    );
+  }
+
   return (
-    <form onSubmit={handleSearch} className={`search-container ${isMobile ? 'w-full' : 'max-w-xs'}`}>
+    <form onSubmit={handleSearch} className={`search-container ${isMobile ? 'w-full' : ''} ${className}`}>
       <div className="relative w-full">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/60 w-4 h-4 pointer-events-none" />
         <Input

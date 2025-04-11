@@ -58,7 +58,7 @@ const NavLinks = ({ mobile = false, onClick }: { mobile?: boolean; onClick?: () 
           
           <div className="my-4 border-t border-white/10"></div>
           
-          {authItems.map((item) => (
+          {!user && authItems.map((item) => (
             <Link
               key={item.path}
               to={item.path}
@@ -77,7 +77,7 @@ const NavLinks = ({ mobile = false, onClick }: { mobile?: boolean; onClick?: () 
           ))}
         </div>
       ) : (
-        <div className="hidden md:flex items-center space-x-1">
+        <div className="flex items-center space-x-1">
           {navItems.map((item) => (
             <Link
               key={item.path}

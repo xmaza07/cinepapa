@@ -4,7 +4,6 @@ import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Logo from './Logo';
 import NavLinks from './NavLinks';
-import SearchBar from './SearchBar';
 import { useAuth } from '@/hooks';
 import UserMenu from './UserMenu';
 
@@ -30,10 +29,6 @@ const MobileMenu = ({ isOpen, onClose }: MobileMenuProps) => {
         >
           <X className="h-6 w-6" />
         </Button>
-      </div>
-      
-      <div className="p-4">
-        <SearchBar isMobile onSearch={onClose} />
       </div>
       
       <div className="flex-1 overflow-y-auto">

@@ -91,6 +91,7 @@ export function WatchHistoryProvider({ children }: { children: ReactNode }) {
   const [favorites, setFavorites] = useState<FavoriteItem[]>([]);
   const [watchlist, setWatchlist] = useState<WatchlistItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [initialFetchDone, setInitialFetchDone] = useState(false);
   const { toast } = useToast();
 
   const processWatchPositionQueue = useCallback(async () => {
@@ -187,6 +188,9 @@ export function WatchHistoryProvider({ children }: { children: ReactNode }) {
       const deduplicatedHistory = deduplicateWatchHistory(localHistory);
       setWatchHistory(deduplicatedHistory);
       setHasMore(false);
+      if (isInitial) {
+        setInitialFetchDone(true);
+      }
       return;
     }
 
@@ -224,6 +228,9 @@ export function WatchHistoryProvider({ children }: { children: ReactNode }) {
       
       if (historySnapshot.empty) {
         setHasMore(false);
+        if (isInitial) {
+          setInitialFetchDone(true);
+        }
         return;
       }
 
@@ -245,6 +252,9 @@ export function WatchHistoryProvider({ children }: { children: ReactNode }) {
       }
 
       setHasMore(historySnapshot.docs.length === ITEMS_PER_PAGE);
+      if (isInitial) {
+        setInitialFetchDone(true);
+      }
     } catch (error) {
       console.error('Error fetching watch history:', error);
       toast({
@@ -252,6 +262,9 @@ export function WatchHistoryProvider({ children }: { children: ReactNode }) {
         description: "There was a problem loading your watch history.",
         variant: "destructive"
       });
+      if (isInitial) {
+        setInitialFetchDone(true);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -316,25 +329,25 @@ export function WatchHistoryProvider({ children }: { children: ReactNode }) {
   }, [user]);
 
   useEffect(() => {
-    const fetchAllData = async () => {
-      setIsLoading(true);
-      await Promise.all([
-        fetchWatchHistory(true),
-        fetchFavorites(),
-        fetchWatchlist()
-      ]);
-      setIsLoading(false);
-    };
+    if (!initialFetchDone || user) {
+      const fetchAllData = async () => {
+        setIsLoading(true);
+        await Promise.all([
+          fetchWatchHistory(true),
+          fetchFavorites(),
+          fetchWatchlist()
+        ]);
+        setIsLoading(false);
+      };
 
-    if (user) {
       fetchAllData();
-    } else {
+    } else if (!user) {
       setWatchHistory([]);
       setFavorites([]);
       setWatchlist([]);
       setIsLoading(false);
     }
-  }, [user, fetchWatchHistory, fetchFavorites, fetchWatchlist]);
+  }, [user, initialFetchDone, fetchWatchHistory, fetchFavorites, fetchWatchlist]);
 
   useEffect(() => {
     const migrateWatchHistory = async () => {
@@ -343,6 +356,13 @@ export function WatchHistoryProvider({ children }: { children: ReactNode }) {
       try {
         const historyRef = collection(db, 'watchHistory');
         const historyQuery = query(historyRef, where('user_id', '==', user.uid));
+        
+        const canExecute = await readRateLimiter.canExecute();
+        if (!canExecute) {
+          console.log('Read rate limit exceeded. Skipping Firestore migration.');
+          return;
+        }
+        
         const historySnapshot = await getDocs(historyQuery);
         
         const migrationPromises = historySnapshot.docs.map(async (doc) => {
@@ -358,8 +378,10 @@ export function WatchHistoryProvider({ children }: { children: ReactNode }) {
       }
     };
     
-    migrateWatchHistory();
-  }, [user]);
+    if (user && initialFetchDone) {
+      migrateWatchHistory();
+    }
+  }, [user, initialFetchDone]);
 
   const addToWatchHistory = async (
     media: Media, 

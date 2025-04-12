@@ -58,38 +58,42 @@ export const fetchTVSources = async (tvId: number, season: number, episode: numb
  * Extract valid video URL from API response
  */
 const extractVideoUrl = (data: ApiResponse[]): string | null => {
-  // Process all responses to find a valid video file
-  for (const item of data) {
-    // Check for source with files
-    if (item.source?.files?.length) {
-      const file = item.source.files[0];
-      const headers = item.source.headers || {};
-      
-      if (file.file && file.type === 'hls') {
-        // Create proxied URL for HLS files
-        const searchParams = new URLSearchParams();
-        searchParams.set('url', file.file);
+  try {
+    // Process all responses to find a valid video file
+    for (const item of data) {
+      // Check for source with files
+      if (item.source?.files?.length) {
+        const file = item.source.files[0];
+        const headers = item.source.headers || {};
         
-        if (Object.keys(headers).length) {
-          searchParams.set('headers', JSON.stringify(headers));
+        if (file.file && file.type === 'hls') {
+          // Create proxied URL for HLS files
+          const searchParams = new URLSearchParams();
+          searchParams.set('url', file.file);
+          
+          if (Object.keys(headers).length) {
+            searchParams.set('headers', JSON.stringify(headers));
+          }
+          
+          return `${PROXY_URL}/v2?${searchParams.toString()}`;
         }
-        
-        return `${PROXY_URL}/v2?${searchParams.toString()}`;
       }
-    }
-    
-    // Check for sources array
-    if (Array.isArray(item.sources)) {
-      for (const source of item.sources) {
-        if (source.files?.length) {
-          const file = source.files[0];
-          if (file.file && file.type === 'hls') {
-            // Return the file URL for HLS content
-            return file.file;
+      
+      // Check for sources array
+      if (Array.isArray(item.sources)) {
+        for (const source of item.sources) {
+          if (source.files?.length) {
+            const file = source.files[0];
+            if (file.file && file.type === 'hls') {
+              // Return the file URL for HLS content
+              return file.file;
+            }
           }
         }
       }
     }
+  } catch (error) {
+    console.error('Error extracting video URL:', error);
   }
   
   return null;

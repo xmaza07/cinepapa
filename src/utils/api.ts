@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { Media, MovieDetails, TVDetails, Episode, Review, Genre, Company, MovieImagesResponse } from './types';
+import { Media, MovieDetails, TVDetails, Episode, Review, Genre, Company, MovieImagesResponse, VideoSource } from './types';
 
 // Add interface for video response
 interface TMDBVideo {

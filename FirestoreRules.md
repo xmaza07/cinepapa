@@ -46,11 +46,16 @@ service cloud.firestore {
       allow create: if isAuthenticated() && request.resource.data.user_id == request.auth.uid;
       allow update, delete: if isAuthenticated() && resource.data.user_id == request.auth.uid;
     }
-    
-    match /watchlist/{documentId} {
+      match /watchlist/{documentId} {
       allow read: if isAuthenticated() && resource.data.user_id == request.auth.uid;
       allow create: if isAuthenticated() && request.resource.data.user_id == request.auth.uid;
       allow update, delete: if isAuthenticated() && resource.data.user_id == request.auth.uid;
+    }
+
+    // Cache metrics rules
+    match /cacheMetrics/{documentId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
     }
 
     // Default deny for all other paths

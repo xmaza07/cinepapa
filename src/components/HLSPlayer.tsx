@@ -1,5 +1,20 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import Hls from 'hls.js';
+import { 
+  Play, 
+  Pause, 
+  Volume2, 
+  VolumeX, 
+  Settings, 
+  Subtitles, 
+  Maximize, 
+  Minimize,
+  MonitorSmartphone,
+  SkipBack,
+  SkipForward,
+  Volume1,
+  Volume
+} from 'lucide-react';
 
 interface Quality {
   level: number;
@@ -483,57 +498,51 @@ const HLSPlayer: React.FC<HLSPlayerProps> = ({ src, poster, onLoaded, onError })
         poster={poster}
         onClick={togglePlay}
       />
-      
-      {/* Buffering indicator */}
-      {isBuffering && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/30">
-          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-        </div>
-      )}
 
-      {/* Error overlay */}
-      {error && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/90 text-white">
-          <p className="text-xl mb-4">{error}</p>
-          <button
-            onClick={retryPlayback}
-            className="px-4 py-2 bg-primary rounded hover:bg-primary/80 transition-colors"
-          >
-            Retry
-          </button>
+      {/* Center play/pause button */}
+      {showControls && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="flex gap-12">
+            <button
+              onClick={handleSeekBackward}
+              className="p-4 rounded-full bg-black/50 hover:bg-black/70 text-white transition-colors"
+            >
+              <SkipBack size={24} />
+            </button>
+            <button
+              onClick={togglePlay}
+              className="p-6 rounded-full bg-black/50 hover:bg-black/70 text-white transition-colors"
+            >
+              {isPlaying ? <Pause size={32} /> : <Play size={32} />}
+            </button>
+            <button
+              onClick={handleSeekForward}
+              className="p-4 rounded-full bg-black/50 hover:bg-black/70 text-white transition-colors"
+            >
+              <SkipForward size={24} />
+            </button>
+          </div>
         </div>
       )}
 
       {/* Controls overlay */}
       <div className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4 transition-opacity duration-300 ${showControls ? 'opacity-100' : 'opacity-0'}`}>
-        {/* Progress bar with preview */}
-        <div 
-          className="relative w-full h-1 bg-gray-600 rounded cursor-pointer mb-4 group"
-          onMouseMove={(e) => {
-            const rect = e.currentTarget.getBoundingClientRect();
-            const pos = (e.clientX - rect.left) / rect.width;
-            setHoverPosition(pos);
-          }}
-          onMouseLeave={() => setHoverPosition(null)}
-          onClick={(e) => {
-            const rect = e.currentTarget.getBoundingClientRect();
-            const pos = (e.clientX - rect.left) / rect.width;
-            if (videoRef.current) {
-              videoRef.current.currentTime = pos * duration;
-            }
-          }}
-        >
+        {/* Progress bar */}
+        <div className="relative w-full h-1 bg-white/30 rounded-full cursor-pointer mb-4 group">
           <div
-            className="absolute h-full bg-primary rounded transition-all"
+            className="absolute h-full bg-primary rounded-full transition-all"
             style={{ width: `${(currentTime / duration) * 100}%` }}
           />
           <div
-            className="absolute h-full bg-primary/50 rounded transition-all"
+            className="absolute h-full bg-white/50 rounded-full transition-all"
             style={{ 
               width: `${(videoRef.current?.buffered?.length ? videoRef.current.buffered.end(videoRef.current.buffered.length - 1) / duration : 0) * 100}%` 
             }}
           />
-          <div className="absolute h-full w-full opacity-0 group-hover:opacity-100 hover:h-2 transition-all duration-200" />
+          <div 
+            className="absolute w-3 h-3 bg-primary rounded-full -translate-y-1/2 top-1/2 opacity-0 group-hover:opacity-100 transition-opacity"
+            style={{ left: `${(currentTime / duration) * 100}%` }}
+          />
         </div>
 
         <div className="flex items-center justify-between">
@@ -543,15 +552,7 @@ const HLSPlayer: React.FC<HLSPlayerProps> = ({ src, poster, onLoaded, onError })
               className="text-white hover:text-primary transition-colors"
               title={isPlaying ? 'Pause (k)' : 'Play (k)'}
             >
-              {isPlaying ? (
-                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 9v6m4-6v6" />
-                </svg>
-              ) : (
-                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                </svg>
-              )}
+              {isPlaying ? <Pause size={24} /> : <Play size={24} />}
             </button>
 
             {/* Volume control */}
@@ -562,16 +563,18 @@ const HLSPlayer: React.FC<HLSPlayerProps> = ({ src, poster, onLoaded, onError })
                 className="text-white hover:text-primary transition-colors"
                 title="Toggle mute (m)"
               >
-                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path 
-                    strokeLinecap="round" 
-                    strokeLinejoin="round" 
-                    strokeWidth={2} 
-                    d={isMuted ? "M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" : "M15.536 8.464a5 5 0 010 7.072M12 6v12m4.536-4.536a5 5 0 000-7.072M12 6a4 4 0 00-4 4v4m8-4a4 4 0 014 4v4"} 
-                  />
-                </svg>
+                {isMuted ? (
+                  <VolumeX size={24} />
+                ) : volume > 0.5 ? (
+                  <Volume2 size={24} />
+                ) : volume > 0 ? (
+                  <Volume1 size={24} />
+                ) : (
+                  <Volume size={24} />
+                )}
               </button>
-              
+
+              {/* Volume slider */}
               {showVolumeSlider && (
                 <div 
                   className="absolute bottom-full left-0 mb-2 p-2 bg-black/90 rounded"
@@ -599,9 +602,12 @@ const HLSPlayer: React.FC<HLSPlayerProps> = ({ src, poster, onLoaded, onError })
               )}
             </div>
 
-            <span className="text-white text-sm">
-              {formatTime(currentTime)} / {formatTime(duration)}
-            </span>
+            {/* Time display */}
+            <div className="text-white text-sm font-medium space-x-2">
+              <span>{formatTime(currentTime)}</span>
+              <span>/</span>
+              <span>{formatTime(duration)}</span>
+            </div>
           </div>
 
           <div className="flex items-center gap-4">
@@ -613,12 +619,8 @@ const HLSPlayer: React.FC<HLSPlayerProps> = ({ src, poster, onLoaded, onError })
                   className="text-white hover:text-primary transition-colors"
                   title="Quality settings"
                 >
-                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
+                  <Settings size={24} />
                 </button>
-
                 {showQualityMenu && (
                   <div className="absolute bottom-full right-0 mb-2 p-2 bg-black/90 rounded">
                     {qualities.map((quality) => (
@@ -658,9 +660,7 @@ const HLSPlayer: React.FC<HLSPlayerProps> = ({ src, poster, onLoaded, onError })
                 className={`text-white hover:text-primary transition-colors ${showSubtitles ? 'text-primary' : ''}`}
                 title="Toggle subtitles"
               >
-                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
-                </svg>
+                <Subtitles size={24} />
               </button>
             )}
 
@@ -671,9 +671,7 @@ const HLSPlayer: React.FC<HLSPlayerProps> = ({ src, poster, onLoaded, onError })
                 className={`text-white hover:text-primary transition-colors ${isPiP ? 'text-primary' : ''}`}
                 title="Picture in Picture"
               >
-                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
+                <MonitorSmartphone size={24} />
               </button>
             )}
 
@@ -683,13 +681,7 @@ const HLSPlayer: React.FC<HLSPlayerProps> = ({ src, poster, onLoaded, onError })
               className={`text-white hover:text-primary transition-colors ${isFullscreen ? 'text-primary' : ''}`}
               title="Toggle fullscreen (f)"
             >
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={
-                  isFullscreen
-                    ? "M9 20H5a2 2 0 01-2-2v-4m14 6h4a2 2 0 002-2v-4M5 4h4a2 2 0 012 2v4M19 4h-4a2 2 0 00-2 2v4"
-                    : "M3 7v4a1 1 0 001 1h4a1 1 0 001-1V7m0 0V3a1 1 0 00-1-1H4a1 1 0 00-1 1v4m16 0v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V7m0 0V3a1 1 0 011-1h4a1 1 0 011 1v4"
-                } />
-              </svg>
+              {isFullscreen ? <Minimize size={24} /> : <Maximize size={24} />}
             </button>
           </div>
         </div>

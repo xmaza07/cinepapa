@@ -1,4 +1,3 @@
-
 // Media types for basic movie and TV show data
 export interface Media {
   id: number;

@@ -1,14 +1,10 @@
-
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import './index.css';
 import { registerSW } from 'virtual:pwa-register';
-import { initServiceWorkerMessaging, initMetricsLogging } from './utils/sw-messaging';
-import { initCacheCleanup } from './utils/cache-cleanup';
+import { initServiceWorkerMessaging } from './utils/sw-messaging';
 import { performanceMonitor } from './utils/performance-monitor';
-import { ServiceWorkerUpdateNotification } from './components/ServiceWorkerUpdateNotification';
-import { syncOfflineCache } from './utils/supabase';
 
 // Start performance monitoring as early as possible
 performanceMonitor.initializeMonitoring();
@@ -20,26 +16,7 @@ const registerServiceWorker = async () => {
       const updateSW = registerSW({
         immediate: true,
         onNeedRefresh() {
-          const root = document.createElement('div');
-          root.id = 'sw-update-root';
-          document.body.appendChild(root);
-
-          ReactDOM.createRoot(root).render(
-            <React.StrictMode>
-              <ServiceWorkerUpdateNotification 
-                onAcceptUpdate={() => {
-                  updateSW(true);
-                  root.remove();
-                }}
-                onDismiss={() => {
-                  root.remove();
-                }}
-              />
-            </React.StrictMode>
-          );
-        },
-        onOfflineReady() {
-          console.log('App ready to work offline');
+          // Handled by ServiceWorkerUpdateNotification component
         },
         onRegistered(swRegistration) {
           if (swRegistration) {
@@ -47,14 +24,6 @@ const registerServiceWorker = async () => {
             
             // Initialize SW monitoring systems
             initServiceWorkerMessaging();
-            initMetricsLogging();
-            initCacheCleanup();
-            
-            // Sync offline cache to Firestore when coming back online
-            window.addEventListener('online', () => {
-              console.log('Online event detected, syncing caches...');
-              syncOfflineCache();
-            });
             
             // Check for updates every hour
             setInterval(() => {

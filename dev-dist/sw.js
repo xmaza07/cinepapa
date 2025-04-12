@@ -67,7 +67,7 @@ if (!self.define) {
     });
   };
 }
-define(['./workbox-d4260423'], (function (workbox) { 'use strict';
+define(['./workbox-b1546880'], (function (workbox) { 'use strict';
 
   workbox.enable();
   self.skipWaiting();
@@ -83,7 +83,7 @@ define(['./workbox-d4260423'], (function (workbox) { 'use strict';
     "revision": "3ca0b8505b4bec776b69afdba2768812"
   }, {
     "url": "index.html",
-    "revision": "0.41nugceoqu8"
+    "revision": "0.54pbedmelt"
   }], {});
   workbox.cleanupOutdatedCaches();
   workbox.registerRoute(new workbox.NavigationRoute(workbox.createHandlerBoundToURL("index.html"), {
@@ -202,40 +202,12 @@ define(['./workbox-d4260423'], (function (workbox) { 'use strict';
     url
   }) => {
     return url.hostname.includes("firestore.googleapis.com") || url.hostname.includes("firebase.googleapis.com") || url.hostname.includes("firebaseio.com");
-  }, new workbox.NetworkFirst({
-    "cacheName": "firebase-data-v0.0.0",
-    "networkTimeoutSeconds": 3,
-    "matchOptions": {
-      "ignoreVary": true,
-      "ignoreSearch": false
-    },
+  }, new workbox.NetworkOnly({
     plugins: [{
-      cacheWillUpdate: async ({
-        response
-      }) => {
-        return response && response.status === 200 ? response : null;
-      },
-      cacheDidUpdate: async ({
-        cacheName,
-        request,
-        oldResponse,
-        newResponse
-      }) => {
-        try {
-          if (oldResponse) {
-            const cache = await self.caches.open(cacheName);
-            const keys = await cache.keys();
-            const oldKeys = keys.filter(key => key.url.includes(request.url) && key !== request);
-            await Promise.all(oldKeys.map(key => cache.delete(key)));
-          }
-        } catch (error) {
-          console.error("Error cleaning up Firebase cache:", error);
-        }
+      fetchDidFail: async () => {
+        console.error("Firebase request failed - network only strategy");
       }
-    }, new workbox.ExpirationPlugin({
-      maxEntries: 100,
-      maxAgeSeconds: 3600
-    })]
+    }]
   }), 'GET');
   workbox.registerRoute(/^https:\/\/(apis\.google\.com|www\.googleapis\.com)\/.*/i, new workbox.NetworkFirst({
     "cacheName": "google-apis-v0.0.0",

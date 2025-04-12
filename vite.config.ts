@@ -1,4 +1,3 @@
-
 /// <reference lib="webworker" />
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
@@ -303,45 +302,18 @@ export default defineConfig(({ mode }) => ({
               }]
             }
           },
-          {
-            urlPattern: ({ url }) => {
+          {            urlPattern: ({ url }) => {
               return url.hostname.includes('firestore.googleapis.com') ||
                      url.hostname.includes('firebase.googleapis.com') ||
                      url.hostname.includes('firebaseio.com');
             },
-            handler: 'NetworkFirst',
+            handler: 'NetworkOnly',
             options: {
-              cacheName: CACHE_NAMES.firebaseData,
-              networkTimeoutSeconds: 3,
               plugins: [{
-                cacheWillUpdate: async ({ response }) => {
-                  // Only cache successful responses
-                  return response && response.status === 200 ? response : null;
-                },
-                cacheDidUpdate: async ({ cacheName, request, oldResponse, newResponse }) => {
-                  try {
-                    // Clean up old cache entries when new data is fetched
-                    if (oldResponse) {
-                      const cache = await self.caches.open(cacheName);
-                      const keys = await cache.keys();
-                      const oldKeys = keys.filter((key: CacheKey) => 
-                        key.url.includes(request.url) && key !== request
-                      );
-                      await Promise.all(oldKeys.map((key: CacheKey) => cache.delete(key)));
-                    }
-                  } catch (error) {
-                    console.error('Error cleaning up Firebase cache:', error);
-                  }
+                fetchDidFail: async () => {
+                  console.error('Firebase request failed - network only strategy');
                 }
-              }],
-              expiration: {
-                maxEntries: 100,
-                maxAgeSeconds: 60 * 60 // 1 hour
-              },
-              matchOptions: {
-                ignoreVary: true,
-                ignoreSearch: false
-              }
+              }]
             }
           },
           {

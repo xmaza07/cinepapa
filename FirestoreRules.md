@@ -50,13 +50,7 @@ service cloud.firestore {
       allow read: if isAuthenticated() && resource.data.user_id == request.auth.uid;
       allow create: if isAuthenticated() && request.resource.data.user_id == request.auth.uid;
       allow update, delete: if isAuthenticated() && resource.data.user_id == request.auth.uid;
-    }
-
-    // Cache metrics rules
-    match /cacheMetrics/{documentId} {
-      allow read: if isAuthenticated();
-      allow write: if isAuthenticated();
-    }
+    }    // No more caching in Firestore
 
     // Default deny for all other paths
     match /{document=**} {

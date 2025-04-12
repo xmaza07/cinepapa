@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
@@ -83,18 +82,16 @@ export function ServiceWorkerDebugPanel() {
   };
 
   // Helper function to rate Web Vitals metrics
-  const getRating = (name: string, value: number): 'good' | 'needs-improvement' | 'poor' => {
+  const getRating = (name: string, value: number): WebVitalMetric['rating'] => {
     switch (name) {
-      case 'LCP':
-        return value <= 2500 ? 'good' : value <= 4000 ? 'needs-improvement' : 'poor';
-      case 'FID':
-        return value <= 100 ? 'good' : value <= 300 ? 'needs-improvement' : 'poor';
       case 'CLS':
         return value <= 0.1 ? 'good' : value <= 0.25 ? 'needs-improvement' : 'poor';
+      case 'FID':
+        return value <= 100 ? 'good' : value <= 300 ? 'needs-improvement' : 'poor';
+      case 'LCP':
+        return value <= 2500 ? 'good' : value <= 4000 ? 'needs-improvement' : 'poor';
       case 'TTFB':
         return value <= 800 ? 'good' : value <= 1800 ? 'needs-improvement' : 'poor';
-      case 'INP':
-        return value <= 200 ? 'good' : value <= 500 ? 'needs-improvement' : 'poor';
       case 'FCP':
         return value <= 1800 ? 'good' : value <= 3000 ? 'needs-improvement' : 'poor';
       default:
@@ -117,7 +114,7 @@ export function ServiceWorkerDebugPanel() {
         
         <TabsContent value="sw" className="space-y-4">
           <div className="space-y-2">
-            <h3 className="font-semibold">Service Worker Debug</h3>
+            <h3 className="font-semibold">Service Worker Status</h3>
             <p className="text-sm text-muted-foreground">
               Controller: {controllerState}
               {waiting && ' (update available)'}

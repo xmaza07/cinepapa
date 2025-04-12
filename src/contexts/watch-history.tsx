@@ -327,27 +327,31 @@ export function WatchHistoryProvider({ children }: { children: ReactNode }) {
       console.error('Error fetching watchlist:', error);
     }
   }, [user]);
-
   useEffect(() => {
-    if (!initialFetchDone || user) {
-      const fetchAllData = async () => {
+    const fetchAllData = async () => {
+      if (!initialFetchDone || user) {
         setIsLoading(true);
-        await Promise.all([
-          fetchWatchHistory(true),
-          fetchFavorites(),
-          fetchWatchlist()
-        ]);
+        try {
+          await Promise.all([
+            fetchWatchHistory(true),
+            fetchFavorites(),
+            fetchWatchlist()
+          ]);
+        } catch (error) {
+          console.error('Error fetching data:', error);
+        } finally {
+          setIsLoading(false);
+        }
+      } else if (!user) {
+        setWatchHistory([]);
+        setFavorites([]);
+        setWatchlist([]);
         setIsLoading(false);
-      };
+      }
+    };
 
-      fetchAllData();
-    } else if (!user) {
-      setWatchHistory([]);
-      setFavorites([]);
-      setWatchlist([]);
-      setIsLoading(false);
-    }
-  }, [user, initialFetchDone, fetchWatchHistory, fetchFavorites, fetchWatchlist]);
+    fetchAllData();
+  }, [user, initialFetchDone]); // Remove function dependencies to prevent infinite loop
 
   useEffect(() => {
     const migrateWatchHistory = async () => {
@@ -382,7 +386,6 @@ export function WatchHistoryProvider({ children }: { children: ReactNode }) {
       migrateWatchHistory();
     }
   }, [user, initialFetchDone]);
-
   const addToWatchHistory = async (
     media: Media, 
     position: number, 
@@ -391,7 +394,26 @@ export function WatchHistoryProvider({ children }: { children: ReactNode }) {
     episode?: number,
     preferredSource?: string
   ) => {
-    if (!user || !userPreferences?.isWatchHistoryEnabled) return;
+    if (!user) {
+      console.warn('Cannot add to watch history: User not authenticated');
+      toast({
+        title: "Authentication required",
+        description: "Please log in to track your watch history.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (!userPreferences?.isWatchHistoryEnabled) {
+      console.log('Watch history is disabled in user preferences');
+      return;
+    }
+
+    // Verify authentication state is valid
+    if (!user.uid) {
+      console.error('Invalid authentication state: missing user ID');
+      return;
+    }
 
     const mediaType = media.media_type;
     const mediaId = media.id;

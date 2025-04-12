@@ -57,6 +57,50 @@ const HLSPlayer: React.FC<HLSPlayerProps> = ({ src, poster, onLoaded, onError })
   const [showVolumeSlider, setShowVolumeSlider] = useState(false);
   const [showQualityMenu, setShowQualityMenu] = useState(false);
   const [isBuffering, setIsBuffering] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const progressBarRef = useRef<HTMLDivElement>(null);
+
+  const handleSeek = useCallback((clientX: number) => {
+    const progressBar = progressBarRef.current;
+    if (!progressBar || !videoRef.current) return;
+
+    const rect = progressBar.getBoundingClientRect();
+    const pos = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+    const newTime = pos * videoRef.current.duration;
+    
+    if (!isNaN(newTime) && isFinite(newTime)) {
+      videoRef.current.currentTime = newTime;
+      setCurrentTime(newTime);
+    }
+  }, []);
+
+  const startDragging = useCallback((e: React.MouseEvent) => {
+    setIsDragging(true);
+    handleSeek(e.clientX);
+    e.preventDefault();
+  }, [handleSeek]);
+
+  const stopDragging = useCallback(() => {
+    setIsDragging(false);
+  }, []);
+
+  const onDrag = useCallback((e: MouseEvent) => {
+    if (isDragging) {
+      handleSeek(e.clientX);
+    }
+  }, [isDragging, handleSeek]);
+
+  // Set up drag event listeners
+  useEffect(() => {
+    if (isDragging) {
+      window.addEventListener('mousemove', onDrag);
+      window.addEventListener('mouseup', stopDragging);
+    }
+    return () => {
+      window.removeEventListener('mousemove', onDrag);
+      window.removeEventListener('mouseup', stopDragging);
+    };
+  }, [isDragging, onDrag, stopDragging]);
 
   const calculateProgress = (current: number, total: number) => {
     return `${Math.round((current / total) * 100)}%`;
@@ -528,21 +572,53 @@ const HLSPlayer: React.FC<HLSPlayerProps> = ({ src, poster, onLoaded, onError })
       {/* Controls overlay */}
       <div className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4 transition-opacity duration-300 ${showControls ? 'opacity-100' : 'opacity-0'}`}>
         {/* Progress bar */}
-        <div className="relative w-full h-1 bg-white/30 rounded-full cursor-pointer mb-4 group">
+        <div 
+          ref={progressBarRef}
+          className="relative w-full h-1 bg-white/30 rounded-full cursor-pointer mb-4 group"
+          onClick={(e) => {
+            if (!isDragging) {
+              handleSeek(e.clientX);
+            }
+          }}
+          onMouseDown={startDragging}
+          onMouseMove={(e) => {
+            const rect = e.currentTarget.getBoundingClientRect();
+            const pos = (e.clientX - rect.left) / rect.width;
+            setHoverPosition(pos * duration);
+          }}
+          onMouseLeave={() => {
+            if (!isDragging) {
+              setHoverPosition(null);
+            }
+          }}
+        >
           <div
             className="absolute h-full bg-primary rounded-full transition-all"
             style={{ width: `${(currentTime / duration) * 100}%` }}
           />
           <div
-            className="absolute h-full bg-white/50 rounded-full transition-all"
+            className="absolute h-full bg-white/50 rounded-full"
             style={{ 
               width: `${(videoRef.current?.buffered?.length ? videoRef.current.buffered.end(videoRef.current.buffered.length - 1) / duration : 0) * 100}%` 
             }}
           />
-          <div 
-            className="absolute w-3 h-3 bg-primary rounded-full -translate-y-1/2 top-1/2 opacity-0 group-hover:opacity-100 transition-opacity"
-            style={{ left: `${(currentTime / duration) * 100}%` }}
-          />
+          {(isDragging || isSeekingHover) && (
+            <div 
+              className="absolute w-4 h-4 bg-primary rounded-full -translate-y-1/2 top-1/2 -translate-x-1/2 shadow-lg cursor-grab active:cursor-grabbing"
+              style={{ 
+                left: `${(currentTime / duration) * 100}%`,
+                transform: isDragging ? 'translate(-50%, -50%) scale(1.2)' : 'translate(-50%, -50%)'
+              }}
+            />
+          )}
+          {hoverPosition !== null && !isDragging && (
+            <div
+              className="absolute bottom-4 transform -translate-x-1/2 bg-black/90 text-white text-xs px-2 py-1 rounded"
+              style={{ left: `${(hoverPosition / duration) * 100}%` }}
+            >
+              {formatTime(hoverPosition)}
+            </div>
+          )}
         </div>
 
         <div className="flex items-center justify-between">

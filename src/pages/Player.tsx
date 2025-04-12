@@ -2,8 +2,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { getMovieDetails, getTVDetails, videoSources, getSeasonDetails } from '@/utils/api';
+import { fetchMovieSources, fetchTVSources } from '@/utils/custom-api';
 import { MovieDetails, TVDetails, VideoSource, Episode } from '@/utils/types';
 import Navbar from '@/components/Navbar';
+import HLSPlayer from '@/components/HLSPlayer';
 import { Button } from '@/components/ui/button';
 import { 
   Select,
@@ -42,6 +44,8 @@ const Player = () => {
   const [hasInitialized, setHasInitialized] = useState(false);
   const [isPlayerLoaded, setIsPlayerLoaded] = useState(false);
   const watchHistoryRecorded = useRef(false);
+  const [hlsSource, setHlsSource] = useState<string | null>(null);
+  const [isCustomSource, setIsCustomSource] = useState(false);
 
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -83,8 +87,60 @@ const Player = () => {
     }
   }, [type]);
 
+  // Check if selected source is our custom API source
+  useEffect(() => {
+    setIsCustomSource(selectedSource === 'custom-api');
+    // Reset HLS source when changing sources
+    if (selectedSource !== 'custom-api') {
+      setHlsSource(null);
+    }
+  }, [selectedSource]);
+
+  // Fetch HLS stream URL when using custom API
+  useEffect(() => {
+    const fetchHlsStream = async () => {
+      if (!isCustomSource || !id) return;
+      
+      try {
+        setIsLoading(true);
+        const mediaId = parseInt(id, 10);
+        let streamUrl: string | null = null;
+        
+        if (mediaType === 'movie') {
+          streamUrl = await fetchMovieSources(mediaId);
+        } else if (mediaType === 'tv' && season && episode) {
+          streamUrl = await fetchTVSources(mediaId, parseInt(season, 10), parseInt(episode, 10));
+        }
+        
+        if (streamUrl) {
+          setHlsSource(streamUrl);
+        } else {
+          toast({
+            title: "Stream Not Available",
+            description: "Could not find a valid stream. Please try another source.",
+            variant: "destructive"
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching HLS stream:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load video stream. Please try another source.",
+          variant: "destructive"
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchHlsStream();
+  }, [isCustomSource, id, mediaType, season, episode, toast]);
+
   // Memoized function to update the iframe URL
   const updateIframeUrl = useCallback((mediaId: number, seasonNum?: number, episodeNum?: number) => {
+    // Skip iframe URL update for custom source
+    if (isCustomSource) return;
+    
     const source = videoSources.find(src => src.key === selectedSource);
     if (!source) return;
     
@@ -99,7 +155,7 @@ const Player = () => {
       setIframeUrl(url);
       setIsPlayerLoaded(true);
     }
-  }, [selectedSource, mediaType]);
+  }, [selectedSource, mediaType, isCustomSource]);
 
   // Handle player load and record watch history
   useEffect(() => {
@@ -151,6 +207,7 @@ const Player = () => {
       setMediaDetails(null);
       setEpisodes([]);
       setIframeUrl('');
+      setHlsSource(null);
       
       try {
         const mediaId = parseInt(id, 10);
@@ -209,13 +266,16 @@ const Player = () => {
   useEffect(() => {
     if (!id || !hasInitialized || !mediaDetails) return;
     
+    // Skip if we're using the custom source (HLS)
+    if (isCustomSource) return;
+    
     const mediaId = parseInt(id, 10);
     if (mediaType === 'movie') {
       updateIframeUrl(mediaId);
     } else if (mediaType === 'tv' && season && episode) {
       updateIframeUrl(mediaId, parseInt(season, 10), parseInt(episode, 10));
     }
-  }, [id, mediaType, season, episode, hasInitialized, mediaDetails, updateIframeUrl]);
+  }, [id, mediaType, season, episode, hasInitialized, mediaDetails, updateIframeUrl, isCustomSource]);
   
   const handleSourceChange = async (sourceKey: string) => {
     setSelectedSource(sourceKey);
@@ -331,8 +391,8 @@ const Player = () => {
     }
   };
   
-  // Handle iframe load event
-  const handleIframeLoad = () => {
+  // Handle player load event
+  const handlePlayerLoaded = () => {
     setIsPlayerLoaded(true);
   };
   
@@ -403,14 +463,30 @@ const Player = () => {
             {/* Player */}
             <div className="max-w-6xl mx-auto rounded-lg overflow-hidden shadow-xl bg-black">
               <div className="relative w-full aspect-video">
-                <iframe
-                  src={iframeUrl}
-                  allowFullScreen
-                  className="absolute inset-0 w-full h-full"
-                  title={title}
-                  loading="lazy"
-                  onLoad={handleIframeLoad}
-                ></iframe>
+                {isCustomSource ? (
+                  // HLS Player for custom source
+                  hlsSource ? (
+                    <HLSPlayer 
+                      src={hlsSource} 
+                      title={title}
+                      onLoaded={handlePlayerLoaded}
+                    />
+                  ) : (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black text-white">
+                      <p>Unable to load video stream. Please try another source.</p>
+                    </div>
+                  )
+                ) : (
+                  // Iframe player for other sources
+                  <iframe
+                    src={iframeUrl}
+                    allowFullScreen
+                    className="absolute inset-0 w-full h-full"
+                    title={title}
+                    loading="lazy"
+                    onLoad={() => setIsPlayerLoaded(true)}
+                  ></iframe>
+                )}
               </div>
             </div>
             

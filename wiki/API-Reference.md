@@ -107,6 +107,58 @@ interface LiveMatchesResponse {
 }
 ```
 
+## Video Streaming APIs
+
+### Custom Streaming API
+
+#### Get Movie Stream
+```typescript
+interface MovieStreamParams {
+  id: number;
+}
+
+interface StreamResponse {
+  source?: {
+    provider: string;
+    files: Array<{
+      file: string;
+      type: string;
+      quality: string;
+      lang: string;
+    }>;
+    headers?: Record<string, string>;
+    subtitles?: Array<any>;
+  };
+  ERROR?: Array<{
+    error: string;
+    what_happened: string;
+    report_issue: string;
+  }>;
+}
+```
+
+#### Get TV Stream
+```typescript
+interface TVStreamParams {
+  id: number;
+  s: number; // season
+  e: number; // episode
+}
+
+// Uses the same StreamResponse interface as Movie Stream
+```
+
+#### Proxy Implementation
+```typescript
+interface ProxyParams {
+  url: string;
+  headers?: string; // JSON stringified headers
+}
+
+// Example usage
+const proxyUrl = `${PROXY_URL}/v2?url=${encodeURIComponent(videoUrl)}&headers=${encodeURIComponent(JSON.stringify(headers))}`;
+```
+
 ## User Data API
 
 ### Watch History

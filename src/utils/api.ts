@@ -1,4 +1,3 @@
-
 import axios from 'axios';
 import { Media, MovieDetails, TVDetails, Episode, Review, Genre, Company, MovieImagesResponse } from './types';
 
@@ -116,7 +115,10 @@ export const backdropSizes = {
   original: `${IMAGE_BASE_URL}/original`,
 };
 
-export const videoSources = [
+// Add the custom API import
+import { fetchMovieSources, fetchTVSources } from './custom-api';
+
+export const videoSources: VideoSource[] = [
   {
     key: 'vidlink',
     name: 'VidLink',
@@ -264,6 +266,20 @@ export const videoSources = [
     getTVUrl: (id: number, season: number, episode: number) => 
       `https://vidbinge.dev/embed/tv/${id}/${season}/${episode}`,
   },
+  {
+    key: "custom-api",
+    name: "Custom API (HLS)",
+    getMovieUrl: async (movieId: number): Promise<string> => {
+      // For HLS players, we'll return a placeholder initially
+      // The actual URL will be fetched and passed to the player separately
+      return `custom-api://${movieId}`;
+    },
+    getTVUrl: async (tvId: number, season: number, episode: number): Promise<string> => {
+      // For HLS players, we'll return a placeholder initially
+      // The actual URL will be fetched and passed to the player separately
+      return `custom-api://${tvId}/${season}/${episode}`;
+    }
+  }
 ];
 
 const formatMediaItem = (item: TMDBMovieResult | TMDBTVResult): Media => {

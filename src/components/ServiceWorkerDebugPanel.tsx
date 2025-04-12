@@ -7,6 +7,7 @@ interface WebVitalMetric {
   name: string;
   value: number;
   rating: 'good' | 'needs-improvement' | 'poor';
+  timestamp?: number;  // Make it optional since not all metrics might have it
 }
 
 export function ServiceWorkerDebugPanel() {
@@ -32,6 +33,26 @@ export function ServiceWorkerDebugPanel() {
 
     getRegistration();
 
+    // Listen for service worker state changes
+    const handleServiceWorkerUpdate = (reg: ServiceWorkerRegistration) => {
+      setWaiting(!!reg.waiting);
+      setRegistration(reg);
+    };
+
+    if (registration) {
+      registration.addEventListener('statechange', () => getRegistration());
+      registration.addEventListener('controllerchange', () => {
+        getRegistration();
+        // Reload once the new service worker has taken control
+        window.location.reload();
+      });
+    }
+
+    // Listen for new service workers
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      setControllerState(navigator.serviceWorker.controller ? 'active' : 'none');
+    });
+
     // Listen for messages from performance monitor
     const handleMessage = (event: MessageEvent) => {
       if (event.data && event.data.type === 'web-vital') {
@@ -43,59 +64,31 @@ export function ServiceWorkerDebugPanel() {
             updated[exists] = {
               ...updated[exists],
               value: event.data.value,
-              rating: getRating(event.data.name, event.data.value)
+              timestamp: Date.now()
             };
             return updated;
-          } else {
-            return [...prev, {
-              name: event.data.name,
-              value: event.data.value,
-              rating: getRating(event.data.name, event.data.value)
-            }];
           }
+          return [...prev, { ...event.data, timestamp: Date.now() }];
         });
       }
     };
 
-    if (navigator.serviceWorker.controller) {
-      navigator.serviceWorker.addEventListener('message', handleMessage);
-    }
+    window.addEventListener('message', handleMessage);
 
-    const interval = setInterval(getRegistration, 1000);
+    // Cleanup
     return () => {
-      clearInterval(interval);
-      if (navigator.serviceWorker.controller) {
-        navigator.serviceWorker.removeEventListener('message', handleMessage);
+      window.removeEventListener('message', handleMessage);
+      if (registration) {
+        registration.removeEventListener('statechange', () => getRegistration());
+        registration.removeEventListener('controllerchange', () => getRegistration());
       }
     };
-  }, []);
+  }, [registration]);
 
   const handleSkipWaiting = async () => {
-    if (!registration?.waiting) return;
-    registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-  };
-
-  const handleUnregister = async () => {
-    if (!registration) return;
-    await registration.unregister();
-    window.location.reload();
-  };
-
-  // Helper function to rate Web Vitals metrics
-  const getRating = (name: string, value: number): WebVitalMetric['rating'] => {
-    switch (name) {
-      case 'CLS':
-        return value <= 0.1 ? 'good' : value <= 0.25 ? 'needs-improvement' : 'poor';
-      case 'FID':
-        return value <= 100 ? 'good' : value <= 300 ? 'needs-improvement' : 'poor';
-      case 'LCP':
-        return value <= 2500 ? 'good' : value <= 4000 ? 'needs-improvement' : 'poor';
-      case 'TTFB':
-        return value <= 800 ? 'good' : value <= 1800 ? 'needs-improvement' : 'poor';
-      case 'FCP':
-        return value <= 1800 ? 'good' : value <= 3000 ? 'needs-improvement' : 'poor';
-      default:
-        return 'good';
+    if (registration?.waiting) {
+      // Send skip waiting message to waiting service worker
+      registration.waiting.postMessage({ type: 'SKIP_WAITING' });
     }
   };
 
@@ -119,38 +112,42 @@ export function ServiceWorkerDebugPanel() {
               Controller: {controllerState}
               {waiting && ' (update available)'}
             </p>
-          </div>
-          <div className="flex gap-2">
-            {waiting && (
-              <Button size="sm" onClick={handleSkipWaiting}>
-                Apply Update
-              </Button>
+            {registration.active && (
+              <p className="text-sm text-muted-foreground">
+                Active: {registration.active.state}
+              </p>
             )}
-            <Button size="sm" variant="outline" onClick={handleUnregister}>
-              Unregister
-            </Button>
+            {registration.installing && (
+              <p className="text-sm text-muted-foreground">
+                Installing: {registration.installing.state}
+              </p>
+            )}
+            {registration.waiting && (
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">
+                  Waiting: {registration.waiting.state}
+                </p>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={handleSkipWaiting}
+                >
+                  Apply Update
+                </Button>
+              </div>
+            )}
           </div>
         </TabsContent>
-        
-        <TabsContent value="vitals" className="space-y-2">
-          <h3 className="font-semibold">Web Vitals</h3>
-          <div className="space-y-1 max-h-60 overflow-y-auto">
-            {webVitals.length > 0 ? (
-              webVitals.map((metric) => (
-                <div key={metric.name} className="flex justify-between items-center text-sm">
-                  <span>{metric.name}</span>
-                  <span className={
-                    metric.rating === 'good' ? 'text-green-500' : 
-                    metric.rating === 'needs-improvement' ? 'text-yellow-500' : 
-                    'text-red-500'
-                  }>
-                    {metric.name === 'CLS' ? metric.value.toFixed(3) : `${metric.value}ms`}
-                  </span>
-                </div>
-              ))
-            ) : (
-              <p className="text-sm text-muted-foreground">No metrics available yet</p>
-            )}
+
+        <TabsContent value="vitals" className="space-y-4">
+          <div className="space-y-2">
+            <h3 className="font-semibold">Web Vitals</h3>
+            {webVitals.map((metric) => (
+              <div key={metric.name} className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">{metric.name}:</span>
+                <span className="text-sm font-medium">{metric.value.toFixed(2)}</span>
+              </div>
+            ))}
           </div>
         </TabsContent>
       </Tabs>

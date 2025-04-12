@@ -120,9 +120,9 @@ const ContinueWatching = ({ maxItems = 20 }: ContinueWatchingProps) => {
   
   const handleContinueWatching = (item: WatchHistoryItem) => {
     if (item.media_type === 'movie') {
-      navigate(`/player/${item.media_type}/${item.media_id}`);
+      navigate(`/watch/${item.media_type}/${item.media_id}`);
     } else if (item.media_type === 'tv') {
-      navigate(`/player/${item.media_type}/${item.media_id}/${item.season}/${item.episode}`);
+      navigate(`/watch/${item.media_type}/${item.media_id}/${item.season}/${item.episode}`);
     }
   };
   

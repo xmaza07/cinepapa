@@ -97,8 +97,7 @@ const Player = () => {
   }, [selectedSource]);
 
   // Fetch HLS stream URL when using custom API
-  useEffect(() => {
-    const fetchHlsStream = async () => {
+  useEffect(() => {    const fetchHlsStream = async () => {
       if (!isCustomSource || !id) return;
       
       try {
@@ -114,7 +113,9 @@ const Player = () => {
         
         if (streamUrl) {
           setHlsSource(streamUrl);
+          setIsPlayerLoaded(true);
         } else {
+          setIsPlayerLoaded(false);
           toast({
             title: "Stream Not Available",
             description: "Could not find a valid stream. Please try another source.",
@@ -123,6 +124,7 @@ const Player = () => {
         }
       } catch (error) {
         console.error('Error fetching HLS stream:', error);
+        setIsPlayerLoaded(false);
         toast({
           title: "Error",
           description: "Failed to load video stream. Please try another source.",
@@ -276,13 +278,16 @@ const Player = () => {
       updateIframeUrl(mediaId, parseInt(season, 10), parseInt(episode, 10));
     }
   }, [id, mediaType, season, episode, hasInitialized, mediaDetails, updateIframeUrl, isCustomSource]);
-  
-  const handleSourceChange = async (sourceKey: string) => {
+    const handleSourceChange = async (sourceKey: string) => {
     setSelectedSource(sourceKey);
-    
-    // Reset player load state and watch history recorded flag when source changes
     setIsPlayerLoaded(false);
+    setHlsSource(null);
     watchHistoryRecorded.current = false;
+    
+    // Clear iframe URL if switching from an iframe source
+    if (iframeUrl) {
+      setIframeUrl('');
+    }
     
     // Save the preference if user is logged in
     if (user) {
@@ -291,9 +296,11 @@ const Player = () => {
       });
     }
     
+    const sourceName = videoSources.find(s => s.key === sourceKey)?.name || 'new source';
     toast({
       title: "Source Changed",
-      description: `Switched to ${videoSources.find(s => s.key === sourceKey)?.name || 'new source'}`,
+      description: `Switched to ${sourceName}`,
+      duration: 3000,
     });
   };
   
@@ -465,11 +472,18 @@ const Player = () => {
               <div className="relative w-full aspect-video">
                 {isCustomSource ? (
                   // HLS Player for custom source
-                  hlsSource ? (
-                    <HLSPlayer 
+                  hlsSource ? (                    <HLSPlayer 
                       src={hlsSource} 
                       title={title}
                       onLoaded={handlePlayerLoaded}
+                      onError={(error) => {
+                        toast({
+                          title: "Playback Error",
+                          description: error,
+                          variant: "destructive"
+                        });
+                        setIsPlayerLoaded(false);
+                      }}
                     />
                   ) : (
                     <div className="absolute inset-0 flex items-center justify-center bg-black text-white">

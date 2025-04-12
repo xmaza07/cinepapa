@@ -1,27 +1,12 @@
-# Proxy for new CUSTOM API video source
+# Streaming Implementation
 
-## This proxy is designed to facilitate requests to the custom streaming API, ensuring a seamless experience for users using m3u8 videos
+The streaming functionality now uses direct HLS (m3u8) URLs from the 2embed provider without a proxy. The HLS player component handles the video playback directly using:
 
-> PROXY_URL = "<https://m3u8proxy.chintanr21.workers.dev/>"
+1. Direct stream access from the provider
+2. Built-in CORS handling in the HLSPlayer component
+3. Automatic quality selection and adaptation
+4. Proper error handling and retry logic
 
-### Usage
+## Configuration
 
-#### Example
-
-```javascript
-const m3u8url = "https://vz-cea98c59-23c.b-cdn.net/c309129c-27b6-4e43-8254-62a15c77c5ee/842x480/video.m3u8";
-const proxyUrl = "https://m3u8proxy.chintanr21.workers.dev/v2";
-
-const proxiedUrl = `${proxyUrl}/v2?url=${encodeURIComponent(m3u8url)}`;
-
-// Alternative Method using URLSearchParams
-const searchParams = new URLSearchParams();
-searchParams.set("url", m3u8url);
-
-const proxiedUrl2 = `${proxyUrl}/v2?${searchParams.toString()}`;
-
-// Setting headers
-searchParams.set("headers", JSON.stringify({
-  Range: "bytes=0-500"
-}));
-```
+No special proxy configuration is needed. The player will automatically handle HLS stream playback using the browser's native capabilities or the HLS.js library as appropriate.

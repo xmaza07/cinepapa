@@ -265,19 +265,14 @@ export const videoSources: VideoSource[] = [
     getMovieUrl: (id: number) => `https://vidbinge.dev/embed/movie/${id}`,
     getTVUrl: (id: number, season: number, episode: number) => 
       `https://vidbinge.dev/embed/tv/${id}/${season}/${episode}`,
-  },
-  {
+  },  {
     key: "custom-api",
-    name: "Custom API (HLS)",
-    getMovieUrl: async (movieId: number): Promise<string> => {
-      // For HLS players, we'll return a placeholder initially
-      // The actual URL will be fetched and passed to the player separately
-      return `custom-api://${movieId}`;
-    },
-    getTVUrl: async (tvId: number, season: number, episode: number): Promise<string> => {
-      // For HLS players, we'll return a placeholder initially
-      // The actual URL will be fetched and passed to the player separately
-      return `custom-api://${tvId}/${season}/${episode}`;
+    name: "Custom API (HLS)",    getMovieUrl: async (movieId: number): Promise<string> => {
+      const streamUrl = await fetchMovieSources(movieId);
+      return streamUrl || '';
+    },    getTVUrl: async (tvId: number, season: number, episode: number): Promise<string> => {
+      const streamUrl = await fetchTVSources(tvId, season, episode);
+      return streamUrl || '';
     }
   }
 ];

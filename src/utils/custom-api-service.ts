@@ -62,12 +62,12 @@ const extractVideoUrl = (data: ApiResponse[]): string | null => {
       
       // Check for sources array
       if (Array.isArray(item.sources)) {
-        for (const source of item.sources) {
-          if (source.files?.length) {
+        for (const source of item.sources) {          if (source.files?.length) {
             const file = source.files[0];
+            const headers = source.headers || {};
+            
             if (file.file && file.type === 'hls') {
-              // Return the file URL for HLS content
-              return file.file;
+              return createProxiedUrl(file.file, headers);
             }
           }
         }

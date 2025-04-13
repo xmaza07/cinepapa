@@ -20,3 +20,30 @@ export const getUserId = () => {
   }
   return anonymousId;
 };
+
+// Save data to localStorage with optional expiration
+export const saveLocalData = (key: string, data: any, ttl?: number) => {
+  const item = {
+    data,
+    timestamp: Date.now(),
+    ttl
+  };
+  localStorage.setItem(key, JSON.stringify(item));
+};
+
+// Get data from localStorage, respecting TTL if set
+export const getLocalData = (key: string, defaultValue: any = null) => {
+  const item = localStorage.getItem(key);
+  if (!item) return defaultValue;
+
+  try {
+    const parsed = JSON.parse(item);
+    if (parsed.ttl && Date.now() - parsed.timestamp > parsed.ttl) {
+      localStorage.removeItem(key);
+      return defaultValue;
+    }
+    return parsed.data;
+  } catch {
+    return defaultValue;
+  }
+};

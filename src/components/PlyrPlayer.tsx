@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import Plyr from 'plyr';
 import 'plyr/dist/plyr.css';
@@ -70,14 +69,14 @@ const PlyrPlayer: React.FC<PlyrPlayerProps> = ({
           if (onLoaded) onLoaded();
         });
         
-        // Fix: Access error event data correctly by handling all possible formats
+        // Handle error events properly - Plyr errors can come in different formats
         plyr.on('error', (event) => {
           if (!mounted) return;
           
           let errorMessage = 'Video playback error';
           
           // Try to extract error message from various possible locations
-          try {
+          if (event) {
             const detail = event.detail;
             if (typeof detail === 'string') {
               errorMessage = detail;
@@ -88,8 +87,6 @@ const PlyrPlayer: React.FC<PlyrPlayerProps> = ({
                 errorMessage = String(detail.error);
               }
             }
-          } catch (err) {
-            console.error('Error extracting message from Plyr error event', err);
           }
           
           setError(errorMessage);

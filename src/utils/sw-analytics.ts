@@ -1,3 +1,4 @@
+
 // Avoid flooding analytics in development
 const isDev = process.env.NODE_ENV === 'development';
 
@@ -82,13 +83,15 @@ class ServiceWorkerAnalytics {
         value: Math.round(this.calculateNetworkSuccessRate())
       });
 
-      // Report web vitals metrics
+      // Report web vitals metrics - fix type issue by ensuring numeric values
       const webVitals = await this.getWebVitals();
       Object.entries(webVitals).forEach(([name, value]) => {
+        // Ensure value is a number before passing it to trackEvent
+        const numericValue = typeof value === 'number' ? value : 0;
         this.trackEvent({
           category: 'WebVitals',
           action: name,
-          value: Math.round(value)
+          value: Math.round(numericValue)
         });
       });
 
@@ -113,13 +116,18 @@ class ServiceWorkerAnalytics {
 
   trackEvent(event: AnalyticsEvent) {
     try {
-      // Send event to your analytics platform
-      if (typeof gtag !== 'undefined') {
-        gtag('event', event.action, {
+      // Send event to your analytics platform, using window.gtag if available
+      if (typeof window !== 'undefined' && window.gtag) {
+        window.gtag('event', event.action, {
           event_category: event.category,
           event_label: event.label,
           value: event.value
         });
+      } else {
+        // Fallback for when gtag is not available - just log to console in development
+        if (isDev) {
+          console.log('Analytics Event:', event);
+        }
       }
     } catch (error) {
       console.error('Error tracking event:', error);

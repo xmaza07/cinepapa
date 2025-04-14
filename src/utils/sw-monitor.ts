@@ -1,3 +1,4 @@
+
 interface NetworkMetrics {
   successes: number;
   failures: number;
@@ -102,6 +103,11 @@ class ServiceWorkerMonitor {
     if (registration.active) {
       registration.active.postMessage(message);
     }
+  }
+
+  // Add the missing logAllMetrics method
+  logAllMetrics(): void {
+    console.log('Service Worker Network Metrics:', this.networkMetrics);
   }
 
   reset() {

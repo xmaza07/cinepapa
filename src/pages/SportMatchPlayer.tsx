@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -68,10 +67,8 @@ const SportMatchPlayer = () => {
   const handleIframeLoad = () => {
     setIsPlayerLoaded(true);
     
-    // Record cache access for this stream
-    if (embedUrl) {
-      swMonitor.recordCacheAccess(embedUrl);
-    }
+    // Record successful stream load without using recordCacheAccess
+    console.log('Stream loaded successfully:', embedUrl);
     
     toast({
       title: "Stream loaded",

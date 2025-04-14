@@ -70,9 +70,11 @@ const PlyrPlayer: React.FC<PlyrPlayerProps> = ({
           if (onLoaded) onLoaded();
         });
         
+        // Fix: Access error details correctly
         plyr.on('error', (event) => {
           if (!mounted) return;
-          const errorMessage = event.detail?.message || 'Video playback error';
+          // The error event in Plyr doesn't directly have a message property
+          const errorMessage = event.detail?.plyr?.error || 'Video playback error';
           setError(errorMessage);
           if (onError) onError(errorMessage);
           toast({

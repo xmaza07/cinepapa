@@ -70,18 +70,27 @@ const PlyrPlayer: React.FC<PlyrPlayerProps> = ({
           if (onLoaded) onLoaded();
         });
         
-        // Fix: Access error event data correctly
+        // Fix: Access error event data correctly by handling all possible formats
         plyr.on('error', (event) => {
           if (!mounted) return;
           
-          // Get error message from event details or use a default message
-          // The Plyr type doesn't directly expose the error property, but it may exist in the detail object
-          const errorDetail = event.detail;
-          const errorMessage = typeof errorDetail === 'string' 
-            ? errorDetail 
-            : (errorDetail && typeof errorDetail === 'object' && 'message' in errorDetail)
-              ? String(errorDetail.message)
-              : 'Video playback error';
+          let errorMessage = 'Video playback error';
+          
+          // Try to extract error message from various possible locations
+          try {
+            const detail = event.detail;
+            if (typeof detail === 'string') {
+              errorMessage = detail;
+            } else if (detail && typeof detail === 'object') {
+              if ('message' in detail) {
+                errorMessage = String(detail.message);
+              } else if ('error' in detail) {
+                errorMessage = String(detail.error);
+              }
+            }
+          } catch (err) {
+            console.error('Error extracting message from Plyr error event', err);
+          }
           
           setError(errorMessage);
           if (onError) onError(errorMessage);

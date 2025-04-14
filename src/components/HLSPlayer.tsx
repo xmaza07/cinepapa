@@ -13,8 +13,7 @@ import {
   SkipBack,
   SkipForward,
   Volume1,
-  Volume,
-  Cast
+  Volume
 } from 'lucide-react';
 
 interface Quality {
@@ -105,14 +104,7 @@ const HLSPlayer: React.FC<HLSPlayerProps> = ({ src, poster, onLoaded, onError })
   const [showVolumeSlider, setShowVolumeSlider] = useState(false);
   const [showQualityMenu, setShowQualityMenu] = useState(false);
   const [isBuffering, setIsBuffering] = useState(false);
-  const [isDragging, setIsDragging] = useState(false);
-  const [audioBoostLevel, setAudioBoostLevel] = useState(1); // 1 = normal, 1.5 = mild boost, 2 = high boost
-  const [isCasting, setIsCasting] = useState(false);
-  const [castSession, setCastSession] = useState<ChromeCastSession | null>(null);
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const gainNodeRef = useRef<GainNode | null>(null);
-  const mediaSourceRef = useRef<MediaElementAudioSourceNode | null>(null);
-  const progressBarRef = useRef<HTMLDivElement>(null);
+  const [isDragging, setIsDragging] = useState(false);  const progressBarRef = useRef<HTMLDivElement>(null);
 
   const handleSeek = useCallback((clientX: number) => {
     const progressBar = progressBarRef.current;
@@ -150,38 +142,6 @@ const HLSPlayer: React.FC<HLSPlayerProps> = ({ src, poster, onLoaded, onError })
     };
   }, [isDragging, onDrag, stopDragging]);
 
-  // Initialize audio context and gain node for audio boost
-  useEffect(() => {
-    if (!audioContextRef.current) {
-      const AudioContextClass = window.AudioContext || ((window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext);
-      audioContextRef.current = new AudioContextClass();
-      gainNodeRef.current = audioContextRef.current.createGain();
-      gainNodeRef.current.connect(audioContextRef.current.destination);
-    }
-
-    return () => {
-      if (audioContextRef.current) {
-        audioContextRef.current.close();
-        audioContextRef.current = null;
-      }
-    };
-  }, []);
-
-  // Connect video element to audio context when ready
-  useEffect(() => {
-    const video = videoRef.current;
-    if (video && audioContextRef.current && gainNodeRef.current) {
-      mediaSourceRef.current = audioContextRef.current.createMediaElementSource(video);
-      mediaSourceRef.current.connect(gainNodeRef.current);
-    }
-  }, []);
-
-  // Update gain value when audio boost level changes
-  useEffect(() => {
-    if (gainNodeRef.current) {
-      gainNodeRef.current.gain.value = audioBoostLevel;
-    }
-  }, [audioBoostLevel]);
 
   const calculateProgress = (current: number, total: number) => {
     return `${Math.round((current / total) * 100)}%`;
@@ -214,48 +174,52 @@ const HLSPlayer: React.FC<HLSPlayerProps> = ({ src, poster, onLoaded, onError })
       try {
         if (hlsInstance.current) {
           hlsInstance.current.destroy();
-        }
-
-        const config = {
+        }        const config = {
           maxBufferLength: 30,
           maxMaxBufferLength: 60,
-          startLevel: -1, // Auto quality selection
+          startLevel: -1,
           capLevelToPlayerSize: true,
           autoStartLoad: true,
           fragLoadingRetryDelay: 2000,
           manifestLoadingRetryDelay: 2000,
           levelLoadingRetryDelay: 2000,
-          fragLoadingMaxRetry: 2,
-          manifestLoadingMaxRetry: 2,
-          levelLoadingMaxRetry: 2,
+          fragLoadingMaxRetry: 3,
+          manifestLoadingMaxRetry: 3,
+          levelLoadingMaxRetry: 3,
           maxFragLookUpTolerance: 0.5,
           maxLoadingDelay: 4,
-          lowLatencyMode: false,
           enableWorker: true,
-          testBandwidth: true,
-          progressive: true,
-          abrEwmaDefaultEstimate: 500000,
-          abrBandWidthFactor: 0.9,
-          xhrSetup: (xhr: XMLHttpRequest) => {
-            xhr.withCredentials = false;
-          }
+          testBandwidth: true,          xhrSetup: (xhr: XMLHttpRequest) => {
+            xhr.withCredentials = false; // Disable credentials for cross-origin
+            // Add required headers for CDN access
+            xhr.setRequestHeader('Origin', window.location.origin);
+            xhr.setRequestHeader('Referer', window.location.origin);
+          },
+          enableSoftwareAES: true,
+          debug: false, // Disable debug mode in production
+          cors: true,  // Enable CORS mode
+          enableCEA708Captions: true
         };
 
-        hlsInstance.current = new Hls(config);
-        
-        hlsInstance.current.on(Hls.Events.ERROR, (_, data) => {
-          if (data.fatal) {
-            let errorMessage = 'Video playback error';
+        hlsInstance.current = new Hls(config);        hlsInstance.current.on(Hls.Events.ERROR, (_, data) => {
+          if (data.fatal) {            let errorMessage = 'Video playback error';
             let canRetry = true;
             
             if (data.type === 'networkError') {
-              if (data.response?.code === 403) {
-                errorMessage = 'Stream access denied';
-                canRetry = false;
-              } else if (data.details === 'manifestLoadError') {
-                errorMessage = 'Unable to load video stream';
+              if (data.details === 'manifestLoadError' || data.details === 'levelLoadError') {
+                if (data.response?.code === 403) {
+                  errorMessage = 'Stream access denied';
+                  canRetry = false;
+                } else if (data.response && data.response.text?.includes('CORS')) {
+                  errorMessage = 'Cross-origin access denied';
+                  canRetry = false;
+                } else {
+                  errorMessage = 'Unable to load video stream';
+                }
               } else if (data.details === 'fragLoadError') {
                 errorMessage = 'Network error while loading video';
+                // Allow retry for fragment loading errors
+                canRetry = true;
               }
             } else if (data.type === 'mediaError') {
               errorMessage = 'Video format not supported';
@@ -266,9 +230,7 @@ const HLSPlayer: React.FC<HLSPlayerProps> = ({ src, poster, onLoaded, onError })
             if (hlsInstance.current) {
               hlsInstance.current.destroy();
               hlsInstance.current = null;
-            }
-
-            if (shouldRetry && canRetry && retryCount.current < maxRetries) {
+            }            if (canRetry && retryCount.current < maxRetries) {
               retryCount.current++;
               setTimeout(() => {
                 setError(null);
@@ -609,95 +571,6 @@ const HLSPlayer: React.FC<HLSPlayerProps> = ({ src, poster, onLoaded, onError })
     };
   }, []);
 
-  const initializeCastApi = useCallback(() => {
-    const chromeWindow = window as unknown as ChromeWindow;
-    if (!chromeWindow.chrome?.cast?.isAvailable) {
-      setTimeout(initializeCastApi, 1000);
-      return;
-    }
-
-    const sessionRequest = new chromeWindow.chrome.cast.SessionRequest(
-      chromeWindow.chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID
-    );
-    
-    const apiConfig = new chromeWindow.chrome.cast.ApiConfig(
-      sessionRequest,
-      (session: ChromeCastSession) => {
-        setCastSession(session);
-        setIsCasting(true);
-      },
-      () => {
-        // Handle availability change
-      }
-    );
-
-    chromeWindow.chrome.cast.initialize(
-      {
-        receiverApplicationId: chromeWindow.chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID,
-        autoJoinPolicy: 'origin_scoped'
-      },
-      () => {
-        console.log('Cast API initialized');
-      },
-      console.error
-    );
-  }, []);
-
-  // Cast API initialization effect
-  useEffect(() => {
-    const chromeWindow = window as unknown as ChromeWindow;
-    if (!chromeWindow.chrome?.cast?.initialize) {
-      const script = document.createElement('script');
-      script.src = 'https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1';
-      document.head.appendChild(script);
-      script.onload = initializeCastApi;
-    } else {
-      initializeCastApi();
-    }
-  }, [initializeCastApi]);
-
-  const startCasting = async () => {
-    const chromeWindow = window as unknown as ChromeWindow;
-    if (!chromeWindow.chrome?.cast?.isAvailable) return;
-
-    try {
-      const session = await new Promise<ChromeCastSession>((resolve, reject) => {
-        chromeWindow.chrome.cast.requestSession(resolve, reject);
-      });
-
-      setCastSession(session);
-      setIsCasting(true);
-
-      const mediaInfo = new chromeWindow.chrome.cast.media.MediaInfo(src, 'application/x-mpegURL');
-      const request = new chromeWindow.chrome.cast.media.LoadRequest(mediaInfo);
-      
-      await session.loadMedia(request);
-      if (videoRef.current) {
-        videoRef.current.pause();
-      }
-    } catch (error) {
-      console.error('Error starting cast:', error);
-    }
-  };
-
-  const stopCasting = useCallback(async () => {
-    if (castSession) {
-      await castSession.stop();
-      setCastSession(null);
-      setIsCasting(false);
-      if (videoRef.current) {
-        videoRef.current.play().catch(console.error);
-      }
-    }
-  }, [castSession]);
-
-  const toggleAudioBoost = useCallback(() => {
-    setAudioBoostLevel(current => {
-      if (current === 1) return 1.5;
-      if (current === 1.5) return 2;
-      return 1;
-    });
-  }, []);
 
   const startDragging = useCallback((e: React.MouseEvent) => {
     setIsDragging(true);
@@ -861,40 +734,7 @@ const HLSPlayer: React.FC<HLSPlayerProps> = ({ src, poster, onLoaded, onError })
               <span>/</span>
               <span>{formatTime(duration)}</span>
             </div>
-          </div>
-
-          <div className="flex items-center gap-4">
-            {/* Audio Boost button */}
-            <button
-              onClick={toggleAudioBoost}
-              className={`text-white hover:text-primary transition-colors ${audioBoostLevel > 1 ? 'text-primary' : ''}`}
-              title={`Audio Boost (Current: ${audioBoostLevel === 1 ? 'Off' : audioBoostLevel === 1.5 ? 'Mild' : 'High'})`}
-            >
-              {audioBoostLevel === 1 ? (
-                <Volume2 size={24} />
-              ) : audioBoostLevel === 1.5 ? (
-                <Volume2 size={24} className="text-primary" />
-              ) : (
-                <Volume2 size={24} className="text-primary font-bold" />
-              )}
-              {audioBoostLevel > 1 && (
-                <span className="absolute -top-1 -right-1 text-xs bg-primary text-white rounded-full w-4 h-4 flex items-center justify-center">
-                  +
-                </span>
-              )}
-            </button>
-
-            {/* Cast button */}
-            {(window as unknown as ChromeWindow).chrome?.cast?.isAvailable && (
-              <button
-                onClick={isCasting ? stopCasting : startCasting}
-                className={`text-white hover:text-primary transition-colors ${isCasting ? 'text-primary' : ''}`}
-                title={isCasting ? 'Stop casting' : 'Cast to device'}
-              >
-                <Cast size={24} />
-              </button>
-            )}
-
+          </div>          <div className="flex items-center gap-4">
             {/* Quality selector */}
             {qualities.length > 0 && (
               <div className="relative">

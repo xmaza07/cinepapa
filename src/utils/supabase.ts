@@ -22,7 +22,7 @@ export const getUserId = () => {
 };
 
 // Save data to localStorage with optional expiration
-export const saveLocalData = (key: string, data: any, ttl?: number) => {
+export const saveLocalData = <T>(key: string, data: T, ttl?: number) => {
   const item = {
     data,
     timestamp: Date.now(),
@@ -32,12 +32,12 @@ export const saveLocalData = (key: string, data: any, ttl?: number) => {
 };
 
 // Get data from localStorage, respecting TTL if set
-export const getLocalData = (key: string, defaultValue: any = null) => {
+export const getLocalData = <T>(key: string, defaultValue: T | null = null): T | null => {
   const item = localStorage.getItem(key);
   if (!item) return defaultValue;
 
   try {
-    const parsed = JSON.parse(item);
+    const parsed = JSON.parse(item) as { data: T; timestamp: number; ttl?: number };
     if (parsed.ttl && Date.now() - parsed.timestamp > parsed.ttl) {
       localStorage.removeItem(key);
       return defaultValue;

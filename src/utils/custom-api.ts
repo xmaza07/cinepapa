@@ -13,15 +13,14 @@ const extractVideoUrl = (data: ApiResponse[]): string | null => {
       if (item.source?.provider?.toLowerCase().includes('2embed')) {
         if (item.source.files?.length) {
           const file = item.source.files[0];
-          
           if (file.file && file.type === 'hls') {
-            // Use HTTPS for the stream URL and ensure it's a valid URL
-            const secureUrl = file.file.replace('http://', 'https://');
             try {
+              const secureUrl = file.file.replace('http://', 'https://');
               new URL(secureUrl); // Validate URL
+              console.warn('Using direct HLS stream URL:', secureUrl);
               return secureUrl;
-            } catch {
-              console.warn('Invalid stream URL:', secureUrl);
+            } catch (e) {
+              console.warn('Invalid stream URL format');
               return null;
             }
           }
@@ -47,12 +46,10 @@ const fetchWithRetry = async <T>(
   retries: number = MAX_RETRIES
 ): Promise<T> => {
   for (let i = 0; i < retries; i++) {
-    try {
-      const response = await axios.get<T>(url, {
+    try {      const response = await axios.get<T>(url, {
         timeout: 15000, // 15 second timeout
         headers: {
-          'Accept': 'application/json',
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+          'Accept': 'application/json'
         }
       });
       return response.data;

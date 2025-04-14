@@ -141,3 +141,32 @@ Example FOR TV: <https://tmdb-embed-api.vercel.app/tv/1418>?s=1&e=1> - Get TV sh
     }
 ]
 ```
+
+## 2embed provider working as of now so don't use any other provider for now
+
+> Example: <https://tmdb-embed-api.vercel.app/movie/2embed/696506>
+
+Response:
+
+```json
+[
+{
+"source": {
+"provider": "2Embed/Swish",
+"files": [
+{
+"file": "https://tcnciokxad.cdn-centaurus.com/hls2/01/09400/oqg4gbqelm38_n/index-v1-a1.m3u8?t=0AZdP4SqG8aEWpHSxZoFBsmFPMViq2hkpOPimlddPxo&s=1744589874&e=129600&f=47022173&srv=kvh8fa28Sb&i=0.4&sp=500&p1=kvh8fa28Sb&p2=kvh8fa28Sb&asn=14618%22,%22hls4%22:%22/stream/EfuMwHpoKi8w8lxXiytCPQ/kjhhiuahiuhgihdf/1744633074/47004712/master.m3u8",
+"type": "hls",
+"quality": "720p",
+"lang": "en"
+}
+],
+"subtitles": [],
+"headers": {
+"Referer": "https://uqloads.xyz",
+"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+"Origin": "https://uqloads.xyz"
+}
+}
+}
+]```

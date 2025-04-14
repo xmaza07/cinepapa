@@ -126,12 +126,12 @@ export interface Company {
   origin_country: string;
 }
 
-// Video source type - Updated to support both synchronous and asynchronous URL functions
+// Video source interface
 export interface VideoSource {
   key: string;
   name: string;
-  getMovieUrl: (movieId: number) => string | Promise<string>;
-  getTVUrl: (tvId: number, season: number, episode: number) => string | Promise<string>;
+  getMovieUrl: (id: number) => string | Promise<string>;
+  getTVUrl: (id: number, season: number, episode: number) => string | Promise<string>;
 }
 
 // Image response types

@@ -7,6 +7,10 @@ import { registerServiceWorker } from './utils/register-sw'
 // Register service worker
 registerServiceWorker().catch(console.error);
 
+// Import Plyr custom styles
+import 'plyr/dist/plyr.css';
+import './styles/plyr-custom.css';
+
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>
     <App />

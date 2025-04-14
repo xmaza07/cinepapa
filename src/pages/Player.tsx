@@ -1,11 +1,10 @@
-
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { getMovieDetails, getTVDetails, videoSources, getSeasonDetails } from '@/utils/api';
-import { fetchMovieSources, fetchTVSources } from '@/utils/custom-api';
+import { getMovieStream, getTVStream } from '@/utils/custom-api';
 import { MovieDetails, TVDetails, VideoSource, Episode } from '@/utils/types';
 import Navbar from '@/components/Navbar';
-import HLSPlayer from '@/components/HLSPlayer';
+import PlyrPlayer from '@/components/PlyrPlayer';
 import { Button } from '@/components/ui/button';
 import { 
   Select,
@@ -15,7 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ArrowLeft, ExternalLink, Film, Tv, Check, SkipBack, SkipForward, Heart, Bookmark } from 'lucide-react';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useWatchHistory } from '@/hooks/watch-history';
 import { useAuth } from '@/hooks';
@@ -44,7 +43,7 @@ const Player = () => {
   const [hasInitialized, setHasInitialized] = useState(false);
   const [isPlayerLoaded, setIsPlayerLoaded] = useState(false);
   const watchHistoryRecorded = useRef(false);
-  const [hlsSource, setHlsSource] = useState<string | null>(null);
+  const [streamUrl, setStreamUrl] = useState<string | null>(null);
   const [isCustomSource, setIsCustomSource] = useState(false);
 
   const navigate = useNavigate();
@@ -64,7 +63,6 @@ const Player = () => {
   const [isFavorite, setIsFavorite] = useState(false);
   const [isInMyWatchlist, setIsInMyWatchlist] = useState(false);
 
-  // Effect to check favorites and watchlist status
   useEffect(() => {
     if (user && id && mediaType) {
       const mediaId = parseInt(id, 10);
@@ -73,46 +71,42 @@ const Player = () => {
     }
   }, [user, id, mediaType, isInFavorites, isInWatchlist]);
 
-  // Effect to initialize selected source from preferences
   useEffect(() => {
     if (userPreferences?.preferred_source) {
       setSelectedSource(userPreferences.preferred_source);
     }
   }, [userPreferences?.preferred_source]);
 
-  // Update media type based on URL parameter
   useEffect(() => {
     if (type === 'movie' || type === 'tv') {
       setMediaType(type);
     }
   }, [type]);
 
-  // Check if selected source is our custom API source
   useEffect(() => {
     setIsCustomSource(selectedSource === 'custom-api');
-    // Reset HLS source when changing sources
     if (selectedSource !== 'custom-api') {
-      setHlsSource(null);
+      setStreamUrl(null);
     }
   }, [selectedSource]);
 
-  // Fetch HLS stream URL when using custom API
-  useEffect(() => {    const fetchHlsStream = async () => {
+  useEffect(() => {
+    const fetchStream = async () => {
       if (!isCustomSource || !id) return;
       
       try {
         setIsLoading(true);
         const mediaId = parseInt(id, 10);
-        let streamUrl: string | null = null;
+        let url: string | null = null;
         
         if (mediaType === 'movie') {
-          streamUrl = await fetchMovieSources(mediaId);
+          url = await getMovieStream(mediaId);
         } else if (mediaType === 'tv' && season && episode) {
-          streamUrl = await fetchTVSources(mediaId, parseInt(season, 10), parseInt(episode, 10));
+          url = await getTVStream(mediaId, parseInt(season, 10), parseInt(episode, 10));
         }
         
-        if (streamUrl) {
-          setHlsSource(streamUrl);
+        if (url) {
+          setStreamUrl(url);
           setIsPlayerLoaded(true);
         } else {
           setIsPlayerLoaded(false);
@@ -123,7 +117,7 @@ const Player = () => {
           });
         }
       } catch (error) {
-        console.error('Error fetching HLS stream:', error);
+        console.error('Error fetching stream:', error);
         setIsPlayerLoaded(false);
         toast({
           title: "Error",
@@ -135,12 +129,10 @@ const Player = () => {
       }
     };
     
-    fetchHlsStream();
+    fetchStream();
   }, [isCustomSource, id, mediaType, season, episode, toast]);
 
-  // Memoized function to update the iframe URL
   const updateIframeUrl = useCallback((mediaId: number, seasonNum?: number, episodeNum?: number) => {
-    // Skip iframe URL update for custom source
     if (isCustomSource) return;
     
     const source = videoSources.find(src => src.key === selectedSource);
@@ -159,11 +151,9 @@ const Player = () => {
     }
   }, [selectedSource, mediaType, isCustomSource]);
 
-  // Handle player load and record watch history
   useEffect(() => {
     if (!isPlayerLoaded || !user || !mediaDetails || !id || watchHistoryRecorded.current) return;
 
-    // Only record once per player load session
     if (!watchHistoryRecorded.current) {
       const mediaId = parseInt(id, 10);
       const duration = mediaType === 'movie' 
@@ -172,7 +162,6 @@ const Player = () => {
       
       watchHistoryRecorded.current = true;
       
-      // Add to watch history with initial position of 0
       console.log('Recording initial watch history on player load');
       addToWatchHistory(
         {
@@ -194,11 +183,9 @@ const Player = () => {
     }
   }, [isPlayerLoaded, user, mediaDetails, id, mediaType, season, episode, selectedSource, addToWatchHistory]);
 
-  // Primary effect: Fetch media details when route params change
   useEffect(() => {
     let isMounted = true;
     
-    // Reset player load state and watch history recorded flag
     setIsPlayerLoaded(false);
     watchHistoryRecorded.current = false;
     
@@ -209,21 +196,19 @@ const Player = () => {
       setMediaDetails(null);
       setEpisodes([]);
       setIframeUrl('');
-      setHlsSource(null);
+      setStreamUrl(null);
       
       try {
         const mediaId = parseInt(id, 10);
         const isTV = type === 'tv';
         
         if (!isTV) {
-          // Movie handling
           const movieDetails = await getMovieDetails(mediaId);
           if (movieDetails && isMounted) {
             setTitle(movieDetails.title || 'Untitled Movie');
             setMediaDetails(movieDetails);
           }
         } else if (isTV && season && episode) {
-          // TV show handling
           const tvDetails = await getTVDetails(mediaId);
           if (tvDetails && isMounted) {
             const seasonData = await getSeasonDetails(mediaId, parseInt(season, 10));
@@ -264,11 +249,9 @@ const Player = () => {
     };
   }, [id, type, season, episode, navigate, toast]);
 
-  // Secondary effect: Update iframe URL after data is fetched
   useEffect(() => {
     if (!id || !hasInitialized || !mediaDetails) return;
     
-    // Skip if we're using the custom source (HLS)
     if (isCustomSource) return;
     
     const mediaId = parseInt(id, 10);
@@ -278,18 +261,17 @@ const Player = () => {
       updateIframeUrl(mediaId, parseInt(season, 10), parseInt(episode, 10));
     }
   }, [id, mediaType, season, episode, hasInitialized, mediaDetails, updateIframeUrl, isCustomSource]);
-    const handleSourceChange = async (sourceKey: string) => {
+
+  const handleSourceChange = async (sourceKey: string) => {
     setSelectedSource(sourceKey);
     setIsPlayerLoaded(false);
-    setHlsSource(null);
+    setStreamUrl(null);
     watchHistoryRecorded.current = false;
     
-    // Clear iframe URL if switching from an iframe source
     if (iframeUrl) {
       setIframeUrl('');
     }
     
-    // Save the preference if user is logged in
     if (user) {
       await updatePreferences({
         preferred_source: sourceKey
@@ -303,13 +285,13 @@ const Player = () => {
       duration: 3000,
     });
   };
-  
+
   const goToDetails = () => {
     if (id) {
       navigate(`/${mediaType}/${id}`);
     }
   };
-  
+
   const goToNextEpisode = () => {
     if (mediaType !== 'tv' || !id || !season || episodes.length === 0 || currentEpisodeIndex >= episodes.length - 1) {
       return;
@@ -323,7 +305,7 @@ const Player = () => {
       description: `Playing next episode: ${nextEpisode.name}`
     });
   };
-  
+
   const goToPreviousEpisode = () => {
     if (mediaType !== 'tv' || !id || !season || episodes.length === 0 || currentEpisodeIndex <= 0) {
       return;
@@ -397,18 +379,25 @@ const Player = () => {
       });
     }
   };
-  
-  // Handle player load event
+
   const handlePlayerLoaded = () => {
     setIsPlayerLoaded(true);
   };
-  
+
+  const handlePlayerError = (error: string) => {
+    setIsPlayerLoaded(false);
+    toast({
+      title: "Playback Error",
+      description: error,
+      variant: "destructive"
+    });
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
       
       <div className="pt-16 px-4 md:px-6">
-        {/* Back button and title */}
         <div className="max-w-6xl mx-auto mb-4 flex flex-wrap items-center gap-3">
           <button 
             onClick={() => navigate(-1)}
@@ -467,23 +456,16 @@ const Player = () => {
           </div>
         ) : (
           <>
-            {/* Player */}
             <div className="max-w-6xl mx-auto rounded-lg overflow-hidden shadow-xl bg-black">
               <div className="relative w-full aspect-video">
                 {isCustomSource ? (
-                  // HLS Player for custom source
-                  hlsSource ? (                    <HLSPlayer 
-                      src={hlsSource} 
+                  streamUrl ? (
+                    <PlyrPlayer 
+                      src={streamUrl} 
                       title={title}
+                      poster={mediaDetails?.backdrop_path ? `https://image.tmdb.org/t/p/w1280${mediaDetails.backdrop_path}` : undefined}
                       onLoaded={handlePlayerLoaded}
-                      onError={(error) => {
-                        toast({
-                          title: "Playback Error",
-                          description: error,
-                          variant: "destructive"
-                        });
-                        setIsPlayerLoaded(false);
-                      }}
+                      onError={handlePlayerError}
                     />
                   ) : (
                     <div className="absolute inset-0 flex items-center justify-center bg-black text-white">
@@ -491,7 +473,6 @@ const Player = () => {
                     </div>
                   )
                 ) : (
-                  // Iframe player for other sources
                   <iframe
                     src={iframeUrl}
                     allowFullScreen
@@ -504,7 +485,6 @@ const Player = () => {
               </div>
             </div>
             
-            {/* Episode navigation - Show only for TV */}
             {mediaType === 'tv' && episodes.length > 1 && (
               <div className="max-w-6xl mx-auto mt-4 flex justify-center gap-4">
                 <Button
@@ -531,7 +511,6 @@ const Player = () => {
               </div>
             )}
             
-            {/* Video source selector */}
             <div className="max-w-6xl mx-auto mt-6 mb-8">
               <div className="glass p-4 rounded-lg">
                 <h3 className="text-white font-medium mb-3">Video Sources</h3>

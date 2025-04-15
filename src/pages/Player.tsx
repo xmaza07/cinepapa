@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { getMovieDetails, getTVDetails, videoSources, getSeasonDetails } from '@/utils/api';
 import { getMovieStream, getTVStream } from '@/utils/custom-api';
-import { MovieDetails, TVDetails, VideoSource, Episode } from '@/utils/types';
+import { MovieDetails, TVDetails, VideoSource, Episode, StreamSource } from '@/utils/types';
 import Navbar from '@/components/Navbar';
 import PlyrPlayer from '@/components/PlyrPlayer';
 import { Button } from '@/components/ui/button';

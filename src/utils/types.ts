@@ -138,7 +138,11 @@ export interface VideoSource {
 export interface StreamSource {
   url: string | null;
   headers: Record<string, string> | null;
-  subtitles: Array<{lang: string; label: string; file: string}> | null;
+  subtitles: Array<{
+    lang: string;
+    label: string;
+    file: string;
+  }> | null;
 }
 
 // Image response types

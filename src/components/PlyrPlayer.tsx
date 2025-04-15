@@ -98,12 +98,12 @@ const PlyrPlayer: React.FC<PlyrPlayerProps> = ({
             if (!mounted) return;
             
             // The manifest has been parsed, now the stream is ready
-            // Attempt to play the video after the player is ready
-            // We can't use plyr.media directly as it doesn't exist in the type
-            videoRef.current?.play().catch(() => {
-              // Autoplay was prevented, we'll let the user initiate playback
-              console.log('Autoplay prevented, waiting for user interaction');
-            });
+            if (plyr.media) {
+              plyr.media.play().catch(() => {
+                // Autoplay was prevented, we'll let the user initiate playback
+                console.log('Autoplay prevented, waiting for user interaction');
+              });
+            }
           });
           
           hls.on(Hls.Events.ERROR, function(event, data) {

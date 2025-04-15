@@ -1,7 +1,6 @@
 
 import axios from 'axios';
 import { ApiResponse } from './custom-api-types';
-import { StreamSource } from './types';
 import { fetchMovieSources, fetchTVSources } from './custom-api-service';
 
 /**
@@ -32,7 +31,11 @@ export const validateStreamUrl = async (url: string): Promise<boolean> => {
 /**
  * Get movie stream URL with headers and subtitles
  */
-export const getMovieStream = async (movieId: number): Promise<StreamSource> => {
+export const getMovieStream = async (movieId: number): Promise<{
+  url: string | null;
+  headers: Record<string, string> | null;
+  subtitles: Array<{lang: string; label: string; file: string}> | null;
+}> => {
   try {
     return await fetchMovieSources(movieId);
   } catch (error) {
@@ -44,7 +47,11 @@ export const getMovieStream = async (movieId: number): Promise<StreamSource> => 
 /**
  * Get TV show stream URL with headers and subtitles
  */
-export const getTVStream = async (tvId: number, season: number, episode: number): Promise<StreamSource> => {
+export const getTVStream = async (tvId: number, season: number, episode: number): Promise<{
+  url: string | null;
+  headers: Record<string, string> | null;
+  subtitles: Array<{lang: string; label: string; file: string}> | null;
+}> => {
   try {
     return await fetchTVSources(tvId, season, episode);
   } catch (error) {

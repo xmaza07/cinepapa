@@ -1,8 +1,9 @@
-
 import { useState, useEffect, useCallback, ReactNode } from 'react';
 import { useAuth } from '@/hooks';
 import { useUserPreferences } from '@/hooks/user-preferences';
+import { getApp } from 'firebase/app';
 import { 
+  getFirestore, 
   collection, 
   doc, 
   setDoc, 
@@ -35,11 +36,6 @@ import {
   filterWatchHistoryDuplicates,
   isSignificantProgress 
 } from '@/utils/watch-history-utils';
-import { db } from '@/lib/firebase';
-import { ensureFirebaseInitialized } from '@/utils/firebase-utils';
-
-// Ensure Firebase is initialized
-ensureFirebaseInitialized();
 
 const LOCAL_STORAGE_HISTORY_KEY = 'fdf_watch_history';
 const ITEMS_PER_PAGE = 20;
@@ -49,6 +45,9 @@ const SIGNIFICANT_PROGRESS = 60; // 60 seconds
 const MINIMUM_UPDATE_INTERVAL = 30000; // 30 seconds
 const lastUpdateTimestamps = new Map<string, number>();
 const pendingOperations: Array<() => Promise<void>> = [];
+
+const app = getApp();
+const db = getFirestore(app);
 
 const readRateLimiter = RateLimiter.getInstance(200, 300000);
 const writeRateLimiter = RateLimiter.getInstance(100, 300000);
@@ -328,7 +327,6 @@ export function WatchHistoryProvider({ children }: { children: ReactNode }) {
       console.error('Error fetching watchlist:', error);
     }
   }, [user]);
-
   useEffect(() => {
     const fetchAllData = async () => {
       if (!initialFetchDone || user) {
@@ -353,7 +351,7 @@ export function WatchHistoryProvider({ children }: { children: ReactNode }) {
     };
 
     fetchAllData();
-  }, [user, initialFetchDone]);
+  }, [user, initialFetchDone]); // Remove function dependencies to prevent infinite loop
 
   useEffect(() => {
     const migrateWatchHistory = async () => {
@@ -388,7 +386,6 @@ export function WatchHistoryProvider({ children }: { children: ReactNode }) {
       migrateWatchHistory();
     }
   }, [user, initialFetchDone]);
-
   const addToWatchHistory = async (
     media: Media, 
     position: number, 
@@ -412,6 +409,7 @@ export function WatchHistoryProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    // Verify authentication state is valid
     if (!user.uid) {
       console.error('Invalid authentication state: missing user ID');
       return;

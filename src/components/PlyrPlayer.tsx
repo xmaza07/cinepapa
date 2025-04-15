@@ -1,8 +1,10 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import Plyr from 'plyr';
 import 'plyr/dist/plyr.css';
 import { useToast } from '@/hooks/use-toast';
 import { validateStreamUrl } from '@/utils/custom-api';
+import Hls from 'hls.js';
 
 interface PlyrPlayerProps {
   src: string;
@@ -10,6 +12,12 @@ interface PlyrPlayerProps {
   onLoaded?: () => void;
   onError?: (error: string) => void;
   poster?: string;
+  headers?: Record<string, string>;
+  subtitles?: Array<{
+    lang: string;
+    label: string;
+    file: string;
+  }>;
 }
 
 const PlyrPlayer: React.FC<PlyrPlayerProps> = ({ 
@@ -17,15 +25,18 @@ const PlyrPlayer: React.FC<PlyrPlayerProps> = ({
   title, 
   onLoaded, 
   onError,
-  poster
+  poster,
+  headers,
+  subtitles
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const playerRef = useRef<Plyr | null>(null);
+  const hlsRef = useRef<Hls | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
   
-  // Initialize Plyr
+  // Initialize Plyr with HLS support
   useEffect(() => {
     let mounted = true;
     
@@ -42,9 +53,13 @@ const PlyrPlayer: React.FC<PlyrPlayerProps> = ({
           throw new Error('Invalid or inaccessible video stream');
         }
         
-        // Destroy existing player if it exists
+        // Destroy existing player and HLS instance if they exist
         if (playerRef.current) {
           playerRef.current.destroy();
+        }
+        
+        if (hlsRef.current) {
+          hlsRef.current.destroy();
         }
         
         // Initialize Plyr with options
@@ -61,6 +76,103 @@ const PlyrPlayer: React.FC<PlyrPlayerProps> = ({
         });
         
         playerRef.current = plyr;
+        
+        // Handle HLS streams
+        const videoSrc = src;
+        if (Hls.isSupported() && videoSrc.includes('.m3u8')) {
+          const hls = new Hls({
+            xhrSetup: function(xhr) {
+              // Apply custom headers if provided
+              if (headers) {
+                Object.entries(headers).forEach(([key, value]) => {
+                  xhr.setRequestHeader(key, value);
+                });
+              }
+            }
+          });
+          
+          hls.loadSource(videoSrc);
+          hls.attachMedia(videoRef.current);
+          
+          hls.on(Hls.Events.MANIFEST_PARSED, () => {
+            if (!mounted) return;
+            
+            // The manifest has been parsed, now the stream is ready
+            if (plyr.media) {
+              plyr.media.play().catch(() => {
+                // Autoplay was prevented, we'll let the user initiate playback
+                console.log('Autoplay prevented, waiting for user interaction');
+              });
+            }
+          });
+          
+          hls.on(Hls.Events.ERROR, function(event, data) {
+            if (!mounted) return;
+            
+            if (data.fatal) {
+              switch (data.type) {
+                case Hls.ErrorTypes.NETWORK_ERROR:
+                  // Try to recover network error
+                  console.log('Fatal network error encountered, trying to recover');
+                  hls.startLoad();
+                  break;
+                  
+                case Hls.ErrorTypes.MEDIA_ERROR:
+                  // Try to recover media error
+                  console.log('Fatal media error encountered, trying to recover');
+                  hls.recoverMediaError();
+                  break;
+                  
+                default:
+                  // Cannot recover
+                  hls.destroy();
+                  const errorMsg = `HLS streaming error: ${data.details}`;
+                  setError(errorMsg);
+                  if (onError) onError(errorMsg);
+                  toast({
+                    title: 'Streaming Error',
+                    description: errorMsg,
+                    variant: 'destructive'
+                  });
+                  break;
+              }
+            }
+          });
+          
+          hlsRef.current = hls;
+        } else if (videoRef.current.canPlayType('application/vnd.apple.mpegurl')) {
+          // For browsers that support HLS natively (Safari)
+          videoRef.current.src = videoSrc;
+        }
+        
+        // Add subtitles if provided
+        if (subtitles && subtitles.length > 0 && plyr) {
+          const tracks = subtitles.map((sub, index) => ({
+            kind: 'subtitles',
+            label: sub.label,
+            srcLang: sub.lang,
+            src: sub.file,
+            default: index === 0 // Make first subtitle default
+          }));
+          
+          if (videoRef.current) {
+            // Remove existing tracks
+            while (videoRef.current.firstChild) {
+              videoRef.current.removeChild(videoRef.current.firstChild);
+            }
+            
+            // Add new tracks
+            tracks.forEach(track => {
+              const trackElement = document.createElement('track');
+              trackElement.kind = track.kind;
+              trackElement.label = track.label;
+              trackElement.srclang = track.srcLang;
+              trackElement.src = track.src;
+              if (track.default) trackElement.default = true;
+              videoRef.current?.appendChild(trackElement);
+            });
+          }
+        }
         
         // Set up event listeners
         plyr.on('ready', () => {
@@ -124,11 +236,14 @@ const PlyrPlayer: React.FC<PlyrPlayerProps> = ({
     
     return () => {
       mounted = false;
+      if (hlsRef.current) {
+        hlsRef.current.destroy();
+      }
       if (playerRef.current) {
         playerRef.current.destroy();
       }
     };
-  }, [src, onLoaded, onError, toast]);
+  }, [src, onLoaded, onError, toast, headers, subtitles]);
   
   return (
     <div className="plyr-container relative w-full h-full bg-black">
@@ -155,6 +270,10 @@ const PlyrPlayer: React.FC<PlyrPlayerProps> = ({
                 if (playerRef.current) {
                   playerRef.current.destroy();
                   playerRef.current = null;
+                }
+                if (hlsRef.current) {
+                  hlsRef.current.destroy();
+                  hlsRef.current = null;
                 }
               }}
             >

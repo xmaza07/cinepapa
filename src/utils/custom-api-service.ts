@@ -1,6 +1,6 @@
 
 import axios from 'axios';
-import { ApiResponse } from './custom-api-types';
+import { ApiResponse, VideoSource } from './custom-api-types';
 import customApiConfig from './custom-api-config';
 
 const MAX_RETRIES = 2;
@@ -45,9 +45,13 @@ const fetchWithRetry = async <T>(
 };
 
 /**
- * Extract valid video URL from API response
+ * Extract video information from API response
  */
-const extractVideoUrl = (data: ApiResponse[]): string | null => {
+const extractVideoInfo = (data: ApiResponse[]): { 
+  url: string | null;
+  headers: Record<string, string> | null;
+  subtitles: Array<{lang: string; label: string; file: string}> | null;
+} => {
   try {
     for (const item of data) {
       // Try to extract from source property (2embed provider)
@@ -58,7 +62,18 @@ const extractVideoUrl = (data: ApiResponse[]): string | null => {
             try {
               const secureUrl = file.file.replace('http://', 'https://');
               new URL(secureUrl); // Validate URL
-              return secureUrl;
+              
+              return {
+                url: secureUrl,
+                headers: item.source.headers || null,
+                subtitles: item.source.subtitles && item.source.subtitles.length > 0 
+                  ? item.source.subtitles.map(sub => ({
+                      lang: sub.lang,
+                      label: sub.label || sub.lang,
+                      file: sub.file
+                    }))
+                  : null
+              };
             } catch (e) {
               console.warn('Invalid stream URL format:', e);
               continue;
@@ -76,7 +91,26 @@ const extractVideoUrl = (data: ApiResponse[]): string | null => {
               try {
                 const secureUrl = file.file.replace('http://', 'https://');
                 new URL(secureUrl); // Validate URL
-                return secureUrl;
+                
+                let headers = null;
+                if (typeof source === 'object' && 'headers' in source) {
+                  headers = source.headers;
+                }
+                
+                let subtitles = null;
+                if (typeof source === 'object' && 'subtitles' in source && Array.isArray(source.subtitles) && source.subtitles.length > 0) {
+                  subtitles = source.subtitles.map(sub => ({
+                    lang: sub.lang,
+                    label: sub.label || sub.lang,
+                    file: sub.file
+                  }));
+                }
+                
+                return {
+                  url: secureUrl,
+                  headers,
+                  subtitles
+                };
               } catch (e) {
                 console.warn('Invalid stream URL format:', e);
                 continue;
@@ -88,36 +122,44 @@ const extractVideoUrl = (data: ApiResponse[]): string | null => {
     }
     
     console.warn('No valid video source found in API response');
-    return null;
+    return { url: null, headers: null, subtitles: null };
   } catch (error) {
     console.error('Error extracting video URL:', error);
-    return null;
+    return { url: null, headers: null, subtitles: null };
   }
 };
 
 /**
  * Fetch movie sources from the custom API
  */
-export const fetchMovieSources = async (movieId: number): Promise<string | null> => {
+export const fetchMovieSources = async (movieId: number): Promise<{
+  url: string | null;
+  headers: Record<string, string> | null;
+  subtitles: Array<{lang: string; label: string; file: string}> | null;
+}> => {
   try {
     const data = await fetchWithRetry<ApiResponse[]>(`${customApiConfig.apiUrl}/movie/2embed/${movieId}`);
     
     if (!data || !Array.isArray(data) || data.length === 0) {
       console.warn('No sources returned for movie:', movieId);
-      return null;
+      return { url: null, headers: null, subtitles: null };
     }
     
-    return extractVideoUrl(data);
+    return extractVideoInfo(data);
   } catch (error) {
     console.error('Error fetching movie sources:', error);
-    return null;
+    return { url: null, headers: null, subtitles: null };
   }
 };
 
 /**
  * Fetch TV show sources from the custom API
  */
-export const fetchTVSources = async (tvId: number, season: number, episode: number): Promise<string | null> => {
+export const fetchTVSources = async (tvId: number, season: number, episode: number): Promise<{
+  url: string | null;
+  headers: Record<string, string> | null;
+  subtitles: Array<{lang: string; label: string; file: string}> | null;
+}> => {
   try {
     const data = await fetchWithRetry<ApiResponse[]>(
       `${customApiConfig.apiUrl}/tv/2embed/${tvId}?s=${season}&e=${episode}`
@@ -125,12 +167,12 @@ export const fetchTVSources = async (tvId: number, season: number, episode: numb
     
     if (!data || !Array.isArray(data) || data.length === 0) {
       console.warn('No sources returned for TV show:', { tvId, season, episode });
-      return null;
+      return { url: null, headers: null, subtitles: null };
     }
     
-    return extractVideoUrl(data);
+    return extractVideoInfo(data);
   } catch (error) {
     console.error('Error fetching TV sources:', error);
-    return null;
+    return { url: null, headers: null, subtitles: null };
   }
 };

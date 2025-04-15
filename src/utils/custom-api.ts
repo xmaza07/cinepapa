@@ -3,9 +3,6 @@ import axios from 'axios';
 import { ApiResponse } from './custom-api-types';
 import { fetchMovieSources, fetchTVSources } from './custom-api-service';
 
-// Proxy URL for m3u8 streams
-const PROXY_URL = "https://m3u8proxy.chintanr21.workers.dev/";
-
 /**
  * Validate if an HLS stream URL is accessible
  */
@@ -32,48 +29,34 @@ export const validateStreamUrl = async (url: string): Promise<boolean> => {
 };
 
 /**
- * Apply proxy to HLS stream URL if needed
+ * Get movie stream URL with headers and subtitles
  */
-export const getProxiedStreamUrl = (url: string): string => {
+export const getMovieStream = async (movieId: number): Promise<{
+  url: string | null;
+  headers: Record<string, string> | null;
+  subtitles: Array<{lang: string; label: string; file: string}> | null;
+}> => {
   try {
-    // Only proxy URLs that are likely to have CORS issues
-    if (url.includes('.m3u8') && !url.includes(window.location.hostname)) {
-      return `${PROXY_URL}/v2?url=${encodeURIComponent(url)}`;
-    }
-    return url;
-  } catch (error) {
-    console.error('Error creating proxied URL:', error);
-    return url;
-  }
-};
-
-/**
- * Get movie stream URL with proxy applied if needed
- */
-export const getMovieStream = async (movieId: number): Promise<string | null> => {
-  try {
-    const streamUrl = await fetchMovieSources(movieId);
-    if (!streamUrl) return null;
-    
-    return getProxiedStreamUrl(streamUrl);
+    return await fetchMovieSources(movieId);
   } catch (error) {
     console.error('Error fetching movie stream:', error);
-    return null;
+    return { url: null, headers: null, subtitles: null };
   }
 };
 
 /**
- * Get TV show stream URL with proxy applied if needed
+ * Get TV show stream URL with headers and subtitles
  */
-export const getTVStream = async (tvId: number, season: number, episode: number): Promise<string | null> => {
+export const getTVStream = async (tvId: number, season: number, episode: number): Promise<{
+  url: string | null;
+  headers: Record<string, string> | null;
+  subtitles: Array<{lang: string; label: string; file: string}> | null;
+}> => {
   try {
-    const streamUrl = await fetchTVSources(tvId, season, episode);
-    if (!streamUrl) return null;
-    
-    return getProxiedStreamUrl(streamUrl);
+    return await fetchTVSources(tvId, season, episode);
   } catch (error) {
     console.error('Error fetching TV stream:', error);
-    return null;
+    return { url: null, headers: null, subtitles: null };
   }
 };
 

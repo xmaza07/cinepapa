@@ -14,6 +14,9 @@ import { auth } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { AuthContext, AuthContextType } from '@/contexts/auth';
 
+// Ensure firebase is imported
+import '@/lib/firebase';
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);

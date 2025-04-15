@@ -14,8 +14,12 @@ import ChatbotWindow from './components/chatbot/ChatbotWindow';
 import AppRoutes from './routes.tsx';
 import './App.css';
 
-// Import firebase to ensure it's initialized before any components
+// Import Firebase to ensure it's initialized as early as possible
+import { ensureFirebaseInitialized } from './utils/firebase-utils';
 import './lib/firebase';
+
+// Initialize Firebase before the app loads
+ensureFirebaseInitialized();
 
 const queryClient = new QueryClient({
   defaultOptions: {

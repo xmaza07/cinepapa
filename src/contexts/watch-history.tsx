@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback, ReactNode } from 'react';
 import { useAuth } from '@/hooks';
 import { useUserPreferences } from '@/hooks/user-preferences';
@@ -35,6 +36,10 @@ import {
   isSignificantProgress 
 } from '@/utils/watch-history-utils';
 import { db } from '@/lib/firebase';
+import { ensureFirebaseInitialized } from '@/utils/firebase-utils';
+
+// Ensure Firebase is initialized
+ensureFirebaseInitialized();
 
 const LOCAL_STORAGE_HISTORY_KEY = 'fdf_watch_history';
 const ITEMS_PER_PAGE = 20;

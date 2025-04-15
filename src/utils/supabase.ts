@@ -1,5 +1,9 @@
 
 import { auth } from '@/lib/firebase';
+import { ensureFirebaseInitialized } from '@/utils/firebase-utils';
+
+// Ensure Firebase is initialized
+ensureFirebaseInitialized();
 
 // Generate a unique ID for database records
 export const generateId = () => {

@@ -1,5 +1,5 @@
 
-import { initializeApp } from 'firebase/app';
+import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getAnalytics } from 'firebase/analytics';
 import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, memoryLocalCache } from 'firebase/firestore';
@@ -14,13 +14,17 @@ const firebaseConfig = {
   measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
-// Initialize the Firebase app immediately
-const app = initializeApp(firebaseConfig);
+// Initialize Firebase - ensure app is only initialized once
+const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+
+// Initialize Firebase services
 export const auth = getAuth(app);
 export const analytics = getAnalytics(app);
+
 // Initialize Firestore with memory-only cache to disable persistence
 export const db = initializeFirestore(app, {
   localCache: memoryLocalCache()
 });
 
+// Export the Firebase app instance
 export default app;

@@ -1,3 +1,4 @@
+
 import { auth } from '@/lib/firebase';
 
 // Generate a unique ID for database records

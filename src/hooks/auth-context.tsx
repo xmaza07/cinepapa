@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+
+import React, { useEffect, useState, createContext } from 'react';
 import { 
   User,
   signInWithEmailAndPassword,
@@ -10,7 +11,7 @@ import {
 } from 'firebase/auth';
 import { FirebaseError } from 'firebase/app';
 import { auth } from '@/lib/firebase';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { AuthContext, AuthContextType } from '@/contexts/auth';
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {

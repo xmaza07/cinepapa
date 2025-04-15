@@ -7,7 +7,7 @@ import { WatchHistoryProvider } from './contexts/watch-history';
 import { ServiceWorkerErrorBoundary } from './components/ServiceWorkerErrorBoundary';
 import { ServiceWorkerDebugPanel } from './components/ServiceWorkerDebugPanel';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { AuthProvider } from '@/hooks';
+import { AuthProvider } from './hooks/auth-context';
 import { ChatbotProvider } from './contexts/chatbot-context';
 import ChatbotButton from './components/chatbot/ChatbotButton';
 import ChatbotWindow from './components/chatbot/ChatbotWindow';

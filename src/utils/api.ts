@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { Media, MovieDetails, TVDetails, Episode, Review, Genre, Company, MovieImagesResponse, VideoSource } from './types';
+import { Media, MovieDetails, TVDetails, Episode, Review, Genre, Company, MovieImagesResponse, VideoSource, StreamSource } from './types';
 
 // Add interface for video response
 interface TMDBVideo {
@@ -160,14 +160,14 @@ export const videoSources: VideoSource[] = [
     getMovieUrl: async (id: number) => {
       const { getMovieStream } = await import('./custom-api');
       const stream = await getMovieStream(id);
-      if (!stream) throw new Error('No stream available');
-      return stream;
+      if (!stream || !stream.url) throw new Error('No stream available');
+      return stream.url; // Return just the URL string
     },
     getTVUrl: async (id: number, season: number, episode: number) => {
       const { getTVStream } = await import('./custom-api');
       const stream = await getTVStream(id, season, episode);
-      if (!stream) throw new Error('No stream available');
-      return stream;
+      if (!stream || !stream.url) throw new Error('No stream available');
+      return stream.url; // Return just the URL string
     }
   }
 ];

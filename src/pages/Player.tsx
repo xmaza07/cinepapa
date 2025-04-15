@@ -44,6 +44,8 @@ const Player = () => {
   const [isPlayerLoaded, setIsPlayerLoaded] = useState(false);
   const watchHistoryRecorded = useRef(false);
   const [streamUrl, setStreamUrl] = useState<string | null>(null);
+  const [streamHeaders, setStreamHeaders] = useState<Record<string, string> | null>(null);
+  const [streamSubtitles, setStreamSubtitles] = useState<Array<{lang: string; label: string; file: string}> | null>(null);
   const [isCustomSource, setIsCustomSource] = useState(false);
 
   const navigate = useNavigate();
@@ -87,6 +89,8 @@ const Player = () => {
     setIsCustomSource(selectedSource === 'custom-api');
     if (selectedSource !== 'custom-api') {
       setStreamUrl(null);
+      setStreamHeaders(null);
+      setStreamSubtitles(null);
     }
   }, [selectedSource]);
 
@@ -97,16 +101,18 @@ const Player = () => {
       try {
         setIsLoading(true);
         const mediaId = parseInt(id, 10);
-        let url: string | null = null;
+        let streamData: StreamSource | null = null;
         
         if (mediaType === 'movie') {
-          url = await getMovieStream(mediaId);
+          streamData = await getMovieStream(mediaId);
         } else if (mediaType === 'tv' && season && episode) {
-          url = await getTVStream(mediaId, parseInt(season, 10), parseInt(episode, 10));
+          streamData = await getTVStream(mediaId, parseInt(season, 10), parseInt(episode, 10));
         }
         
-        if (url) {
-          setStreamUrl(url);
+        if (streamData && streamData.url) {
+          setStreamUrl(streamData.url);
+          setStreamHeaders(streamData.headers);
+          setStreamSubtitles(streamData.subtitles);
           setIsPlayerLoaded(true);
         } else {
           setIsPlayerLoaded(false);
@@ -266,6 +272,8 @@ const Player = () => {
     setSelectedSource(sourceKey);
     setIsPlayerLoaded(false);
     setStreamUrl(null);
+    setStreamHeaders(null);
+    setStreamSubtitles(null);
     watchHistoryRecorded.current = false;
     
     if (iframeUrl) {
@@ -464,6 +472,8 @@ const Player = () => {
                       src={streamUrl} 
                       title={title}
                       poster={mediaDetails?.backdrop_path ? `https://image.tmdb.org/t/p/w1280${mediaDetails.backdrop_path}` : undefined}
+                      headers={streamHeaders}
+                      subtitles={streamSubtitles}
                       onLoaded={handlePlayerLoaded}
                       onError={handlePlayerError}
                     />

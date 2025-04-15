@@ -134,6 +134,13 @@ export interface VideoSource {
   getTVUrl: (id: number, season: number, episode: number) => string | Promise<string>;
 }
 
+// Add a new interface for the stream source with headers and subtitles
+export interface StreamSource {
+  url: string | null;
+  headers: Record<string, string> | null;
+  subtitles: Array<{lang: string; label: string; file: string}> | null;
+}
+
 // Image response types
 export interface MovieImagesResponse {
   id: number;

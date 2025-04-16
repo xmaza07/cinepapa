@@ -126,12 +126,23 @@ export interface Company {
   origin_country: string;
 }
 
+// Custom video source result for advanced streaming info (HLS, headers, subtitles, etc)
+export interface CustomVideoSourceResult {
+  url: string;
+  headers?: Record<string, string>;
+  subtitles?: Array<{
+    lang: string;
+    label: string;
+    file: string;
+  }>;
+}
+
 // Video source interface
 export interface VideoSource {
   key: string;
   name: string;
-  getMovieUrl: (id: number) => string | Promise<string>;
-  getTVUrl: (id: number, season: number, episode: number) => string | Promise<string>;
+  getMovieUrl: (id: number) => string | Promise<string> | Promise<CustomVideoSourceResult | string>;
+  getTVUrl: (id: number, season: number, episode: number) => string | Promise<string> | Promise<CustomVideoSourceResult | string>;
 }
 
 // Image response types

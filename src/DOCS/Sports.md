@@ -10,7 +10,7 @@ Check the links on the left to get started.
 
 ## Matches
 
-### Schema of a match object (APIMatch):
+### Schema of a match object (APIMatch)
 
 ```json
 {
@@ -39,29 +39,33 @@ Check the links on the left to get started.
 
 To get stream lists from a source, use the streams endpoint [here](...).
 
-### Available endpoints are listed below:
+### Available endpoints are listed below
 
-#### Sports:
+#### Sports
+
 You can get a list of sports to be used in the `[SPORT]` endpoints [here](...).
 
 - `/api/matches/[SPORT]`
 - `/api/matches/[SPORT]/popular`
 
-#### All matches:
+#### All matches
+
 - `/api/matches/all`
 - `/api/matches/all/popular`
 
-#### All matches TODAY:
+#### All matches TODAY
+
 - `/api/matches/all-today`
 - `/api/matches/all-today/popular`
 
-#### Live matches:
+#### Live matches
+
 - `/api/matches/live`
 - `/api/matches/live/popular`
 
 ## Streams
 
-### Schema of a stream object:
+### Schema of a stream object
 
 ```json
 {
@@ -74,29 +78,35 @@ You can get a list of sports to be used in the `[SPORT]` endpoints [here](...).
 }
 ```
 
-### Available endpoints are listed below:
+### Available endpoints are listed below according to the source
 
-#### Alpha source:
+#### Alpha source
+
 - `/api/stream/alpha/[id]`
 
-#### Bravo source:
+#### Bravo source
+
 - `/api/stream/bravo/[id]`
 
-#### Charlie source:
+#### Charlie source
+
 - `/api/stream/charlie/[id]`
 
-#### Delta source:
+#### Delta source
+
 - `/api/stream/delta/[id]`
 
-#### Echo source:
+#### Echo source
+
 - `/api/stream/echo/[id]`
 
-#### Foxtrot source:
+#### Foxtrot source
+
 - `/api/stream/foxtrot/[id]`
 
-## Sports
+## Sports responses
 
-### Schema of a sport object:
+### Schema of a sport object
 
 ```json
 {
@@ -105,16 +115,15 @@ You can get a list of sports to be used in the `[SPORT]` endpoints [here](...).
 }
 ```
 
-### Available endpoints are listed below:
+### Available endpoints are listed below as a list of sports
 
-#### Sports:
 - `/api/sports`
 
 ## Images
 
 All images are served in webp format.
 
-### Available endpoints are listed below:
+### Available endpoints are listed below according to the type of video format
 
 - `/api/images/badge/[id].webp`
 - `/api/images/poster/[badge]/[badge].webp`

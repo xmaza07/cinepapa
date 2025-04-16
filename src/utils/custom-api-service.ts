@@ -1,4 +1,3 @@
-
 import axios from 'axios';
 import { ApiResponse, VideoSource } from './custom-api-types';
 import customApiConfig from './custom-api-config';
@@ -23,9 +22,8 @@ const fetchWithRetry = async <T>(
       const response = await axios.get<T>(url, {
         timeout: 15000, // 15 second timeout
         headers: {
-          'Accept': 'application/json',
-          'Origin': window.location.origin,
-          'Referer': window.location.origin
+          'Accept': 'application/json'
+          // Removed 'Origin' and 'Referer' to avoid browser CORS/unsafe header errors
         }
       });
       
@@ -49,8 +47,8 @@ const fetchWithRetry = async <T>(
  */
 const extractVideoInfo = (data: ApiResponse[]): { 
   url: string | null;
-  headers: Record<string, string> | null;
-  subtitles: Array<{lang: string; label: string; file: string}> | null;
+  headers: null;
+  subtitles: null;
 } => {
   try {
     for (const item of data) {
@@ -62,17 +60,10 @@ const extractVideoInfo = (data: ApiResponse[]): {
             try {
               const secureUrl = file.file.replace('http://', 'https://');
               new URL(secureUrl); // Validate URL
-              
               return {
                 url: secureUrl,
-                headers: item.source.headers || null,
-                subtitles: item.source.subtitles && item.source.subtitles.length > 0 
-                  ? item.source.subtitles.map(sub => ({
-                      lang: sub.lang,
-                      label: sub.label || sub.lang,
-                      file: sub.file
-                    }))
-                  : null
+                headers: null,
+                subtitles: null
               };
             } catch (e) {
               console.warn('Invalid stream URL format:', e);
@@ -81,7 +72,6 @@ const extractVideoInfo = (data: ApiResponse[]): {
           }
         }
       }
-      
       // Try to extract from sources array if available
       if (Array.isArray(item.sources)) {
         for (const source of item.sources) {
@@ -91,25 +81,10 @@ const extractVideoInfo = (data: ApiResponse[]): {
               try {
                 const secureUrl = file.file.replace('http://', 'https://');
                 new URL(secureUrl); // Validate URL
-                
-                let headers = null;
-                if (typeof source === 'object' && 'headers' in source) {
-                  headers = source.headers;
-                }
-                
-                let subtitles = null;
-                if (typeof source === 'object' && 'subtitles' in source && Array.isArray(source.subtitles) && source.subtitles.length > 0) {
-                  subtitles = source.subtitles.map(sub => ({
-                    lang: sub.lang,
-                    label: sub.label || sub.lang,
-                    file: sub.file
-                  }));
-                }
-                
                 return {
                   url: secureUrl,
-                  headers,
-                  subtitles
+                  headers: null,
+                  subtitles: null
                 };
               } catch (e) {
                 console.warn('Invalid stream URL format:', e);
@@ -120,7 +95,6 @@ const extractVideoInfo = (data: ApiResponse[]): {
         }
       }
     }
-    
     console.warn('No valid video source found in API response');
     return { url: null, headers: null, subtitles: null };
   } catch (error) {

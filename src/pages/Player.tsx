@@ -93,18 +93,16 @@ const Player = () => {
   useEffect(() => {
     const fetchStream = async () => {
       if (!isCustomSource || !id) return;
-      
       try {
         setIsLoading(true);
         const mediaId = parseInt(id, 10);
-        let url: string | null = null;
-        
+        let streamObj = null;
         if (mediaType === 'movie') {
-          url = await getMovieStream(mediaId);
+          streamObj = await getMovieStream(mediaId);
         } else if (mediaType === 'tv' && season && episode) {
-          url = await getTVStream(mediaId, parseInt(season, 10), parseInt(episode, 10));
+          streamObj = await getTVStream(mediaId, parseInt(season, 10), parseInt(episode, 10));
         }
-        
+        const url = streamObj?.url || null;
         if (url) {
           setStreamUrl(url);
           setIsPlayerLoaded(true);
@@ -128,7 +126,6 @@ const Player = () => {
         setIsLoading(false);
       }
     };
-    
     fetchStream();
   }, [isCustomSource, id, mediaType, season, episode, toast]);
 

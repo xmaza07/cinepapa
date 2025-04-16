@@ -102,7 +102,14 @@ const Player = () => {
         } else if (mediaType === 'tv' && season && episode) {
           streamObj = await getTVStream(mediaId, parseInt(season, 10), parseInt(episode, 10));
         }
-        const url = streamObj?.url || null;
+        const getProxiedUrl = (url: string, headers?: Record<string, string> | null) => {
+          let proxyUrl = `https://plain-sound-6910.chintanr21.workers.dev/?url=${encodeURIComponent(url)}`;
+          if (headers && Object.keys(headers).length > 0) {
+            proxyUrl += `&headers=${encodeURIComponent(JSON.stringify(headers))}`;
+          }
+          return proxyUrl;
+        };
+        const url = streamObj?.url ? getProxiedUrl(streamObj.url, streamObj.headers) : null;
         if (url) {
           setStreamUrl(url);
           setIsPlayerLoaded(true);

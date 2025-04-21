@@ -1,11 +1,13 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Film, Tv, Star, ExternalLink } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
 import { Media } from '@/utils/types';
+import { validateMediaId } from '@/utils/validation-utils';
 
 interface RecommendationCardProps {
   media: Media;
@@ -15,9 +17,34 @@ interface RecommendationCardProps {
 
 const RecommendationCard = ({ media, genres, rating }: RecommendationCardProps) => {
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const [isValidating, setIsValidating] = useState(false);
 
-  const handleWatchClick = () => {
-    navigate(`/watch/${media.media_type}/${media.id}`);
+  const handleWatchClick = async () => {
+    setIsValidating(true);
+    
+    try {
+      const isValid = await validateMediaId(media.id, media.media_type);
+      
+      if (isValid) {
+        navigate(`/watch/${media.media_type}/${media.id}`);
+      } else {
+        toast({
+          title: "Content Unavailable",
+          description: "Sorry, this content is not available at the moment. Please try another title.",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error('Error validating media:', error);
+      toast({
+        title: "Validation Error",
+        description: "Unable to verify content availability. Please try again later.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsValidating(false);
+    }
   };
 
   return (
@@ -75,9 +102,10 @@ const RecommendationCard = ({ media, genres, rating }: RecommendationCardProps) 
             onClick={handleWatchClick}
             className="mt-2 w-full"
             variant="default"
+            disabled={isValidating}
           >
             <ExternalLink className="h-4 w-4 mr-2" />
-            Watch {media.media_type === 'movie' ? 'Movie' : 'Show'}
+            {isValidating ? 'Validating...' : `Watch ${media.media_type === 'movie' ? 'Movie' : 'Show'}`}
           </Button>
         </div>
       </CardContent>

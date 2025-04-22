@@ -27,10 +27,20 @@ export async function registerServiceWorker() {
 function registerSW() {
   navigator.serviceWorker.register('/sw.js', {
     scope: '/',
-    type: 'classic'
+    type: 'classic',
+    updateViaCache: 'none' // Don't use cache for service worker updates
   })
   .then((registration) => {
     console.log('ServiceWorker registered with scope:', registration.scope);
+    
+    // Check if there's an update immediately
+    registration.update();
+    
+    // Periodically update the service worker
+    setInterval(() => {
+      registration.update();
+      console.log('Service worker update check triggered');
+    }, 60 * 60 * 1000); // Check for updates every hour
     
     // Add message event listener to handle skipWaiting
     navigator.serviceWorker.addEventListener('message', (event) => {

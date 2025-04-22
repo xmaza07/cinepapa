@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useContext, ReactNode } from 'react';
 import { sendMessageToGemini, searchMedia } from '@/utils/gemini-api';
 import { extractMediaItems } from '@/utils/chatbot-utils';
@@ -59,41 +58,21 @@ export const ChatbotProvider: React.FC<ChatbotProviderProps> = ({ children }) =>
 
   const sendMessage = async (message: string) => {
     if (!message.trim()) return;
-    
-    // Add user message
+
+    // Heuristic: If the message is a single word or short phrase (likely a genre or keyword), rephrase it as a recommendation request
+    let userMessage = message.trim();
+    if (/^([\w\s-]+)$/.test(userMessage) && userMessage.length < 40 && !userMessage.toLowerCase().includes('recommend') && !userMessage.toLowerCase().includes('suggest') && !userMessage.toLowerCase().includes('show me')) {
+      userMessage = `Recommend some ${userMessage} movies or TV shows.`;
+    }
+
     addMessage(message, true);
-    
-    // Set loading state
     setIsLoading(true);
-    
     try {
-      // Get chat history for context (last 5 messages)
-      const chatHistory = messages
-        .slice(-5)
-        .map(msg => msg.text);
-      
-      // Provide formatting guidance to Gemini to make parsing easier
-      const formattedMessage = `
-${message}
-
-When responding with movie or TV show recommendations, please format them as follows:
-1. **Title** (Year) - Brief description about the content.
-Genre: genre1, genre2
-Type: movie or tv
-Rating: X/10
-TMDB_ID: ID number if available
-
-Follow this format to make recommendations easier to understand.
-      `;
-      
-      // Send message to Gemini
+      const chatHistory = messages.slice(-5).map(msg => msg.text);
+      const formattedMessage = `\n${userMessage}\n\nWhen responding with movie or TV show recommendations, please format them as follows:\n1. **Title** (Year) - Brief description about the content.\nGenre: genre1, genre2\nType: movie or tv\nRating: X/10\nTMDB_ID: ID number if available\n\nFollow this format to make recommendations easier to understand.\n      `;
       const response = await sendMessageToGemini(formattedMessage, chatHistory);
-      
-      // Check if the response contains media items
       const mediaItems = extractMediaItems(response);
       console.log('Extracted media items:', mediaItems);
-      
-      // Add AI response
       addMessage(response, false);
     } catch (error) {
       console.error('Error sending message:', error);

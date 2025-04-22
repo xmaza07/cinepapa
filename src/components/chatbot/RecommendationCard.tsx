@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Film, Tv, Star, ExternalLink } from 'lucide-react';
@@ -7,40 +6,47 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Media } from '@/utils/types';
-import { validateMediaId } from '@/utils/validation-utils';
+import { validateTMDBId } from '@/utils/api';
 
 interface RecommendationCardProps {
   media: Media;
   genres?: string[];
   rating?: string;
+  expectedTmdbId?: number;
 }
 
-const RecommendationCard = ({ media, genres, rating }: RecommendationCardProps) => {
+const RecommendationCard = ({ media, genres, rating, expectedTmdbId }: RecommendationCardProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isValidating, setIsValidating] = useState(false);
 
   const handleWatchClick = async () => {
     setIsValidating(true);
-    
     try {
-      const isValid = await validateMediaId(media.id, media.media_type);
-      
-      if (isValid) {
+      // Validate TMDB ID before redirecting
+      const isValid = await validateTMDBId(media.media_type, media.id);
+      // Check if the recommended TMDB ID matches the expected one
+      if (isValid && (!expectedTmdbId || media.id === expectedTmdbId)) {
         navigate(`/watch/${media.media_type}/${media.id}`);
+      } else if (isValid && expectedTmdbId && media.id !== expectedTmdbId) {
+        toast({
+          title: 'Content Link Mismatch',
+          description: `Expected TMDB ID: ${expectedTmdbId}, but got: ${media.id}. Please use the correct link or contact support.`,
+          variant: 'destructive',
+        });
       } else {
         toast({
-          title: "Content Unavailable",
-          description: "Sorry, this content is not available at the moment. Please try another title.",
-          variant: "destructive"
+          title: 'Invalid Content Link',
+          description: `The content link does not match the correct TMDB ID. Please try another title or contact support.`,
+          variant: 'destructive',
         });
       }
     } catch (error) {
-      console.error('Error validating media:', error);
+      console.error('Error validating TMDB ID:', error);
       toast({
-        title: "Validation Error",
-        description: "Unable to verify content availability. Please try again later.",
-        variant: "destructive"
+        title: 'Validation Error',
+        description: 'Unable to verify content. Please try again later.',
+        variant: 'destructive',
       });
     } finally {
       setIsValidating(false);

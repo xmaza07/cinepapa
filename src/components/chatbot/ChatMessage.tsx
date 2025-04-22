@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { ThumbsUp, Star } from 'lucide-react';
 import { ChatMessage as ChatMessageType } from '@/contexts/chatbot-context';
@@ -39,10 +38,9 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
     setHasReacted(true);
   };
 
-  // If this is an AI message with media items, render them as cards
+  // Pass the expected TMDB ID (from parsedItems) to RecommendationCard for validation
   if (!message.isUser && mediaItems.length > 0) {
     const introText = getIntroText(message.text);
-    
     return (
       <div className="flex flex-col space-y-4 mb-4">
         {introText && (
@@ -50,12 +48,9 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
             {introText}
           </div>
         )}
-        
         <motion.div 
           className="grid gap-4 ml-4"
-          style={{
-            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-          }}
+          style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' }}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, staggerChildren: 0.1 }}
@@ -71,6 +66,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
                 media={media}
                 genres={parsedItems[index]?.genres}
                 rating={parsedItems[index]?.rating}
+                expectedTmdbId={parsedItems[index]?.tmdbId}
               />
             </motion.div>
           ))}

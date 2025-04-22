@@ -1,4 +1,3 @@
-
 import React, { useRef, useEffect } from 'react';
 import { Send, Search, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -53,7 +52,7 @@ const ChatbotWindow: React.FC = () => {
     <Card className="fixed bottom-20 right-4 w-[350px] h-[500px] z-50 shadow-xl flex flex-col">
       <CardHeader className="pb-2">
         <div className="flex justify-between items-center">
-          <CardTitle className="text-lg">Movie Recommendations</CardTitle>
+          <CardTitle className="text-lg">CineMate</CardTitle>
           <Button variant="ghost" size="icon" onClick={closeChatbot}>
             <X className="h-5 w-5" />
           </Button>
@@ -63,8 +62,21 @@ const ChatbotWindow: React.FC = () => {
       <CardContent className="flex-1 overflow-y-auto p-4">
         {messages.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-center text-muted-foreground">
-            <p className="mb-2">Hi there! I can help you find movies and TV shows.</p>
-            <p>Ask me for recommendations or use the search option.</p>
+            <p className="mb-2 font-semibold">Welcome to CineMate! 🎬</p>
+            <p className="mb-2">I can recommend movies and TV shows tailored to your tastes, or help you discover something new.</p>
+            <ul className="mb-2 text-left text-sm list-disc list-inside">
+              <li>Get instant recommendations based on your mood or favorite genres.</li>
+              <li>Search for trending, top-rated, or newly released titles.</li>
+              <li>Add movies and shows to your watchlist for later.</li>
+              <li>Track your watch history and resume where you left off.</li>
+              <li>Try advanced search to filter by genre, rating, or year.</li>
+            </ul>
+            <p className="mb-1">Try something like:</p>
+            <div className="text-xs italic text-muted-foreground">
+              <p>"Suggest a feel-good comedy for the weekend"</p>
+              <p>"Show me trending sci-fi movies"</p>
+              <p>"Add Inception to my watchlist"</p>
+            </div>
           </div>
         ) : (
           <div className="space-y-4">

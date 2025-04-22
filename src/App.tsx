@@ -1,4 +1,5 @@
 
+import React from 'react';
 import { BrowserRouter } from 'react-router-dom';
 import { Toaster } from './components/ui/toaster';
 import { ThemeProvider } from './contexts/theme';
@@ -14,6 +15,7 @@ import ChatbotWindow from './components/chatbot/ChatbotWindow';
 import AppRoutes from './routes.tsx';
 import './App.css';
 
+// Create a client
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -27,27 +29,29 @@ function App() {
   const isDevelopment = import.meta.env.DEV;
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <ThemeProvider>
-          <UserPreferencesProvider>
-            <WatchHistoryProvider>
-              <ChatbotProvider>
-                <ServiceWorkerErrorBoundary>
-                  <BrowserRouter>
-                    <AppRoutes />
-                    <Toaster />
-                    {isDevelopment && <ServiceWorkerDebugPanel />}
-                    <ChatbotButton />
-                    <ChatbotWindow />
-                  </BrowserRouter>
-                </ServiceWorkerErrorBoundary>
-              </ChatbotProvider>
-            </WatchHistoryProvider>
-          </UserPreferencesProvider>
-        </ThemeProvider>
-      </AuthProvider>
-    </QueryClientProvider>
+    <React.StrictMode>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <ThemeProvider>
+            <UserPreferencesProvider>
+              <WatchHistoryProvider>
+                <ChatbotProvider>
+                  <ServiceWorkerErrorBoundary>
+                    <BrowserRouter>
+                      <AppRoutes />
+                      <Toaster />
+                      {isDevelopment && <ServiceWorkerDebugPanel />}
+                      <ChatbotButton />
+                      <ChatbotWindow />
+                    </BrowserRouter>
+                  </ServiceWorkerErrorBoundary>
+                </ChatbotProvider>
+              </WatchHistoryProvider>
+            </UserPreferencesProvider>
+          </ThemeProvider>
+        </AuthProvider>
+      </QueryClientProvider>
+    </React.StrictMode>
   );
 }
 

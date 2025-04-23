@@ -303,6 +303,176 @@ const formatMediaItem = (item: TMDBMovieResult | TMDBTVResult): Media => {
   };
 };
 
+// --- HOMEPAGE EXTRA SECTIONS FETCH FUNCTIONS ---
+
+// Bollywood: Hindi language movies (India)
+export const getBollywoodMovies = async (page: number = 1): Promise<Media[]> => {
+  try {
+    const response = await fetch(
+      `${BASE_URL}/discover/movie?api_key=${API_KEY}&language=en-US&with_original_language=hi&region=IN&sort_by=popularity.desc&page=${page}`
+    );
+    const data = await response.json();
+    return data.results.map((item: TMDBMovieResult) => formatMediaItem({ ...item, media_type: 'movie' }));
+  } catch (error) {
+    console.error('Error fetching Bollywood movies:', error);
+    return [];
+  }
+};
+
+// Action movies (genre id: 28)
+export const getActionMovies = async (page: number = 1): Promise<Media[]> => {
+  try {
+    const response = await fetch(
+      `${BASE_URL}/discover/movie?api_key=${API_KEY}&language=en-US&with_genres=28&sort_by=popularity.desc&page=${page}`
+    );
+    const data = await response.json();
+    return data.results.map((item: TMDBMovieResult) => formatMediaItem({ ...item, media_type: 'movie' }));
+  } catch (error) {
+    console.error('Error fetching Action movies:', error);
+    return [];
+  }
+};
+
+// Drama movies (genre id: 18)
+export const getDramaMovies = async (page: number = 1): Promise<Media[]> => {
+  try {
+    const response = await fetch(
+      `${BASE_URL}/discover/movie?api_key=${API_KEY}&language=en-US&with_genres=18&sort_by=popularity.desc&page=${page}`
+    );
+    const data = await response.json();
+    return data.results.map((item: TMDBMovieResult) => formatMediaItem({ ...item, media_type: 'movie' }));
+  } catch (error) {
+    console.error('Error fetching Drama movies:', error);
+    return [];
+  }
+};
+
+// Netflix (provider id: 8)
+export const getNetflixContent = async (page: number = 1): Promise<Media[]> => {
+  try {
+    const response = await fetch(
+      `${BASE_URL}/discover/movie?api_key=${API_KEY}&language=en-US&with_watch_providers=8&watch_region=US&sort_by=popularity.desc&page=${page}`
+    );
+    const data = await response.json();
+    return data.results.map((item: TMDBMovieResult) => formatMediaItem({ ...item, media_type: 'movie' }));
+  } catch (error) {
+    console.error('Error fetching Netflix content:', error);
+    return [];
+  }
+};
+
+// Hulu (provider id: 15)
+export const getHuluContent = async (page: number = 1): Promise<Media[]> => {
+  try {
+    const response = await fetch(
+      `${BASE_URL}/discover/movie?api_key=${API_KEY}&language=en-US&with_watch_providers=15&watch_region=US&sort_by=popularity.desc&page=${page}`
+    );
+    const data = await response.json();
+    return data.results.map((item: TMDBMovieResult) => formatMediaItem({ ...item, media_type: 'movie' }));
+  } catch (error) {
+    console.error('Error fetching Hulu content:', error);
+    return [];
+  }
+};
+
+// Prime Video (provider id: 119)
+export const getPrimeContent = async (page: number = 1): Promise<Media[]> => {
+  try {
+    const response = await fetch(
+      `${BASE_URL}/discover/movie?api_key=${API_KEY}&language=en-US&with_watch_providers=119&watch_region=US&sort_by=popularity.desc&page=${page}`
+    );
+    const data = await response.json();
+    return data.results.map((item: TMDBMovieResult) => formatMediaItem({ ...item, media_type: 'movie' }));
+  } catch (error) {
+    console.error('Error fetching Prime Video content:', error);
+    return [];
+  }
+};
+
+// Paramount+ (provider id: 531)
+export const getParamountContent = async (page: number = 1): Promise<Media[]> => {
+  try {
+    const response = await fetch(
+      `${BASE_URL}/discover/movie?api_key=${API_KEY}&language=en-US&with_watch_providers=531&watch_region=US&sort_by=popularity.desc&page=${page}`
+    );
+    const data = await response.json();
+    return data.results.map((item: TMDBMovieResult) => formatMediaItem({ ...item, media_type: 'movie' }));
+  } catch (error) {
+    console.error('Error fetching Paramount+ content:', error);
+    return [];
+  }
+};
+
+// Disney+ (provider id: 337)
+export const getDisneyContent = async (page: number = 1): Promise<Media[]> => {
+  try {
+    const response = await fetch(
+      `${BASE_URL}/discover/movie?api_key=${API_KEY}&language=en-US&with_watch_providers=337&watch_region=US&sort_by=popularity.desc&page=${page}`
+    );
+    const data = await response.json();
+    return data.results.map((item: TMDBMovieResult) => formatMediaItem({ ...item, media_type: 'movie' }));
+  } catch (error) {
+    console.error('Error fetching Disney+ content:', error);
+    return [];
+  }
+};
+
+// Hotstar (provider id: 122)
+export const getHotstarContent = async (page: number = 1): Promise<Media[]> => {
+  try {
+    const response = await fetch(
+      `${BASE_URL}/discover/movie?api_key=${API_KEY}&language=en-US&with_watch_providers=122&watch_region=IN&sort_by=popularity.desc&page=${page}`
+    );
+    const data = await response.json();
+    return data.results.map((item: TMDBMovieResult) => formatMediaItem({ ...item, media_type: 'movie' }));
+  } catch (error) {
+    console.error('Error fetching Hotstar content:', error);
+    return [];
+  }
+};
+
+// Apple TV+ (provider id: 350)
+export const getAppleTVContent = async (page: number = 1): Promise<Media[]> => {
+  try {
+    const response = await fetch(
+      `${BASE_URL}/discover/movie?api_key=${API_KEY}&language=en-US&with_watch_providers=350&watch_region=US&sort_by=popularity.desc&page=${page}`
+    );
+    const data = await response.json();
+    return data.results.map((item: TMDBMovieResult) => formatMediaItem({ ...item, media_type: 'movie' }));
+  } catch (error) {
+    console.error('Error fetching Apple TV+ content:', error);
+    return [];
+  }
+};
+
+// JioCinema (provider id: 970)
+export const getJioCinemaContent = async (page: number = 1): Promise<Media[]> => {
+  try {
+    const response = await fetch(
+      `${BASE_URL}/discover/movie?api_key=${API_KEY}&language=en-US&with_watch_providers=970&watch_region=IN&sort_by=popularity.desc&page=${page}`
+    );
+    const data = await response.json();
+    return data.results.map((item: TMDBMovieResult) => formatMediaItem({ ...item, media_type: 'movie' }));
+  } catch (error) {
+    console.error('Error fetching JioCinema content:', error);
+    return [];
+  }
+};
+
+// Sony Liv (provider id: 237)
+export const getSonyLivContent = async (page: number = 1): Promise<Media[]> => {
+  try {
+    const response = await fetch(
+      `${BASE_URL}/discover/movie?api_key=${API_KEY}&language=en-US&with_watch_providers=237&watch_region=IN&sort_by=popularity.desc&page=${page}`
+    );
+    const data = await response.json();
+    return data.results.map((item: TMDBMovieResult) => formatMediaItem({ ...item, media_type: 'movie' }));
+  } catch (error) {
+    console.error('Error fetching Sony Liv content:', error);
+    return [];
+  }
+};
+
 // Get trending media (movies and TV shows)
 export const getTrending = async (timeWindow: 'day' | 'week' = 'week', page: number = 1): Promise<Media[]> => {
   try {

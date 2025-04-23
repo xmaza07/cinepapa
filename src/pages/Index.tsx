@@ -4,7 +4,19 @@ import {
   getPopularMovies,
   getPopularTVShows,
   getTopRatedMovies,
-  getTopRatedTVShows
+  getTopRatedTVShows,
+  getBollywoodMovies,
+  getActionMovies,
+  getDramaMovies,
+  getNetflixContent,
+  getHuluContent,
+  getPrimeContent,
+  getParamountContent,
+  getDisneyContent,
+  getHotstarContent,
+  getAppleTVContent,
+  getJioCinemaContent,
+  getSonyLivContent
 } from '@/utils/api';
 import { Media } from '@/utils/types';
 import { useAuth } from '@/hooks';
@@ -23,6 +35,18 @@ const Index = () => {
   const [popularTVShows, setPopularTVShows] = useState<Media[]>([]);
   const [topRatedMovies, setTopRatedMovies] = useState<Media[]>([]);
   const [topRatedTVShows, setTopRatedTVShows] = useState<Media[]>([]);
+  const [bollywoodMovies, setBollywoodMovies] = useState<Media[]>([]);
+  const [actionMovies, setActionMovies] = useState<Media[]>([]);
+  const [dramaMovies, setDramaMovies] = useState<Media[]>([]);
+  const [netflixContent, setNetflixContent] = useState<Media[]>([]);
+  const [huluContent, setHuluContent] = useState<Media[]>([]);
+  const [primeContent, setPrimeContent] = useState<Media[]>([]);
+  const [paramountContent, setParamountContent] = useState<Media[]>([]);
+  const [disneyContent, setDisneyContent] = useState<Media[]>([]);
+  const [hotstarContent, setHotstarContent] = useState<Media[]>([]);
+  const [appleTVContent, setAppleTVContent] = useState<Media[]>([]);
+  const [jioCinemaContent, setJioCinemaContent] = useState<Media[]>([]);
+  const [sonyLivContent, setSonyLivContent] = useState<Media[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [contentVisible, setContentVisible] = useState(false);
 
@@ -65,6 +89,24 @@ const Index = () => {
     fetchData();
   }, []);
 
+  useEffect(() => {
+    const fetchExtraSections = async () => {
+      setBollywoodMovies(await getBollywoodMovies());
+      setActionMovies(await getActionMovies());
+      setDramaMovies(await getDramaMovies());
+      setNetflixContent(await getNetflixContent());
+      setHuluContent(await getHuluContent());
+      setPrimeContent(await getPrimeContent());
+      setParamountContent(await getParamountContent());
+      setDisneyContent(await getDisneyContent());
+      setHotstarContent(await getHotstarContent());
+      setAppleTVContent(await getAppleTVContent());
+      setJioCinemaContent(await getJioCinemaContent());
+      setSonyLivContent(await getSonyLivContent());
+    };
+    fetchExtraSections();
+  }, []);
+
   console.log('Current trendingMedia state:', trendingMedia);
 
   return (
@@ -89,6 +131,19 @@ const Index = () => {
             <ContentRow title="Popular TV Shows" media={popularTVShows} />
             <ContentRow title="Top Rated Movies" media={topRatedMovies} />
             <ContentRow title="Top Rated TV Shows" media={topRatedTVShows} />
+            {/* New Sections */}
+            <ContentRow title="Bollywood" media={bollywoodMovies} />
+            <ContentRow title="Action" media={actionMovies} />
+            <ContentRow title="Drama" media={dramaMovies} />
+            <ContentRow title="Netflix" media={netflixContent} />
+            <ContentRow title="Hulu" media={huluContent} />
+            <ContentRow title="Prime Video" media={primeContent} />
+            <ContentRow title="Paramount+" media={paramountContent} />
+            <ContentRow title="Disney+" media={disneyContent} />
+            <ContentRow title="Hotstar" media={hotstarContent} />
+            <ContentRow title="Apple TV+" media={appleTVContent} />
+            <ContentRow title="JioCinema" media={jioCinemaContent} />
+            <ContentRow title="Sony Liv" media={sonyLivContent} />
           </div>
         </>
       )}

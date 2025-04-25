@@ -19,6 +19,8 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useWatchHistory } from '@/hooks/watch-history';
 import { useAuth } from '@/hooks';
 import { useUserPreferences } from '@/hooks/user-preferences';
+import { motion, AnimatePresence } from 'framer-motion';
+import { cn } from '@/lib/utils';
 
 const MIN_WATCH_TIME = 30; // 30 seconds minimum before recording
 
@@ -398,172 +400,259 @@ const Player = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="min-h-screen bg-background relative"
+    >
+      <div className="fixed inset-0 bg-gradient-to-b from-background/95 to-background pointer-events-none" />
       
-      <div className="pt-16 px-4 md:px-6">
-        <div className="max-w-6xl mx-auto mb-4 flex flex-wrap items-center gap-3">
-          <button 
+      <motion.nav 
+        initial={{ y: -100 }}
+        animate={{ y: 0 }}
+        exit={{ y: -100 }}
+        className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-b from-black/80 to-transparent"
+      >
+        <Navbar />
+      </motion.nav>
+
+      <div className="relative z-10 container mx-auto px-4">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex items-center gap-4 py-4 mt-16"
+        >
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-white/80 hover:text-white transition-colors"
             onClick={() => navigate(-1)}
-            className="text-white p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
-            aria-label="Go back"
           >
-            <ArrowLeft className="h-5 w-5" />
-          </button>
-          
-          <h1 className="text-xl font-medium text-white truncate flex-1">{title}</h1>
-          
-          <div className="flex gap-2">
-            {user && (
-              <>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={toggleFavorite}
-                  className={`border-white/20 ${isFavorite ? 'bg-accent text-white' : 'bg-black/50 text-white hover:bg-black/70'}`}
-                >
-                  <Heart className={`h-4 w-4 ${isFavorite ? 'fill-white' : ''}`} />
-                  {!isMobile && <span>{isFavorite ? 'Favorited' : 'Add to Favorites'}</span>}
-                </Button>
-                
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={toggleWatchlist}
-                  className={`border-white/20 ${isInMyWatchlist ? 'bg-accent text-white' : 'bg-black/50 text-white hover:bg-black/70'}`}
-                >
-                  <Bookmark className={`h-4 w-4 ${isInMyWatchlist ? 'fill-white' : ''}`} />
-                  {!isMobile && <span>{isInMyWatchlist ? 'In Watchlist' : 'Add to Watchlist'}</span>}
-                </Button>
-              </>
-            )}
-            
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={goToDetails} 
-              className="border-white/20 bg-black/50 text-white hover:bg-black/70"
-            >
-              {mediaType === 'movie' ? (
-                <Film className="h-4 w-4 mr-2" />
-              ) : (
-                <Tv className="h-4 w-4 mr-2" />
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back
+          </Button>
+
+          <div className="flex-1" />
+
+          <motion.div 
+            className="flex items-center gap-2"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+          >
+            <Button
+              variant="ghost"
+              size="icon"
+              className={cn(
+                "rounded-full transition-all duration-300",
+                isFavorite ? "text-red-500 hover:text-red-600" : "text-white/80 hover:text-white"
               )}
-              {!isMobile && 'View Details'}
+              onClick={toggleFavorite}
+            >
+              <Heart className={cn("h-5 w-5", isFavorite && "fill-current")} />
             </Button>
-          </div>
-        </div>
-        
-        {isLoading ? (
-          <div className="w-full aspect-video flex items-center justify-center bg-black/50 rounded-lg">
-            <div className="animate-pulse-slow text-white">Loading player...</div>
-          </div>
-        ) : (
-          <>
-            <div className="max-w-6xl mx-auto rounded-lg overflow-hidden shadow-xl bg-black">
-              <div className="relative w-full aspect-video">
-                {isCustomSource ? (
-                  streamUrl ? (
-                    <PlyrPlayer 
-                      src={streamUrl} 
-                      title={title}
-                      poster={mediaDetails?.backdrop_path ? `https://image.tmdb.org/t/p/w1280${mediaDetails.backdrop_path}` : undefined}
-                      onLoaded={handlePlayerLoaded}
-                      onError={handlePlayerError}
-                    />
-                  ) : (
-                    <div className="absolute inset-0 flex items-center justify-center bg-black text-white">
-                      <p>Unable to load video stream. Please try another source.</p>
-                    </div>
-                  )
-                ) : (
-                  <iframe
-                    src={iframeUrl}
-                    allowFullScreen
-                    className="absolute inset-0 w-full h-full"
-                    title={title}
-                    loading="lazy"
-                    onLoad={() => setIsPlayerLoaded(true)}
-                  ></iframe>
-                )}
-              </div>
-            </div>
-            
-            {mediaType === 'tv' && episodes.length > 1 && (
-              <div className="max-w-6xl mx-auto mt-4 flex justify-center gap-4">
-                <Button
-                  variant="outline"
-                  size={isMobile ? "icon" : "default"}
-                  onClick={goToPreviousEpisode}
-                  disabled={currentEpisodeIndex <= 0}
-                  className="border-white/20 bg-black/50 text-white hover:bg-black/70"
-                >
-                  <SkipBack className="h-4 w-4" />
-                  {!isMobile && <span>Previous Episode</span>}
-                </Button>
-                
-                <Button
-                  variant="outline"
-                  size={isMobile ? "icon" : "default"}
-                  onClick={goToNextEpisode}
-                  disabled={currentEpisodeIndex >= episodes.length - 1}
-                  className="border-white/20 bg-black/50 text-white hover:bg-black/70"
-                >
-                  {!isMobile && <span>Next Episode</span>}
-                  <SkipForward className="h-4 w-4" />
-                </Button>
-              </div>
+
+            <Button
+              variant="ghost"
+              size="icon"
+              className={cn(
+                "rounded-full transition-all duration-300",
+                isInMyWatchlist ? "text-accent hover:text-accent/90" : "text-white/80 hover:text-white"
+              )}
+              onClick={toggleWatchlist}
+            >
+              <Bookmark className={cn("h-5 w-5", isInMyWatchlist && "fill-current")} />
+            </Button>
+          </motion.div>
+        </motion.div>
+
+        <div className="relative aspect-video rounded-lg overflow-hidden shadow-2xl">
+          {isLoading ? (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/60 flex items-center justify-center"
+            >
+              <div className="w-16 h-16 border-4 border-accent/30 border-t-accent rounded-full animate-spin" />
+            </motion.div>
+          ) : null}
+
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5 }}
+            className="w-full h-full"
+          >
+            {isCustomSource && streamUrl ? (
+              <PlyrPlayer
+                src={streamUrl}
+                title={title}
+                poster={mediaDetails?.backdrop_path ? `https://image.tmdb.org/t/p/w1280${mediaDetails.backdrop_path}` : undefined}
+                onLoaded={handlePlayerLoaded}
+                onError={handlePlayerError}
+              />
+            ) : (
+              <iframe
+                src={iframeUrl}
+                className="w-full h-full"
+                allowFullScreen
+                onLoad={handlePlayerLoaded}
+              />
             )}
-            
-            <div className="max-w-6xl mx-auto mt-6 mb-8">
-              <div className="glass p-4 rounded-lg">
-                <h3 className="text-white font-medium mb-3">Video Sources</h3>
-                <p className="text-white/70 text-sm mb-4">
-                  If the current source isn't working, try another one below.
-                </p>
-                
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <div className="w-full sm:w-64">
-                    <Select value={selectedSource} onValueChange={handleSourceChange}>
-                      <SelectTrigger className="bg-white/10 border-white/20 text-white">
-                        <SelectValue placeholder="Select a video source" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-background border-white/10">
-                        {videoSources.map(source => (
-                          <SelectItem key={source.key} value={source.key} className="text-white focus:text-white focus:bg-white/10">
-                            <div className="flex items-center gap-2">
-                              {selectedSource === source.key && <Check className="h-4 w-4" />}
-                              {source.name}
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+          </motion.div>
+        </div>
+
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mt-6 space-y-6"
+        >
+          {mediaType === 'tv' && episodes.length > 0 && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-medium text-white">Episode Navigation</h3>
+                  <p className="text-sm text-white/60">
+                    Season {season} • Episode {episode} of {episodes.length}
+                  </p>
+                </div>
+              </div>
+
+              <div className="glass p-4 rounded-lg border border-white/10 backdrop-blur-sm">
+                <div className="flex flex-col space-y-3">
+                  {/* Current Episode Info */}
+                  <div className="space-y-1">
+                    <h4 className="text-white font-medium">
+                      {episodes[currentEpisodeIndex]?.name || 'Episode ' + episode}
+                    </h4>
+                    {episodes[currentEpisodeIndex]?.overview && (
+                      <p className="text-sm text-white/70 line-clamp-2">
+                        {episodes[currentEpisodeIndex]?.overview}
+                      </p>
+                    )}
                   </div>
-                  
-                  <div className="flex flex-wrap gap-2">
-                    {videoSources.map(source => (
+
+                  {/* Navigation Controls */}
+                  <div className="flex items-center justify-between pt-2">
+                    <div className="flex items-center gap-3">
                       <Button
-                        key={source.key}
-                        variant={selectedSource === source.key ? 'default' : 'outline'}
+                        variant="outline"
                         size="sm"
-                        className={selectedSource === source.key 
-                          ? 'bg-accent hover:bg-accent/80' 
-                          : 'border-white/20 bg-black/50 text-white hover:bg-black/70'
-                        }
-                        onClick={() => handleSourceChange(source.key)}
+                        className="border-white/10 bg-white/5 backdrop-blur-sm hover:bg-white/10 transition-all duration-300"
+                        onClick={goToPreviousEpisode}
+                        disabled={currentEpisodeIndex === 0}
                       >
-                        {source.name}
+                        <SkipBack className="h-4 w-4 mr-2" />
+                        Previous
                       </Button>
-                    ))}
+
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="border-white/10 bg-white/5 backdrop-blur-sm hover:bg-white/10 transition-all duration-300"
+                        onClick={goToNextEpisode}
+                        disabled={currentEpisodeIndex === episodes.length - 1}
+                      >
+                        Next
+                        <SkipForward className="h-4 w-4 ml-2" />
+                      </Button>
+                    </div>
+
+                    {episodes[currentEpisodeIndex]?.air_date && (
+                      <span className="text-sm text-white/40">
+                        Aired: {new Date(episodes[currentEpisodeIndex].air_date).toLocaleDateString()}
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
             </div>
-          </>
-        )}
+          )}
+
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-medium text-white">Video Sources</h3>
+                <p className="text-sm text-white/60">Select your preferred streaming source</p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-white/10 bg-white/5 backdrop-blur-sm hover:bg-white/10 transition-all duration-300"
+                onClick={goToDetails}
+              >
+                <ExternalLink className="h-4 w-4 mr-2" />
+                View Details
+              </Button>
+            </div>
+
+            <motion.div 
+              className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+            >
+              {videoSources.map((source, index) => (
+                <motion.button
+                  key={source.key}
+                  onClick={() => handleSourceChange(source.key)}
+                  className={cn(
+                    "relative group p-4 rounded-lg border transition-all duration-300",
+                    "bg-gradient-to-br backdrop-blur-sm",
+                    selectedSource === source.key
+                      ? "from-accent/20 to-accent/10 border-accent"
+                      : "from-white/5 to-transparent border-white/10 hover:border-white/20"
+                  )}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: index * 0.05 }}
+                >
+                  <div className="space-y-2 text-left">
+                    <div className="flex items-center justify-between">
+                      <span className={cn(
+                        "text-sm font-medium transition-colors",
+                        selectedSource === source.key ? "text-accent" : "text-white group-hover:text-white/90"
+                      )}>
+                        {source.name}
+                      </span>
+                      {selectedSource === source.key && (
+                        <motion.div
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          className="h-2 w-2 rounded-full bg-accent"
+                        />
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      {selectedSource === source.key ? (
+                        <motion.div
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          className="text-xs text-accent flex items-center gap-1"
+                        >
+                          <Check className="h-3 w-3" />
+                          Active
+                        </motion.div>
+                      ) : (
+                        <span className="text-xs text-white/40">Click to switch</span>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* Highlight effect */}
+                  <div className={cn(
+                    "absolute inset-0 rounded-lg opacity-0 transition-opacity duration-300",
+                    "bg-gradient-to-br from-white/5 to-transparent",
+                    "group-hover:opacity-100"
+                  )} />
+                </motion.button>
+              ))}
+            </motion.div>
+          </div>
+        </motion.div>
       </div>
-    </div>
+    </motion.div>
   );
 };
 

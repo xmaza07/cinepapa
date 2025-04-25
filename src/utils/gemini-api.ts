@@ -1,15 +1,97 @@
+import { GoogleGenerativeAI, GenerateContentResult } from '@google/generative-ai';
+import { RateLimiter } from './rate-limiter';
 
-import { GoogleGenAI } from '@google/genai';
-
-// Get API key from environment variable
-const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-
-if (!API_KEY) {
-  throw new Error("Missing GEMINI_API_KEY environment variable. Please set it in your .env file.");
+// Types
+interface GeminiConfig {
+  apiKey: string;
+  maxRetries: number;
+  retryDelay: number;
+  rateLimit: {
+    requestsPerMinute: number;
+    burstLimit: number;
+  };
 }
 
+interface ChatMessage {
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  timestamp: number;
+}
+
+interface GeminiResponse {
+  text: string;
+  status: 'success' | 'error';
+  error?: string;
+}
+
+// Custom error types
+class GeminiAPIError extends Error {
+  constructor(message: string, public code?: string) {
+    super(message);
+    this.name = 'GeminiAPIError';
+  }
+}
+
+// Configuration
+const DEFAULT_CONFIG: GeminiConfig = {
+  apiKey: import.meta.env.VITE_GEMINI_API_KEY,
+  maxRetries: 3,
+  retryDelay: 1000,
+  rateLimit: {
+    requestsPerMinute: 60,
+    burstLimit: 10,
+  },
+};
+
+if (!DEFAULT_CONFIG.apiKey) {
+  throw new GeminiAPIError("Missing GEMINI_API_KEY environment variable. Please set it in your .env file.");
+}
+
+// Initialize rate limiter as a singleton instance
+const rateLimiter = RateLimiter.getInstance(
+  DEFAULT_CONFIG.rateLimit.requestsPerMinute,
+  60 * 1000 // 1 minute in milliseconds
+);
+
+// Set specific limit for Gemini API
+rateLimiter.setLimit('gemini-api', {
+  maxRequests: DEFAULT_CONFIG.rateLimit.requestsPerMinute,
+  windowMs: 60 * 1000 // 1 minute in milliseconds
+});
+
 // Initialize the Google GenAI with API key
-const genAI = new GoogleGenAI({ apiKey: API_KEY });
+const genAI = new GoogleGenerativeAI(DEFAULT_CONFIG.apiKey);
+
+// Helper function for delay
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+// Helper function for retrying failed requests
+async function withRetry<T>(
+  operation: () => Promise<T>,
+  maxRetries: number = DEFAULT_CONFIG.maxRetries,
+  delay: number = DEFAULT_CONFIG.retryDelay
+): Promise<T> {
+  let lastError: Error | null = null;
+  
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await operation();
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error('Unknown error');
+      
+      if (attempt === maxRetries) {
+        throw new GeminiAPIError(
+          `Operation failed after ${maxRetries} retries: ${lastError.message}`,
+          'RETRY_EXHAUSTED'
+        );
+      }
+      
+      await sleep(delay * Math.pow(2, attempt));
+    }
+  }
+  
+  throw lastError;
+}
 
 // Define movie recommendation system prompt
 const MOVIE_RECOMMENDATION_PROMPT = `
@@ -68,17 +150,23 @@ Example user output:
  * Send a message to the Gemini model and get a response
  * @param message The user's message
  * @param chatHistory Previous messages for context
- * @returns The AI response
+ * @returns Promise<GeminiResponse>
  */
 export const sendMessageToGemini = async (
   message: string,
-  chatHistory: string[] = []
-): Promise<string> => {
+  chatHistory: ChatMessage[] = []
+): Promise<GeminiResponse> => {
   try {
-    // Create a chat session
-    const chat = genAI.chats.create({
-      model: 'gemini-2.0-flash-lite',
-      config: {
+    // Check rate limit using the specific Gemini API endpoint
+    const canProceed = await rateLimiter.isAllowed('https://generativelanguage.googleapis.com/v1/chat', 'gemini-api');
+    if (!canProceed) {
+      throw new GeminiAPIError('Rate limit exceeded. Please try again later.', 'RATE_LIMIT_EXCEEDED');
+    }
+
+    // Get the chat model
+    const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+    const chat = model.startChat({
+      generationConfig: {
         temperature: 0.7,
         topK: 40,
         topP: 0.95,
@@ -86,57 +174,103 @@ export const sendMessageToGemini = async (
       }
     });
     
-    // Add system prompt if chat history is empty
-    if (chatHistory.length === 0) {
-      await chat.sendMessage({
-        message: MOVIE_RECOMMENDATION_PROMPT
-      });
+    // Process chat history
+    if (chatHistory.length > 0) {
+      // Add system prompt first if not present
+      if (!chatHistory.some(msg => msg.role === 'system')) {
+        await withRetry(() => 
+          chat.sendMessage(MOVIE_RECOMMENDATION_PROMPT)
+        );
+      }
+      
+      // Add historical messages in order
+      for (const msg of chatHistory) {
+        if (msg.role !== 'system') {
+          await withRetry(() => 
+            chat.sendMessage(msg.content)
+          );
+        }
+      }
+    } else {
+      // Initialize with system prompt
+      await withRetry(() => 
+        chat.sendMessage(MOVIE_RECOMMENDATION_PROMPT)
+      );
     }
     
-    // Send the user message
-    const result = await chat.sendMessage({
-      message: message
-    });
+    // Send the user message with retry logic
+    const result = await withRetry(() => 
+      chat.sendMessage(message)
+    );
     
-    return result.text || 'Sorry, I couldn\'t generate a response.';
+    return {
+      text: result.response.text() || 'No response generated.',
+      status: 'success'
+    };
   } catch (error) {
     console.error('Error communicating with Gemini API:', error);
-    return 'Sorry, I encountered an error while processing your request. Please try again later.';
+    
+    if (error instanceof GeminiAPIError) {
+      return {
+        text: error.message,
+        status: 'error',
+        error: error.code
+      };
+    }
+    
+    return {
+      text: 'An unexpected error occurred. Please try again later.',
+      status: 'error',
+      error: 'UNKNOWN_ERROR'
+    };
   }
 };
 
 /**
  * Function to search for movies or TV shows
  * @param query The search query
- * @returns Movie/TV show search results
+ * @returns Promise<GeminiResponse>
  */
-export const searchMedia = async (query: string): Promise<string> => {
+export const searchMedia = async (query: string): Promise<GeminiResponse> => {
   try {
-    // Use the models API for one-off content generation
-    const result = await genAI.models.generateContent({
-      model: 'gemini-2.0-flash',
-      contents: [
-        {
-          parts: [
-            {
-              text: `Please search for movies or TV shows that match: "${query}".
-              Provide up to 3 results with title, year, brief description, genre, and TMDB ID.
-              For each result, specify whether it's a movie or TV show by adding "Type: movie" or "Type: tv".
-              Include the TMDB ID as "TMDB_ID: [id]" for each result.
-              Format each result in a clear, structured way that can be easily parsed.`
-            }
-          ]
-        }
-      ],
-      config: {
-        temperature: 0.7,
-        maxOutputTokens: 1024,
-      }
-    });
+    // Check rate limit using the specific Gemini API endpoint
+    const canProceed = await rateLimiter.isAllowed('https://generativelanguage.googleapis.com/v1/generate', 'gemini-api');
+    if (!canProceed) {
+      throw new GeminiAPIError('Rate limit exceeded. Please try again later.', 'RATE_LIMIT_EXCEEDED');
+    }
+
+    // Use the models API for one-off content generation with retry logic
+    const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+    const result = await withRetry<GenerateContentResult>(() => 
+      model.generateContent(`Please search for movies or TV shows that match: "${query}".
+        Provide up to 3 results with title, year, brief description, genre, and TMDB ID.
+        For each result, specify whether it's a movie or TV show by adding "Type: movie" or "Type: tv".
+        Include the TMDB ID as "TMDB_ID: [id]" for each result.
+        Format each result in a clear, structured way that can be easily parsed.`)
+    );
     
-    return result.text || 'No results found.';
+    return {
+      text: result.response.text() || 'No results found.',
+      status: 'success'
+    };
   } catch (error) {
     console.error('Error searching media:', error);
-    return 'Sorry, I encountered an error while searching. Please try again later.';
+    
+    if (error instanceof GeminiAPIError) {
+      return {
+        text: error.message,
+        status: 'error',
+        error: error.code
+      };
+    }
+    
+    return {
+      text: 'An unexpected error occurred while searching. Please try again later.',
+      status: 'error',
+      error: 'UNKNOWN_ERROR'
+    };
   }
 };
+
+// Export types for use in other files
+export type { ChatMessage, GeminiResponse, GeminiConfig, GeminiAPIError };

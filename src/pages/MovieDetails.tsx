@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getMovieDetails, getMovieRecommendations, getMovieTrailer, backdropSizes, posterSizes } from '@/utils/api';
-import { MovieDetails, Media } from '@/utils/types';
+import { getMovieDetails, getMovieRecommendations, getMovieTrailer, backdropSizes, posterSizes, getMovieCast } from '@/utils/api';
+import { MovieDetails, Media, CastMember } from '@/utils/types';
 import { Button } from '@/components/ui/button';
 import Navbar from '@/components/Navbar';
 import ContentRow from '@/components/ContentRow';
@@ -17,9 +17,10 @@ const MovieDetailsPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [backdropLoaded, setBackdropLoaded] = useState(false);
   const [logoLoaded, setLogoLoaded] = useState(false);
-  const [activeTab, setActiveTab] = useState<'about' | 'reviews'>('about');
+  const [activeTab, setActiveTab] = useState<'about' | 'reviews' | 'cast'>('about');
   const [recommendations, setRecommendations] = useState<Media[]>([]);
   const [trailerKey, setTrailerKey] = useState<string | null>(null);
+  const [cast, setCast] = useState<CastMember[]>([]);
   const { 
     addToFavorites, 
     addToWatchlist,
@@ -51,9 +52,10 @@ const MovieDetailsPage = () => {
       try {
         setIsLoading(true);
         setError(null);
-        const [movieData, recommendationsData] = await Promise.all([
+        const [movieData, recommendationsData, castData] = await Promise.all([
           getMovieDetails(movieId),
           getMovieRecommendations(movieId),
+          getMovieCast(movieId),
         ]);
         
         if (!movieData) {
@@ -63,6 +65,7 @@ const MovieDetailsPage = () => {
         
         setMovie(movieData);
         setRecommendations(recommendationsData);
+        setCast(castData);
       } catch (error) {
         console.error('Error fetching movie data:', error);
         setError("Failed to load movie data. Please try again.");
@@ -338,11 +341,11 @@ const MovieDetailsPage = () => {
         </div>
       </div>
       
-      {/* Tabs for About and Reviews */}
+      {/* Tabs for About, Cast, and Reviews */}
       <div className="max-w-6xl mx-auto px-4 py-8">
         <div className="flex border-b border-white/10 mb-6">
           <button
-            className={`py-2 px-4 font-medium ${
+            className={`py-2 px-4 font-medium whitespace-nowrap ${
               activeTab === 'about' 
                 ? 'text-white border-b-2 border-accent' 
                 : 'text-white/60 hover:text-white'
@@ -352,7 +355,17 @@ const MovieDetailsPage = () => {
             About
           </button>
           <button
-            className={`py-2 px-4 font-medium ${
+            className={`py-2 px-4 font-medium whitespace-nowrap ${
+              activeTab === 'cast' 
+                ? 'text-white border-b-2 border-accent' 
+                : 'text-white/60 hover:text-white'
+            }`}
+            onClick={() => setActiveTab('cast')}
+          >
+            Cast
+          </button>
+          <button
+            className={`py-2 px-4 font-medium whitespace-nowrap ${
               activeTab === 'reviews' 
                 ? 'text-white border-b-2 border-accent' 
                 : 'text-white/60 hover:text-white'
@@ -418,6 +431,33 @@ const MovieDetailsPage = () => {
               </div>
             )}
           </>
+        ) : activeTab === 'cast' ? (
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold text-white mb-6">Cast</h2>
+            {cast.length > 0 ? (
+              <div className="flex flex-wrap gap-6">
+                {cast.map((member) => (
+                  <div key={member.id} className="w-32 text-center">
+                    {member.profile_path ? (
+                      <img
+                        src={`https://image.tmdb.org/t/p/w185${member.profile_path}`}
+                        alt={member.name}
+                        className="rounded-lg w-24 h-32 object-cover mx-auto mb-2"
+                      />
+                    ) : (
+                      <div className="rounded-lg w-24 h-32 bg-white/10 flex items-center justify-center mx-auto mb-2 text-white/60 text-xs">
+                        No Image
+                      </div>
+                    )}
+                    <p className="text-white/90 text-sm font-medium truncate">{member.name}</p>
+                    <p className="text-white/60 text-xs truncate">{member.character}</p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-white/70">No cast information available.</div>
+            )}
+          </div>
         ) : (
           /* Reviews section */
           <div className="mb-8">

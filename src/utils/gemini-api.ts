@@ -164,7 +164,7 @@ export const sendMessageToGemini = async (
     }
 
     // Get the chat model
-    const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-lite' });
     const chat = model.startChat({
       generationConfig: {
         temperature: 0.7,

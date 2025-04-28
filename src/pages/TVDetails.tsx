@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getTVDetails, getTVRecommendations, getSeasonDetails, backdropSizes, posterSizes, getTVTrailer } from '@/utils/api';
-import { TVDetails, Episode, Media } from '@/utils/types';
+import { getTVDetails, getTVRecommendations, getSeasonDetails, backdropSizes, posterSizes, getTVTrailer, getTVCast } from '@/utils/api';
+import { TVDetails, Episode, Media, CastMember } from '@/utils/types';
 import { Button } from '@/components/ui/button';
 import ContentRow from '@/components/ContentRow';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -21,8 +21,9 @@ const TVDetailsPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [backdropLoaded, setBackdropLoaded] = useState(false);
   const [logoLoaded, setLogoLoaded] = useState(false);
-  const [activeTab, setActiveTab] = useState<'episodes' | 'about' | 'reviews'>('episodes');
+  const [activeTab, setActiveTab] = useState<'episodes' | 'about' | 'cast' | 'reviews'>('episodes');
   const [recommendations, setRecommendations] = useState<Media[]>([]);
+  const [cast, setCast] = useState<CastMember[]>([]);
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { watchHistory, addToFavorites, addToWatchlist, removeFromFavorites, removeFromWatchlist, isInFavorites, isInWatchlist } = useWatchHistory();
@@ -48,9 +49,10 @@ const TVDetailsPage = () => {
       try {
         setIsLoading(true);
         setError(null);
-        const [tvData, recommendationsData] = await Promise.all([
+        const [tvData, recommendationsData, castData] = await Promise.all([
           getTVDetails(tvId),
-          getTVRecommendations(tvId)
+          getTVRecommendations(tvId),
+          getTVCast(tvId),
         ]);
         
         if (!tvData) {
@@ -60,6 +62,7 @@ const TVDetailsPage = () => {
 
         setTVShow(tvData);
         setRecommendations(recommendationsData);
+        setCast(castData);
         
         if (tvData.seasons && tvData.seasons.length > 0) {
           const firstSeason = tvData.seasons.find(s => s.season_number > 0);
@@ -416,6 +419,16 @@ const TVDetailsPage = () => {
           </button>
           <button
             className={`py-2 px-4 font-medium whitespace-nowrap ${
+              activeTab === 'cast' 
+                ? 'text-white border-b-2 border-accent' 
+                : 'text-white/60 hover:text-white'
+            }`}
+            onClick={() => setActiveTab('cast')}
+          >
+            Cast
+          </button>
+          <button
+            className={`py-2 px-4 font-medium whitespace-nowrap ${
               activeTab === 'reviews' 
                 ? 'text-white border-b-2 border-accent' 
                 : 'text-white/60 hover:text-white'
@@ -554,6 +567,35 @@ const TVDetailsPage = () => {
                   ))}
                 </div>
               </div>
+            )}
+          </div>
+        )}
+        
+        {activeTab === 'cast' && (
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold text-white mb-6">Cast</h2>
+            {cast.length > 0 ? (
+              <div className="flex flex-wrap gap-6">
+                {cast.map((member) => (
+                  <div key={member.id} className="w-32 text-center">
+                    {member.profile_path ? (
+                      <img
+                        src={`https://image.tmdb.org/t/p/w185${member.profile_path}`}
+                        alt={member.name}
+                        className="rounded-lg w-24 h-32 object-cover mx-auto mb-2"
+                      />
+                    ) : (
+                      <div className="rounded-lg w-24 h-32 bg-white/10 flex items-center justify-center mx-auto mb-2 text-white/60 text-xs">
+                        No Image
+                      </div>
+                    )}
+                    <p className="text-white/90 text-sm font-medium truncate">{member.name}</p>
+                    <p className="text-white/60 text-xs truncate">{member.character}</p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-white/70">No cast information available.</div>
             )}
           </div>
         )}

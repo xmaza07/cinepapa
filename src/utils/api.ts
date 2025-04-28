@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { Media, MovieDetails, TVDetails, Episode, Review, Genre, Company, MovieImagesResponse, VideoSource } from './types';
+import { Media, MovieDetails, TVDetails, Episode, Review, Genre, Company, MovieImagesResponse, VideoSource, CastMember } from './types';
 
 // Add interface for video response
 interface TMDBVideo {
@@ -815,5 +815,57 @@ export const validateTMDBId = async (mediaType: 'movie' | 'tv', tmdbId: number) 
     return response.data && response.data.id === tmdbId;
   } catch (error) {
     return false;
+  }
+};
+
+// Get movie cast
+export const getMovieCast = async (id: number): Promise<CastMember[]> => {
+  try {
+    const response = await fetch(
+      `${BASE_URL}/movie/${id}/credits?api_key=${API_KEY}&language=en-US`
+    );
+    const data = await response.json();
+    return (data.cast || []).map((member: {
+      id: number;
+      name: string;
+      character: string;
+      profile_path: string | null;
+      order: number;
+    }) => ({
+      id: member.id,
+      name: member.name,
+      character: member.character,
+      profile_path: member.profile_path,
+      order: member.order,
+    }));
+  } catch (error) {
+    console.error(`Error fetching movie cast for id ${id}:`, error);
+    return [];
+  }
+};
+
+// Get TV show cast
+export const getTVCast = async (id: number): Promise<CastMember[]> => {
+  try {
+    const response = await fetch(
+      `${BASE_URL}/tv/${id}/credits?api_key=${API_KEY}&language=en-US`
+    );
+    const data = await response.json();
+    return (data.cast || []).map((member: {
+      id: number;
+      name: string;
+      character: string;
+      profile_path: string | null;
+      order: number;
+    }) => ({
+      id: member.id,
+      name: member.name,
+      character: member.character,
+      profile_path: member.profile_path,
+      order: member.order,
+    }));
+  } catch (error) {
+    console.error(`Error fetching TV cast for id ${id}:`, error);
+    return [];
   }
 };

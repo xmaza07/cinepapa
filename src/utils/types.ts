@@ -162,3 +162,12 @@ export interface Image {
   vote_count: number;
   width: number;
 }
+
+// --- CAST TYPES ---
+export interface CastMember {
+  id: number;
+  name: string;
+  character: string;
+  profile_path: string | null;
+  order: number;
+}

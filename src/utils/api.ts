@@ -532,6 +532,20 @@ export const getTopRatedMovies = async (page: number = 1): Promise<Media[]> => {
   }
 };
 
+// Get trending TV shows
+export const getTrendingTVShows = async (page: number = 1): Promise<Media[]> => {
+  try {
+    const response = await fetch(
+      `${BASE_URL}/trending/tv/week?api_key=${API_KEY}&language=en-US&page=${page}`
+    );
+    const data = await response.json();
+    return data.results.map((item: TMDBTVResult) => formatMediaItem({...item, media_type: 'tv'}));
+  } catch (error) {
+    console.error('Error fetching trending TV shows:', error);
+    return [];
+  }
+};
+
 // Get top rated TV shows
 export const getTopRatedTVShows = async (page: number = 1): Promise<Media[]> => {
   try {

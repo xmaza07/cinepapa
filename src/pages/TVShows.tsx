@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useQuery, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { getPopularTVShows, getTopRatedTVShows, getTrendingTVShows } from '@/utils/api';
@@ -7,8 +8,7 @@ import Footer from '@/components/Footer';
 import MediaGrid from '@/components/MediaGrid';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Tv, ChevronDown, Grid3X3, List, Filter } from 'lucide-react';
-import { netflix, amazon, hulu, paramount } from 'lucide-react';
+import { Tv, ChevronDown, Grid3X3, List, Filter, Play, Download, Monitor, Film } from 'lucide-react';
 import PageTransition from '@/components/PageTransition';
 import { useToast } from '@/hooks/use-toast';
 import { MediaGridSkeleton } from '@/components/MediaSkeleton';
@@ -34,7 +34,7 @@ import {
 
 const ITEMS_PER_PAGE = 20;
 
-// Streaming platform definition with added icons
+// Streaming platform definition with added icons - using available Lucide icons
 interface StreamingPlatform {
   id: string;
   name: string;
@@ -43,10 +43,10 @@ interface StreamingPlatform {
 }
 
 const STREAMING_PLATFORMS: StreamingPlatform[] = [
-  { id: 'netflix', name: 'Netflix', icon: netflix, color: 'text-red-600' },
-  { id: 'prime', name: 'Amazon Prime Video', icon: amazon, color: 'text-blue-500' },
-  { id: 'hulu', name: 'Hulu', icon: hulu, color: 'text-green-500' },
-  { id: 'paramount', name: 'Paramount+', icon: paramount, color: 'text-blue-700' },
+  { id: 'netflix', name: 'Netflix', icon: Play, color: 'text-red-600' },
+  { id: 'prime', name: 'Amazon Prime Video', icon: Monitor, color: 'text-blue-500' },
+  { id: 'hulu', name: 'Hulu', icon: Download, color: 'text-green-500' },
+  { id: 'paramount', name: 'Paramount+', icon: Film, color: 'text-blue-700' },
   { id: 'disney', name: 'Disney+', color: 'text-blue-400' },
   { id: 'hbo', name: 'HBO Max', color: 'text-purple-600' },
   { id: 'apple', name: 'Apple TV+', color: 'text-gray-400' },

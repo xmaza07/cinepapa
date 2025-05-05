@@ -1,3 +1,0 @@
-// Backup of the original tmdb-api.ts before overwrite for compatibility layer refactor.
-// See new modular files: tmdb-types.ts, tmdb-constants.ts, tmdb-fetchers.ts, tmdb-details.ts, tmdb-extras.ts
-

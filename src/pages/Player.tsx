@@ -24,6 +24,7 @@ const Player = () => {
   const {
     title,
     mediaType,
+    mediaDetails,
     episodes,
     currentEpisodeIndex,
     isLoading,
@@ -45,8 +46,8 @@ const Player = () => {
     goBack
   } = useMediaPlayer(id, season, episode, type);
 
-  const posterUrl = mediaType === 'movie' || mediaType === 'tv' 
-    ? `https://image.tmdb.org/t/p/w1280${mediaType.backdrop_path}` 
+  const posterUrl = mediaDetails ? 
+    `https://image.tmdb.org/t/p/w1280${mediaDetails.backdrop_path}` 
     : undefined;
 
   return (

@@ -12,13 +12,13 @@ interface GeminiConfig {
   };
 }
 
-interface ChatMessage {
+export interface ChatMessage {
   role: 'user' | 'assistant' | 'system';
   content: string;
   timestamp: number;
 }
 
-interface GeminiResponse {
+export interface GeminiResponse {
   text: string;
   status: 'success' | 'error';
   error?: string;
@@ -133,7 +133,7 @@ Don't use overly technical jargon or industry terms. Keep it relatable and fun.
 don't ask for the user's name or any personal information. Just focus on their preferences and interests.
 Don't include any disclaimers or limitations about your capabilities. Just focus on providing the best recommendations possible.
 don't ask extra questions or provide unnecessary context. Just focus on the user's preferences and interests.
-Don't include any information about the AI model or its capabilities. Just focus on providing the best recommendations possible.
+don't include any information about the AI model or its capabilities. Just focus on providing the best recommendations possible.
 Generate a list of 2-3 movie or TV show recommendations based on the user's preferences. Make sure to include the title, year, brief synopsis, genre(s), audience score, TMDB ID, Type (movie or tv), and a personalized reason for each recommendation.
 Example Opening: "Hey there! Ready to find your next favorite movie or show? Tell me a bit about what you're in the mood for, or maybe something you've watched recently and loved (or hated!)?"
 Example Closing: "Can't wait to hear what you think! If you have any other questions or need more suggestions, just let me know. Happy watching!
@@ -154,7 +154,7 @@ Example user output:
  */
 export const sendMessageToGemini = async (
   message: string,
-  chatHistory: ChatMessage[] = []
+  chatHistory: string[] = []
 ): Promise<GeminiResponse> => {
   try {
     // Check rate limit using the specific Gemini API endpoint
@@ -177,7 +177,7 @@ export const sendMessageToGemini = async (
     // Process chat history
     if (chatHistory.length > 0) {
       // Add system prompt first if not present
-      if (!chatHistory.some(msg => msg.role === 'system')) {
+      if (!chatHistory.some(msg => msg.includes(MOVIE_RECOMMENDATION_PROMPT))) {
         await withRetry(() => 
           chat.sendMessage(MOVIE_RECOMMENDATION_PROMPT)
         );
@@ -185,11 +185,9 @@ export const sendMessageToGemini = async (
       
       // Add historical messages in order
       for (const msg of chatHistory) {
-        if (msg.role !== 'system') {
-          await withRetry(() => 
-            chat.sendMessage(msg.content)
-          );
-        }
+        await withRetry(() => 
+          chat.sendMessage(msg)
+        );
       }
     } else {
       // Initialize with system prompt

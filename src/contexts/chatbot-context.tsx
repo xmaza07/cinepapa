@@ -1,5 +1,6 @@
+
 import React, { createContext, useState, useContext, ReactNode } from 'react';
-import { sendMessageToGemini, searchMedia } from '@/utils/gemini-api';
+import { sendMessageToGemini, searchMedia, type GeminiResponse, type ChatMessage as GeminiChatMessage } from '@/utils/gemini-api';
 import { extractMediaItems } from '@/utils/chatbot-utils';
 
 export interface ChatMessage {
@@ -68,12 +69,13 @@ export const ChatbotProvider: React.FC<ChatbotProviderProps> = ({ children }) =>
     addMessage(message, true);
     setIsLoading(true);
     try {
+      // Convert ChatMessage[] to string[] for the API
       const chatHistory = messages.slice(-5).map(msg => msg.text);
       const formattedMessage = `\n${userMessage}\n\nWhen responding with movie or TV show recommendations, please format them as follows:\n1. **Title** (Year) - Brief description about the content.\nGenre: genre1, genre2\nType: movie or tv\nRating: X/10\nTMDB_ID: ID number if available\n\nFollow this format to make recommendations easier to understand.\n      `;
       const response = await sendMessageToGemini(formattedMessage, chatHistory);
-      const mediaItems = extractMediaItems(response);
+      const mediaItems = extractMediaItems(response.text);
       console.log('Extracted media items:', mediaItems);
-      addMessage(response, false);
+      addMessage(response.text, false);
     } catch (error) {
       console.error('Error sending message:', error);
       addMessage('Sorry, I encountered an error. Please try again.', false);
@@ -110,11 +112,11 @@ Follow this format to make the results easier to understand.
       const results = await searchMedia(formattedQuery);
       
       // Check if the results contain media items
-      const mediaItems = extractMediaItems(results);
+      const mediaItems = extractMediaItems(results.text);
       console.log('Extracted search results:', mediaItems);
       
       // Add search results
-      addMessage(results, false);
+      addMessage(results.text, false);
     } catch (error) {
       console.error('Error searching media:', error);
       addMessage('Sorry, I encountered an error while searching. Please try again.', false);
@@ -137,8 +139,13 @@ Follow this format to make the results easier to understand.
       const ratingMessage = `I rated the recommendation "${ratedMessage.text.substring(0, 50)}..." as ${rating}/5. Please remember this for future recommendations.`;
       console.log(ratingMessage);
       
+      // Convert ChatMessage[] to string[] for the API
+      const messageTexts = messages.map(msg => msg.text);
+      
       // Silently send rating to Gemini without adding to visible chat
-      sendMessageToGemini(ratingMessage, messages.map(msg => msg.text));
+      sendMessageToGemini(ratingMessage, messageTexts).catch(error => {
+        console.error('Error sending rating to Gemini:', error);
+      });
     }
   };
 

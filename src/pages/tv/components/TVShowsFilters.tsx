@@ -36,13 +36,14 @@ const TVShowsFilters = ({
   };
 
   const togglePlatformFilter = (platformId: string) => {
-    setPlatformFilters(prev => {
-      if (prev.includes(platformId)) {
-        return prev.filter(id => id !== platformId);
-      } else {
-        return [...prev, platformId];
-      }
-    });
+    // Fix the type error by properly handling the state update
+    if (platformFilters.includes(platformId)) {
+      // Remove platform from filters
+      setPlatformFilters(platformFilters.filter(id => id !== platformId));
+    } else {
+      // Add platform to filters
+      setPlatformFilters([...platformFilters, platformId]);
+    }
   };
 
   return (

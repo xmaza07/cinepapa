@@ -8,7 +8,7 @@ const Login = lazy(() => import('./pages/Login'));
 const Signup = lazy(() => import('./pages/Signup'));
 const Profile = lazy(() => import('./pages/Profile'));
 const Movies = lazy(() => import('./pages/Movies'));
-const TVShows = lazy(() => import('./pages/TVShows'));
+const TVShowsPage = lazy(() => import('./pages/tv'));
 const Sports = lazy(() => import('./pages/Sports'));
 const Search = lazy(() => import('./pages/Search'));
 const WatchHistory = lazy(() => import('./pages/WatchHistory'));
@@ -43,7 +43,7 @@ export default function AppRoutes() {
         {/* Content routes */}
         <Route path="/movie" element={<Movies />} />
         <Route path="/movie/:id" element={<MovieDetails />} />
-        <Route path="/tv" element={<TVShows />} />
+        <Route path="/tv" element={<TVShowsPage />} />
         <Route path="/tv/:id" element={<TVDetails />} />
         <Route path="/sports" element={<Sports />} />
         <Route path="/sports/:id" element={<SportMatch />} />

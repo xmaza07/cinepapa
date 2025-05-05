@@ -1,4 +1,3 @@
-
 import { GoogleGenerativeAI, GenerateContentResult } from '@google/generative-ai';
 import { RateLimiter } from './rate-limiter';
 
@@ -132,7 +131,7 @@ Stay Up-to-Date: When possible, factor in recent releases if relevant to the use
 Don't include long descriptions or spoilers. Keep it concise and engaging.
 Don't use overly technical jargon or industry terms. Keep it relatable and fun.
 don't ask for the user's name or any personal information. Just focus on their preferences and interests.
-Don't include any disclaimers or limitations about your capabilities. Just focus on providing the best recommendations possible.
+don't include any disclaimers or limitations about your capabilities. Just focus on providing the best recommendations possible.
 don't ask extra questions or provide unnecessary context. Just focus on the user's preferences and interests.
 don't include any information about the AI model or its capabilities. Just focus on providing the best recommendations possible.
 Generate a list of 2-3 movie or TV show recommendations based on the user's preferences. Make sure to include the title, year, brief synopsis, genre(s), audience score, TMDB ID, Type (movie or tv), and a personalized reason for each recommendation.
@@ -272,4 +271,4 @@ export const searchMedia = async (query: string): Promise<GeminiResponse> => {
 };
 
 // Export types for use in other files
-export type { GeminiChatMessage, GeminiConfig, GeminiAPIError };
+export type { GeminiConfig, GeminiAPIError };

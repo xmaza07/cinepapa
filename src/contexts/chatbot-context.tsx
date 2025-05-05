@@ -1,6 +1,6 @@
 
 import React, { createContext, useState, useContext, ReactNode } from 'react';
-import { sendMessageToGemini, searchMedia, type GeminiResponse, type ChatMessage as GeminiChatMessage } from '@/utils/gemini-api';
+import { sendMessageToGemini, searchMedia, type GeminiResponse } from '@/utils/gemini-api';
 import { extractMediaItems } from '@/utils/chatbot-utils';
 
 export interface ChatMessage {

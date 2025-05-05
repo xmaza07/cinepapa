@@ -1,3 +1,4 @@
+
 import { GoogleGenerativeAI, GenerateContentResult } from '@google/generative-ai';
 import { RateLimiter } from './rate-limiter';
 
@@ -12,7 +13,7 @@ interface GeminiConfig {
   };
 }
 
-export interface ChatMessage {
+export interface GeminiChatMessage {
   role: 'user' | 'assistant' | 'system';
   content: string;
   timestamp: number;
@@ -271,4 +272,4 @@ export const searchMedia = async (query: string): Promise<GeminiResponse> => {
 };
 
 // Export types for use in other files
-export type { ChatMessage, GeminiResponse, GeminiConfig, GeminiAPIError };
+export type { GeminiChatMessage, GeminiConfig, GeminiAPIError };

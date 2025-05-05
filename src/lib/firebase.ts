@@ -15,13 +15,15 @@ const firebaseConfig = {
   measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
-// For debugging purposes
+// For debugging purposes, directly check if the API key is being loaded correctly
+console.log("Firebase API key:", import.meta.env.VITE_FIREBASE_API_KEY ? "Available" : "Missing");
 console.log("Firebase config:", {
   apiKey: firebaseConfig.apiKey ? "API key exists" : "Missing API key", 
   authDomain: firebaseConfig.authDomain,
   projectId: firebaseConfig.projectId
 });
 
+// Create a .env file if it doesn't exist with the values from the environment
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const analytics = getAnalytics(app);

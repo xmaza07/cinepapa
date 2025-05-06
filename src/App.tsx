@@ -13,8 +13,11 @@ import { AuthProvider } from '@/hooks';
 import { ChatbotProvider } from './contexts/chatbot-context';
 import ChatbotButton from './components/chatbot/ChatbotButton';
 import ChatbotWindow from './components/chatbot/ChatbotWindow';
+import { SidebarProvider, SidebarInset } from './components/ui/sidebar';
+import { AppSidebar } from './components/app-sidebar';
 import AppRoutes from './routes.tsx';
 import './App.css';
+import './styles/sidebar.css';
 
 // Create a client
 const queryClient = new QueryClient({
@@ -61,17 +64,24 @@ function App() {
                 <ChatbotProvider>
                   <ServiceWorkerErrorBoundary>
                     <BrowserRouter>
-                      <AppRoutes />
-                      <Toaster />
-                      {isDevelopment && <ServiceWorkerDebugPanel />}
-                      {swUpdateAvailable && (
-                        <ServiceWorkerUpdateNotification 
-                          onAcceptUpdate={handleSwUpdateAccept}
-                          onDismiss={() => setSwUpdateAvailable(false)}
-                        />
-                      )}
-                      <ChatbotButton />
-                      <ChatbotWindow />
+                      <SidebarProvider>
+                        <div className="flex w-full min-h-screen">
+                          <AppSidebar />
+                          <SidebarInset>
+                            <AppRoutes />
+                            <Toaster />
+                            {isDevelopment && <ServiceWorkerDebugPanel />}
+                            {swUpdateAvailable && (
+                              <ServiceWorkerUpdateNotification 
+                                onAcceptUpdate={handleSwUpdateAccept}
+                                onDismiss={() => setSwUpdateAvailable(false)}
+                              />
+                            )}
+                            <ChatbotButton />
+                            <ChatbotWindow />
+                          </SidebarInset>
+                        </div>
+                      </SidebarProvider>
                     </BrowserRouter>
                   </ServiceWorkerErrorBoundary>
                 </ChatbotProvider>

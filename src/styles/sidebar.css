@@ -1,30 +1,10 @@
 
-@layer base {
-  :root {
-    --sidebar-width: 16rem;
-    --sidebar-width-icon: 3rem;
-    --sidebar-width-mobile: 18rem;
-  }
+/* 
+ * Sidebar styling for MovieFlix app
+ * Custom styles for the Sidebar component
+ */
 
-  [data-theme="dark"] {
-    --sidebar: 240 10% 3.9%;
-    --sidebar-foreground: 0 0% 98%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-ring: 240 4.9% 83.9%;
-  }
-
-  [data-theme="light"] {
-    --sidebar: 0 0% 100%;
-    --sidebar-foreground: 240 10% 3.9%;
-    --sidebar-border: 240 5.9% 90%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-ring: 240 5.9% 10%;
-  }
-}
-
+/* Base styles for the sidebar */
 .sidebar-card {
   @apply glass rounded-lg p-2 transition-all duration-200 hover:bg-white/10;
 }
@@ -43,4 +23,31 @@
 
 .sidebar-menu-item:not(.active) {
   @apply text-white/70 hover:text-white;
+}
+
+/* CSS variables for sidebar dimensions */
+:root {
+  --sidebar-width: 16rem;
+  --sidebar-width-icon: 3rem;
+  --sidebar-width-mobile: 18rem;
+}
+
+/* Dark theme sidebar colors */
+[data-theme="dark"] {
+  --sidebar-background: 240 10% 3.9%;
+  --sidebar-foreground: 0 0% 98%;
+  --sidebar-border: 240 3.7% 15.9%;
+  --sidebar-accent: 240 3.7% 15.9%;
+  --sidebar-accent-foreground: 0 0% 98%;
+  --sidebar-ring: 240 4.9% 83.9%;
+}
+
+/* Light theme sidebar colors */
+[data-theme="light"] {
+  --sidebar-background: 0 0% 100%;
+  --sidebar-foreground: 240 10% 3.9%;
+  --sidebar-border: 240 5.9% 90%;
+  --sidebar-accent: 240 4.8% 95.9%;
+  --sidebar-accent-foreground: 240 5.9% 10%;
+  --sidebar-ring: 240 5.9% 10%;
 }

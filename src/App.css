@@ -1,4 +1,3 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -43,9 +42,6 @@
     --ring: 240 4.9% 83.9%;
 
     --radius: 0.75rem;
-    
-    /* Include sidebar variables from sidebar.css */
-    --sidebar: var(--sidebar-background);
   }
 
   * {

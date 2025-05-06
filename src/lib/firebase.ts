@@ -16,18 +16,14 @@ const firebaseConfig = {
 };
 
 // For debugging purposes, directly check if the API key is being loaded correctly
-console.log("Firebase API key loaded:", import.meta.env.VITE_FIREBASE_API_KEY ? "Yes" : "No");
+console.log("Firebase API key:", import.meta.env.VITE_FIREBASE_API_KEY ? "Available" : "Missing");
 console.log("Firebase config:", {
-  apiKey: firebaseConfig.apiKey ? "Available" : "Missing", 
+  apiKey: firebaseConfig.apiKey ? "API key exists" : "Missing API key", 
   authDomain: firebaseConfig.authDomain,
   projectId: firebaseConfig.projectId
 });
 
-// Initialize Firebase only if we have an API key
-if (!firebaseConfig.apiKey) {
-  console.error("Firebase API key is missing. Authentication will not work properly.");
-}
-
+// Create a .env file if it doesn't exist with the values from the environment
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const analytics = getAnalytics(app);

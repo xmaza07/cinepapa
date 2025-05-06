@@ -1,3 +1,4 @@
+
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/hooks';
 
@@ -16,6 +17,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     );
   }
 
+  // If user is not authenticated, redirect to login
   if (!user) {
     return <Navigate to="/login" replace />;
   }

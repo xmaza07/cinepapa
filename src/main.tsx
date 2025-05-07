@@ -4,9 +4,13 @@ import ReactDOM from 'react-dom/client'
 import App from './App'
 import './index.css'
 import { registerServiceWorker } from './utils/register-sw'
+import { registerIframeProxySW } from './utils/iframe-proxy-sw'
 
-// Register service worker
-registerServiceWorker().catch(console.error);
+// Register service workers
+Promise.all([
+  registerServiceWorker(),
+  registerIframeProxySW()
+]).catch(console.error);
 
 // Import Plyr custom styles
 import 'plyr/dist/plyr.css';

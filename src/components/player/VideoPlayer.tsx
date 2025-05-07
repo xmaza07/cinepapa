@@ -1,6 +1,8 @@
 
 import { motion } from 'framer-motion';
 import PlyrPlayer from '@/components/PlyrPlayer';
+import { useEffect, useRef } from 'react';
+import { registerIframeOrigin } from '@/utils/iframe-proxy-sw';
 
 interface VideoPlayerProps {
   isLoading: boolean;
@@ -23,6 +25,15 @@ const VideoPlayer = ({
   onLoaded,
   onError
 }: VideoPlayerProps) => {
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  
+  // Register iframe origin when URL changes
+  useEffect(() => {
+    if (!isCustomSource && iframeUrl) {
+      registerIframeOrigin(iframeUrl);
+    }
+  }, [isCustomSource, iframeUrl]);
+
   return (
     <div className="relative aspect-video rounded-lg overflow-hidden shadow-2xl">
       {isLoading ? (
@@ -52,10 +63,13 @@ const VideoPlayer = ({
           />
         ) : (
           <iframe
+            ref={iframeRef}
             src={iframeUrl}
             className="w-full h-full"
             allowFullScreen
             onLoad={onLoaded}
+            // Don't use sandbox as it's not supported by the video sources
+            // Instead, we're using our service worker to block pop-ups
           />
         )}
       </motion.div>

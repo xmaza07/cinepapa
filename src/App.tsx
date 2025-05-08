@@ -38,29 +38,80 @@ function App() {
         console.log(`Proxy system ${registered ? 'registered successfully' : 'not registered or using fallback'}`);
       })
       .catch(error => {
+        // Enhanced error handling: show user-friendly message
         console.error('Failed to initialize proxy system:', error);
-        // Continue with the app even if the proxy system fails
+        if (window && 'Notification' in window) {
+          Notification.requestPermission().then(permission => {
+            if (permission === 'granted') {
+              new Notification('Proxy System Error', {
+                body: 'Failed to initialize proxy system. Some features may not work offline.',
+              });
+            }
+          });
+        }
       });
 
     // Listen for service worker updates
     const handleSwUpdate = () => {
-      console.log('Service worker update detected');
-      setSwUpdateAvailable(true);
+      try {
+        console.log('Service worker update detected');
+        setSwUpdateAvailable(true);
+      } catch (err) {
+        console.error('Error handling service worker update:', err);
+      }
     };
 
     window.addEventListener('sw-update-available', handleSwUpdate);
 
+    // Enhanced error handling for event listener
     return () => {
-      window.removeEventListener('sw-update-available', handleSwUpdate);
+      try {
+        window.removeEventListener('sw-update-available', handleSwUpdate);
+      } catch (err) {
+        console.error('Error removing sw-update-available event listener:', err);
+      }
     };
   }, []);
 
+
+  /**
+   * Handles acceptance of a service worker update.
+   * Sends a message to the waiting service worker to skip waiting,
+   * and reloads the page when the new service worker takes control.
+   * Enhanced with error handling and user notification.
+   */
   const handleSwUpdateAccept = () => {
-    // Send message to skip waiting
-    if (navigator.serviceWorker.controller) {
-      navigator.serviceWorker.controller.postMessage({ type: 'SKIP_WAITING' });
+    try {
+      if (navigator.serviceWorker.controller) {
+        navigator.serviceWorker.controller.postMessage({ type: 'SKIP_WAITING' });
+      }
+      // Listen for controllerchange and reload when new SW takes control
+      const reloadOnControllerChange = () => {
+        window.location.reload();
+      };
+      navigator.serviceWorker.addEventListener('controllerchange', reloadOnControllerChange, { once: true });
+    } catch (err) {
+      console.error('Error during service worker update acceptance:', err);
+      if (window && 'Notification' in window) {
+        Notification.requestPermission().then(permission => {
+          if (permission === 'granted') {
+            new Notification('Update Error', {
+              body: 'Failed to apply the update. Please refresh the page manually.',
+            });
+          }
+        });
+      }
     }
   };
+/**
+ * App component for the Flicker Dreams Factory PWA.
+ *
+ * Handles service worker update notifications, error boundaries, and context providers.
+ *
+ * - Shows a notification when a new service worker is available.
+ * - Handles update acceptance and reloads the app when the new service worker takes control.
+ * - Provides enhanced error handling and user notifications for critical failures.
+ */
 
   return (
     <QueryClientProvider client={queryClient}>

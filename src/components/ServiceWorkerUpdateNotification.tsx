@@ -14,7 +14,7 @@ export function ServiceWorkerUpdateNotification({
   onDismiss 
 }: ServiceWorkerUpdateNotificationProps) {
   const [isVisible, setIsVisible] = useState(true);
-
+  // Auto-update fallback after 60 seconds
   useEffect(() => {
     // Show a toast notification about the service worker error on mount
     toast({
@@ -23,7 +23,15 @@ export function ServiceWorkerUpdateNotification({
       variant: "destructive",
       duration: 5000,
     });
-  }, []);
+    const timeout = setTimeout(() => {
+      if (isVisible) {
+        setIsVisible(false);
+        onAcceptUpdate();
+      }
+    }, 60000); // 60 seconds
+    return () => clearTimeout(timeout);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isVisible]);
 
   if (!isVisible) return null;
 
@@ -39,7 +47,6 @@ export function ServiceWorkerUpdateNotification({
         <Button size="sm" onClick={() => {
           setIsVisible(false);
           onAcceptUpdate();
-          window.location.reload(); // Force reload to apply the service worker update
         }}>
           Update Now
         </Button>

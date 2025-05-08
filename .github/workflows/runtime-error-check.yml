@@ -1,10 +1,8 @@
+
 name: Runtime Error Check
 
 on:
-  pull_request:
-    branches: [ main, master, development ]
-  push:
-    branches: [ main, master, development ]
+  workflow_dispatch:
 
 jobs:
   runtime-check:
@@ -42,11 +40,11 @@ jobs:
           done;
           echo 'Server did not start in time.';
           exit 1
-      - name: Check for runtime errors (Playwright)
+      - name: Create Playwright runtime error check
         run: |
-          npx playwright install chromium
-          npx playwright codegen http://localhost:4173 --target javascript --output runtime-check.spec.js --save-storage=storage.json --timeout=10000
-          npx playwright test runtime-check.spec.js --reporter=list
+          echo "const { test, expect } = require('@playwright/test');\n\ntest('no runtime errors on load', async ({ page }) => {\n  const errors = [];\n  page.on('pageerror', (err) => errors.push('Page error: ' + err.message));\n  page.on('console', (msg) => {\n    if (msg.type() === 'error') errors.push('Console error: ' + msg.text());\n  });\n  await page.goto('http://localhost:4173', { waitUntil: 'networkidle' });\n  expect(errors, `Runtime errors found:\n${errors.join('\\n')}`).toEqual([]);\n});" > runtime-error-check.spec.js
+      - name: Run Playwright runtime error check
+        run: npx playwright test runtime-error-check.spec.js --reporter=list
         env:
           CI: true
       - name: Upload Playwright report

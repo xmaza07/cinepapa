@@ -14,9 +14,15 @@ import './index.css';
 // Import the proxy system
 import { initializeProxySystem } from './utils/proxy-sw-registration';
 
-// Initialize the proxy system
-initializeProxySystem().then(registered => {
-  console.log(`Proxy system ${registered ? 'registered successfully' : 'not registered or using fallback'}`);
+// Wait for DOM to be ready before initializing the proxy system
+document.addEventListener('DOMContentLoaded', () => {
+  // Initialize the proxy system
+  initializeProxySystem().then(registered => {
+    console.log(`Proxy system ${registered ? 'registered successfully' : 'not registered or using fallback'}`);
+  }).catch(error => {
+    console.error('Failed to initialize proxy system:', error);
+    // Continue with the app even if the proxy system fails
+  });
 });
 
 createRoot(document.getElementById('root')!).render(

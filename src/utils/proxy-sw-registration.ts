@@ -32,10 +32,19 @@ export async function initializeProxySystem(): Promise<boolean> {
 
 // Monitor the proxy system status
 export function getProxySystemStatus(): { active: boolean; type: string } {
-  const swActive = isProxyServiceWorkerActive();
-  
-  return {
-    active: swActive,
-    type: swActive ? 'service-worker' : 'fallback-script'
-  };
+  // Safely check if service worker is active without throwing errors
+  try {
+    const swActive = isProxyServiceWorkerActive();
+    
+    return {
+      active: swActive,
+      type: swActive ? 'service-worker' : 'fallback-script'
+    };
+  } catch (error) {
+    console.error('Error checking proxy system status:', error);
+    return { 
+      active: false, 
+      type: 'error'
+    };
+  }
 }

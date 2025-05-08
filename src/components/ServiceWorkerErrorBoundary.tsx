@@ -1,5 +1,7 @@
+
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { Alert, AlertTitle, AlertDescription } from './ui/alert';
+import { Button } from './ui/button';
 
 interface Props {
   children: ReactNode;
@@ -8,31 +10,52 @@ interface Props {
 interface State {
   hasError: boolean;
   error: Error | null;
+  errorInfo: ErrorInfo | null;
 }
 
 export class ServiceWorkerErrorBoundary extends Component<Props, State> {
   public state: State = {
     hasError: false,
-    error: null
+    error: null,
+    errorInfo: null
   };
 
   public static getDerivedStateFromError(error: Error): State {
-    return { hasError: true, error };
+    // Update state so the next render will show the fallback UI
+    return { hasError: true, error, errorInfo: null };
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('Service Worker error:', error, errorInfo);
+    this.setState({ errorInfo });
   }
+
+  private handleRetry = () => {
+    // Reset error state and attempt to render again
+    this.setState({ hasError: false, error: null, errorInfo: null });
+    
+    // Attempt to re-initialize service worker
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(registrations => {
+        registrations.forEach(registration => {
+          registration.unregister();
+        });
+        
+        // Reload the page after unregistering
+        window.location.reload();
+      });
+    }
+  };
 
   public render() {
     if (this.state.hasError) {
       return (
-        <Alert variant="destructive">
+        <Alert variant="destructive" className="mb-4">
           <AlertTitle>Service Worker Error</AlertTitle>
           <AlertDescription>
-            There was an issue with the service worker. Some offline features may not work.
-            Please refresh the page or clear your browser cache if the issue persists.
-            Error: {this.state.error?.message}
+            <p className="mb-2">There was an issue with the service worker. Some features may not work properly.</p>
+            <p className="text-sm mb-4">{this.state.error?.message || 'Unknown error'}</p>
+            <Button size="sm" onClick={this.handleRetry}>Retry</Button>
           </AlertDescription>
         </Alert>
       );

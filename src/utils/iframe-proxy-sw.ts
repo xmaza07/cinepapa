@@ -90,14 +90,19 @@ export function setProxyHeaders(domain: string, headers: Record<string, string>)
  * Create a Cloudflare worker proxy URL for a given URL
  */
 export function createProxyUrl(url: string, headers?: Record<string, string>): string {
-  const params = new URLSearchParams();
-  params.append('url', url);
-  
-  if (headers) {
-    params.append('headers', JSON.stringify(headers));
+  try {
+    const params = new URLSearchParams();
+    params.append('url', url);
+    
+    if (headers) {
+      params.append('headers', JSON.stringify(headers));
+    }
+    
+    return `/worker-proxy?${params.toString()}`;
+  } catch (error) {
+    console.error('Failed to create proxy URL:', error);
+    return url; // Return the original URL as fallback
   }
-  
-  return `/worker-proxy?${params.toString()}`;
 }
 
 /**

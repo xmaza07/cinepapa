@@ -107,3 +107,29 @@ export async function proxyAndRewriteM3u8(m3u8Url: string, headers?: Record<stri
     throw error;
   }
 }
+
+/**
+ * Inject a script into the page to intercept window.open calls
+ * This is a fallback mechanism to help block popups that might bypass the service worker
+ */
+export function injectPopupBlocker(): void {
+  const script = document.createElement('script');
+  script.textContent = `
+    // Block window.open
+    window.open = function() {
+      console.warn('Window.open blocked by popup blocker');
+      return null;
+    };
+    
+    // Block target="_blank" links
+    document.addEventListener('click', function(e) {
+      const target = e.target.closest('a');
+      if (target && target.getAttribute('target') === '_blank') {
+        e.preventDefault();
+        console.warn('Target _blank link click blocked');
+        return false;
+      }
+    }, true);
+  `;
+  document.head.appendChild(script);
+}

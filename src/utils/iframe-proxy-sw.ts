@@ -58,6 +58,8 @@ export function registerIframeOrigin(iframeUrl: string): void {
       type: 'REGISTER_IFRAME_ORIGIN',
       origin: url.origin
     });
+    
+    console.log('Registered iframe origin with service worker:', url.origin);
   } catch (error) {
     console.error('Failed to register iframe origin:', error);
   }
@@ -77,6 +79,8 @@ export function setProxyHeaders(domain: string, headers: Record<string, string>)
       domain,
       headers
     });
+    
+    console.log('Set proxy headers for domain:', domain);
   } catch (error) {
     console.error('Failed to set proxy headers:', error);
   }
@@ -94,4 +98,31 @@ export function createProxyUrl(url: string, headers?: Record<string, string>): s
   }
   
   return `/worker-proxy?${params.toString()}`;
+}
+
+/**
+ * Reset all stored data in the service worker
+ * Useful for debugging or when changing iframe contexts
+ */
+export function resetServiceWorkerData(): void {
+  if (!('serviceWorker' in navigator) || !navigator.serviceWorker.controller) {
+    return;
+  }
+  
+  try {
+    navigator.serviceWorker.controller.postMessage({
+      type: 'CLEAR_DATA'
+    });
+    
+    console.log('Reset service worker stored data');
+  } catch (error) {
+    console.error('Failed to reset service worker data:', error);
+  }
+}
+
+/**
+ * Check if the iframe proxy service worker is active
+ */
+export function isProxyServiceWorkerActive(): boolean {
+  return !!(navigator.serviceWorker && navigator.serviceWorker.controller);
 }

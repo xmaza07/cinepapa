@@ -13,10 +13,35 @@ const ALLOWED_HOSTNAMES = [
   'swish.today'
 ];
 
+// Common ad/tracking domains to block
+const BLOCKED_DOMAINS = [
+  'adservice',
+  'doubleclick',
+  'googlesyndication',
+  'google-analytics',
+  'googleadservices',
+  'analytics',
+  'tracker',
+  'popads',
+  'popcash',
+  'propellerads',
+  'exoclick',
+  'trafficjunky',
+  'juicyads'
+];
+
+// Common popup patterns
+const POPUP_PATTERNS = [
+  'click', 'banner', 'pop', 'ad.', 'ads.', 'track', 
+  'promo', 'window.open', '.php?', '.html?', 'redirect'
+];
+
 // Keep track of iframe origins
 let knownIframeOrigins = new Set();
 // Keep track of proxy headers for different domains
 let proxyHeaders = new Map();
+// Track navigation attempts to detect potential popups
+let navigationAttempts = new Map();
 
 self.addEventListener('install', (event) => {
   console.log('[IframeProxy] Service Worker installed');
@@ -48,6 +73,14 @@ self.addEventListener('message', (event) => {
         proxyHeaders.set(data.domain, data.headers);
       }
       break;
+      
+    case 'CLEAR_DATA':
+      // Reset all stored data - useful for debugging
+      knownIframeOrigins.clear();
+      proxyHeaders.clear();
+      navigationAttempts.clear();
+      console.log('[IframeProxy] Cleared all stored data');
+      break;
   }
 });
 
@@ -56,60 +89,116 @@ self.addEventListener('fetch', (event) => {
   const request = event.request;
   const url = new URL(request.url);
   
-  // Skip intercepting same-origin requests that aren't navigation
-  if (request.mode !== 'navigate' && url.origin === self.location.origin) {
-    return;
-  }
-  
-  // Handle different types of requests
+  // Handle proxy requests
   if (request.url.includes('/worker-proxy')) {
-    // Handle proxy requests
     handleProxyRequest(event);
     return;
   }
   
-  // Debug logging for intercepted requests
-  console.log('[IframeProxy] Intercepted request:', {
-    url: request.url,
-    mode: request.mode,
-    destination: request.destination
-  });
+  // Skip same-origin non-navigation requests
+  if (request.mode !== 'navigate' && url.origin === self.location.origin) {
+    return;
+  }
+  
+  // Log important requests for debugging
+  if (request.mode === 'navigate' || request.destination === 'iframe') {
+    console.log('[IframeProxy] Intercepted request:', {
+      url: request.url,
+      mode: request.mode,
+      destination: request.destination,
+      referrer: request.referrer
+    });
+  }
+  
+  // Check if this is a blocked domain
+  if (isBlockedDomain(url.hostname)) {
+    console.warn('[IframeProxy] Blocked request to ad/tracking domain:', url.hostname);
+    event.respondWith(blockResponse('Ad or tracking domain blocked'));
+    return;
+  }
   
   // Check if this is likely a pop-up from an iframe
-  const isLikelyPopup = isProbablyPopupFromIframe(request);
-  
-  if (isLikelyPopup) {
+  if (isProbablyPopupFromIframe(request)) {
     console.warn('[IframeProxy] Blocked potential pop-up:', request.url);
+    event.respondWith(blockResponse('Pop-up blocked'));
+    return;
+  }
+  
+  // Handle rapid navigation attempts (likely pop-up chains)
+  if (request.mode === 'navigate') {
+    const now = Date.now();
+    const clientId = event.clientId;
     
-    // Return an empty page response instead of the requested resource
+    if (clientId) {
+      const lastAttempt = navigationAttempts.get(clientId);
+      if (lastAttempt && (now - lastAttempt.time < 1000)) {
+        // Multiple navigation attempts in short succession
+        lastAttempt.count++;
+        
+        if (lastAttempt.count > 3) {
+          console.warn('[IframeProxy] Blocked rapid navigation chain:', request.url);
+          event.respondWith(blockResponse('Too many navigation attempts'));
+          return;
+        }
+      }
+      
+      navigationAttempts.set(clientId, {
+        time: now,
+        count: lastAttempt ? lastAttempt.count + 1 : 1,
+        url: request.url
+      });
+    }
+  }
+  
+  // If this is a known streaming URL that needs proxy help
+  if (shouldUseProxy(url.hostname)) {
+    console.log('[IframeProxy] Proxying streaming content:', url.hostname);
+    
+    // Check if we have custom headers for this domain
+    const headers = proxyHeaders.get(url.hostname) || {};
+    
     event.respondWith(
-      new Response('Pop-up blocked by service worker', {
-        status: 200,
-        headers: { 'Content-Type': 'text/plain' }
+      fetch(request.url, {
+        headers: {
+          ...Object.fromEntries(request.headers),
+          ...headers
+        },
+        mode: 'cors',
+        credentials: 'omit'
+      })
+      .then(response => {
+        // Add CORS headers to the response
+        const modifiedHeaders = new Headers(response.headers);
+        modifiedHeaders.set('Access-Control-Allow-Origin', '*');
+        
+        return new Response(response.body, {
+          status: response.status,
+          statusText: response.statusText,
+          headers: modifiedHeaders
+        });
+      })
+      .catch(error => {
+        console.error('[IframeProxy] Proxy error:', error);
+        return fetch(request);
       })
     );
     return;
   }
-  
-  // If this is a known streaming URL, proxy it through our CORS proxy
-  if (shouldUseProxy(url.hostname)) {
-    const proxyUrl = createProxyUrl(request.url);
-    console.log('[IframeProxy] Proxying through CORS proxy:', proxyUrl);
-    
-    event.respondWith(
-      fetch(proxyUrl)
-        .then(response => {
-          console.log('[IframeProxy] Proxy response status:', response.status);
-          return response;
-        })
-        .catch(error => {
-          console.error('[IframeProxy] Proxy error:', error);
-          return fetch(request);
-        })
-    );
-    return;
-  }
 });
+
+// Create a blocked response
+function blockResponse(message) {
+  return new Response(
+    `<html><body style="background:#111;color:#fff;font-family:sans-serif;padding:20px;">
+     <h2>Request Blocked</h2>
+     <p>${message} by Service Worker</p>
+     </body></html>`, 
+    {
+      status: 200,
+      headers: { 'Content-Type': 'text/html' }
+    }
+  );
+}
 
 // Handle proxy requests specifically
 function handleProxyRequest(event) {
@@ -181,35 +270,42 @@ function handleProxyRequest(event) {
 
 // Helper function to determine if a request is likely a pop-up from an iframe
 function isProbablyPopupFromIframe(request) {
-  // If we detect it's a navigation request and has a referer from a known iframe origin
-  if (request.mode === 'navigate' && request.referrer) {
+  // Only check navigation requests
+  if (request.mode !== 'navigate') {
+    return false;
+  }
+  
+  // If we have a referrer
+  if (request.referrer) {
     const referrerUrl = new URL(request.referrer);
     
     // Check known iframe origins
     if (knownIframeOrigins.has(referrerUrl.origin)) {
-      return true;
-    }
-    
-    // Check for common popup patterns from streaming sites
-    if (request.url.includes('ad') || 
-        request.url.includes('popup') || 
-        request.url.includes('banner') ||
-        request.url.includes('track') ||
-        request.url.includes('analytics') ||
-        request.url.includes('trafficjunky') ||
-        request.url.includes('popcash') ||
-        request.url.includes('exoclick')) {
-      return true;
-    }
-    
-    // Check for window open attempts
-    if (request.url.includes('window.open') || 
-        request.url.includes('window_open')) {
+      // Navigation from a known iframe origin is suspicious
       return true;
     }
   }
   
+  // Check the URL for common popup patterns
+  const url = request.url.toLowerCase();
+  
+  // Check for common popup patterns
+  if (POPUP_PATTERNS.some(pattern => url.includes(pattern))) {
+    return true;
+  }
+  
+  // Check for target=_blank or window.open
+  if (url.includes('target=_blank') || url.includes('window.open')) {
+    return true;
+  }
+  
   return false;
+}
+
+// Helper to check if hostname is a blocked ad/tracking domain
+function isBlockedDomain(hostname) {
+  hostname = hostname.toLowerCase();
+  return BLOCKED_DOMAINS.some(domain => hostname.includes(domain));
 }
 
 // Helper to check if URL should use our CORS proxy

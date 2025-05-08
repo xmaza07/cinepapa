@@ -1,26 +1,38 @@
 
-import React from 'react'
-import ReactDOM from 'react-dom/client'
-import App from './App'
-import './index.css'
-import { registerServiceWorker } from './utils/register-sw'
-import { registerIframeProxySW } from './utils/iframe-proxy-sw'
+import React from 'react';
+import { createRoot } from 'react-dom/client';
+import { BrowserRouter } from 'react-router-dom';
+import App from './App';
+import { ThemeProvider } from './contexts/theme';
+import { UserPreferencesProvider } from './contexts/user-preferences';
+import { WatchHistoryProvider } from './contexts/watch-history';
+import { AuthProvider } from './hooks/auth-context';
+import { Toaster } from './components/ui/toaster';
+import { Toaster as Sonner } from './components/ui/sonner';
+import './index.css';
 
-// Register service workers
-Promise.all([
-  registerServiceWorker(),
-  registerIframeProxySW()
-]).catch(console.error);
+// Import the proxy system
+import { initializeProxySystem } from './utils/proxy-sw-registration';
 
-// Import Plyr custom styles
-import 'plyr/dist/plyr.css';
-import './styles/plyr-custom.css';
+// Initialize the proxy system
+initializeProxySystem().then(registered => {
+  console.log(`Proxy system ${registered ? 'registered successfully' : 'not registered or using fallback'}`);
+});
 
-const rootElement = document.getElementById('root');
-if (!rootElement) throw new Error('Failed to find the root element');
-
-ReactDOM.createRoot(rootElement).render(
+createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <App />
+    <BrowserRouter>
+      <AuthProvider>
+        <ThemeProvider>
+          <UserPreferencesProvider>
+            <WatchHistoryProvider>
+              <App />
+              <Toaster />
+              <Sonner />
+            </WatchHistoryProvider>
+          </UserPreferencesProvider>
+        </ThemeProvider>
+      </AuthProvider>
+    </BrowserRouter>
   </React.StrictMode>
 );

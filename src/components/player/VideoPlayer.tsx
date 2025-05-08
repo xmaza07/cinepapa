@@ -2,7 +2,7 @@
 import { motion } from 'framer-motion';
 import PlyrPlayer from '@/components/PlyrPlayer';
 import { useEffect, useRef, useState } from 'react';
-import { registerIframeOrigin, setProxyHeaders } from '@/utils/iframe-proxy-sw';
+import { registerIframeOrigin, setProxyHeaders, resetServiceWorkerData } from '@/utils/iframe-proxy-sw';
 import { createProxyStreamUrl, proxyAndRewriteM3u8 } from '@/utils/cors-proxy-api';
 
 interface VideoPlayerProps {
@@ -30,11 +30,23 @@ const VideoPlayer = ({
 }: VideoPlayerProps) => {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [processedStreamUrl, setProcessedStreamUrl] = useState<string | null>(null);
+  const [iframeAttempts, setIframeAttempts] = useState(0);
+  
+  // Reset service worker data when component unmounts
+  useEffect(() => {
+    return () => {
+      // Clean up when component unmounts to prevent issues with future player instances
+      resetServiceWorkerData();
+    };
+  }, []);
   
   // Register iframe origin when URL changes
   useEffect(() => {
     if (!isCustomSource && iframeUrl) {
       registerIframeOrigin(iframeUrl);
+      
+      // Reset iframe attempts counter when URL changes
+      setIframeAttempts(0);
     }
   }, [isCustomSource, iframeUrl]);
 
@@ -81,6 +93,43 @@ const VideoPlayer = ({
     }
   }, [isCustomSource, streamUrl, headers]);
 
+  // Handle iframe load error
+  const handleIframeError = () => {
+    console.error('Iframe failed to load:', iframeUrl);
+    
+    // Increment attempts counter
+    setIframeAttempts(prev => prev + 1);
+    
+    // After 3 attempts, report the error
+    if (iframeAttempts >= 2) {
+      onError('Failed to load iframe content after multiple attempts');
+    }
+  };
+  
+  // Handle iframe load success
+  const handleIframeLoad = () => {
+    console.log('Iframe loaded successfully');
+    onLoaded();
+    
+    // Apply CSS to the iframe to prevent pointer events on overlays (helps block some popups)
+    if (iframeRef.current && iframeRef.current.contentWindow) {
+      try {
+        const style = document.createElement('style');
+        style.textContent = `
+          div[class*="popup"], div[class*="ad"], div[id*="popup"], div[id*="ad"],
+          iframe:not([src*="${new URL(iframeUrl).host}"]) {
+            display: none !important;
+            pointer-events: none !important;
+          }
+        `;
+        iframeRef.current.contentDocument?.head.appendChild(style);
+      } catch (e) {
+        // This will likely fail due to CORS, but it's worth trying
+        console.log('Could not inject CSS into iframe (expected due to CORS)');
+      }
+    }
+  };
+
   return (
     <div className="relative aspect-video rounded-lg overflow-hidden shadow-2xl">
       {isLoading ? (
@@ -114,7 +163,9 @@ const VideoPlayer = ({
             src={iframeUrl}
             className="w-full h-full"
             allowFullScreen
-            onLoad={onLoaded}
+            onLoad={handleIframeLoad}
+            onError={handleIframeError}
+            key={`iframe-${iframeUrl}-${iframeAttempts}`}
             // Don't use sandbox as it's not supported by the video sources
             // Instead, we're using our service worker to block pop-ups
           />

@@ -32,9 +32,9 @@ class GeminiAPIError extends Error {
   }
 }
 
-// Configuration
+// Configuration with fallback to empty string to prevent runtime errors
 const DEFAULT_CONFIG: GeminiConfig = {
-  apiKey: import.meta.env.VITE_GEMINI_API_KEY,
+  apiKey: import.meta.env.VITE_GEMINI_API_KEY || '',
   maxRetries: 3,
   retryDelay: 1000,
   rateLimit: {
@@ -42,10 +42,6 @@ const DEFAULT_CONFIG: GeminiConfig = {
     burstLimit: 10,
   },
 };
-
-if (!DEFAULT_CONFIG.apiKey) {
-  throw new GeminiAPIError("Missing GEMINI_API_KEY environment variable. Please set it in your .env file.");
-}
 
 // Initialize rate limiter as a singleton instance
 const rateLimiter = RateLimiter.getInstance(
@@ -59,8 +55,11 @@ rateLimiter.setLimit('gemini-api', {
   windowMs: 60 * 1000 // 1 minute in milliseconds
 });
 
-// Initialize the Google GenAI with API key
-const genAI = new GoogleGenerativeAI(DEFAULT_CONFIG.apiKey);
+// Initialize the Google GenAI only if API key is available
+let genAI: GoogleGenerativeAI | null = null;
+if (DEFAULT_CONFIG.apiKey) {
+  genAI = new GoogleGenerativeAI(DEFAULT_CONFIG.apiKey);
+}
 
 // Helper function for delay
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -157,6 +156,15 @@ export const sendMessageToGemini = async (
   chatHistory: string[] = []
 ): Promise<GeminiResponse> => {
   try {
+    // Check if Gemini API is configured
+    if (!genAI) {
+      return {
+        text: "Gemini API is not configured. Please add a valid API key in your .env file.",
+        status: 'error',
+        error: 'API_NOT_CONFIGURED'
+      };
+    }
+
     // Check rate limit using the specific Gemini API endpoint
     const canProceed = await rateLimiter.isAllowed('https://generativelanguage.googleapis.com/v1/chat', 'gemini-api');
     if (!canProceed) {
@@ -231,6 +239,15 @@ export const sendMessageToGemini = async (
  */
 export const searchMedia = async (query: string): Promise<GeminiResponse> => {
   try {
+    // Check if Gemini API is configured
+    if (!genAI) {
+      return {
+        text: "Gemini API is not configured. Please add a valid API key in your .env file.",
+        status: 'error',
+        error: 'API_NOT_CONFIGURED'
+      };
+    }
+    
     // Check rate limit using the specific Gemini API endpoint
     const canProceed = await rateLimiter.isAllowed('https://generativelanguage.googleapis.com/v1/generate', 'gemini-api');
     if (!canProceed) {

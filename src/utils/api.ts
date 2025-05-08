@@ -822,7 +822,7 @@ export const getTVTrailer = async (tvId: number): Promise<string | null> => {
 };
 
 // Validate TMDB ID against TMDB API for movies or TV
-export const validateTMDBId = async (mediaType: 'movie' | 'tv', tmdbId: number) => {
+export const validateTMDBId = async (mediaType: 'movie' | 'tv', tmdbId: number): Promise<boolean> => {
   try {
     const url = `${BASE_URL}/${mediaType}/${tmdbId}?api_key=${API_KEY}`;
     const response = await axios.get(url);

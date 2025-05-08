@@ -25,6 +25,15 @@ export async function registerIframeProxySW(): Promise<boolean> {
       console.log('Iframe Proxy Service Worker is active');
     } else {
       console.log('Iframe Proxy Service Worker is installing/waiting');
+      
+      // Wait for the service worker to be activated
+      if (registration.installing) {
+        registration.installing.addEventListener('statechange', (event) => {
+          if ((event.target as ServiceWorker).state === 'activated') {
+            console.log('Iframe Proxy Service Worker now active');
+          }
+        });
+      }
     }
     
     return true;
@@ -51,6 +60,25 @@ export function registerIframeOrigin(iframeUrl: string): void {
     });
   } catch (error) {
     console.error('Failed to register iframe origin:', error);
+  }
+}
+
+/**
+ * Set custom headers for a specific domain to be used by the proxy
+ */
+export function setProxyHeaders(domain: string, headers: Record<string, string>): void {
+  if (!('serviceWorker' in navigator) || !navigator.serviceWorker.controller) {
+    return;
+  }
+  
+  try {
+    navigator.serviceWorker.controller.postMessage({
+      type: 'SET_PROXY_HEADERS',
+      domain,
+      headers
+    });
+  } catch (error) {
+    console.error('Failed to set proxy headers:', error);
   }
 }
 

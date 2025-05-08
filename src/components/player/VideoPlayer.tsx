@@ -1,8 +1,9 @@
 
 import { motion } from 'framer-motion';
 import PlyrPlayer from '@/components/PlyrPlayer';
-import { useEffect, useRef } from 'react';
-import { registerIframeOrigin } from '@/utils/iframe-proxy-sw';
+import { useEffect, useRef, useState } from 'react';
+import { registerIframeOrigin, setProxyHeaders } from '@/utils/iframe-proxy-sw';
+import { createProxyStreamUrl, proxyAndRewriteM3u8 } from '@/utils/cors-proxy-api';
 
 interface VideoPlayerProps {
   isLoading: boolean;
@@ -11,6 +12,7 @@ interface VideoPlayerProps {
   iframeUrl: string;
   title: string;
   poster?: string;
+  headers?: Record<string, string>;
   onLoaded: () => void;
   onError: (error: string) => void;
 }
@@ -22,10 +24,12 @@ const VideoPlayer = ({
   iframeUrl,
   title,
   poster,
+  headers,
   onLoaded,
   onError
 }: VideoPlayerProps) => {
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const [processedStreamUrl, setProcessedStreamUrl] = useState<string | null>(null);
   
   // Register iframe origin when URL changes
   useEffect(() => {
@@ -33,6 +37,49 @@ const VideoPlayer = ({
       registerIframeOrigin(iframeUrl);
     }
   }, [isCustomSource, iframeUrl]);
+
+  // Process M3U8 stream URLs to handle CORS issues
+  useEffect(() => {
+    if (isCustomSource && streamUrl) {
+      // If we have custom headers, register them with the service worker
+      if (headers && Object.keys(headers).length > 0) {
+        try {
+          const domain = new URL(streamUrl).hostname;
+          setProxyHeaders(domain, headers);
+        } catch (e) {
+          console.error('Failed to set proxy headers:', e);
+        }
+      }
+
+      // Process based on URL type
+      if (streamUrl.endsWith('.m3u8')) {
+        // For M3U8 streams, we might need to rewrite URLs inside the playlist
+        if (headers && Object.keys(headers).length > 0) {
+          // If we have headers and it's an m3u8, we may need to rewrite the file
+          proxyAndRewriteM3u8(streamUrl, headers)
+            .then(processedM3u8 => {
+              // Create a blob URL for the processed M3U8
+              const blob = new Blob([processedM3u8], { type: 'application/vnd.apple.mpegurl' });
+              const blobUrl = URL.createObjectURL(blob);
+              setProcessedStreamUrl(blobUrl);
+            })
+            .catch(err => {
+              console.error('Failed to process M3U8:', err);
+              // Fallback to simple proxy
+              setProcessedStreamUrl(createProxyStreamUrl(streamUrl, headers));
+            });
+        } else {
+          // No headers, just proxy the stream
+          setProcessedStreamUrl(createProxyStreamUrl(streamUrl));
+        }
+      } else {
+        // For other types of streams, just proxy them
+        setProcessedStreamUrl(createProxyStreamUrl(streamUrl, headers));
+      }
+    } else {
+      setProcessedStreamUrl(null);
+    }
+  }, [isCustomSource, streamUrl, headers]);
 
   return (
     <div className="relative aspect-video rounded-lg overflow-hidden shadow-2xl">
@@ -53,9 +100,9 @@ const VideoPlayer = ({
         transition={{ duration: 0.5 }}
         className="w-full h-full"
       >
-        {isCustomSource && streamUrl ? (
+        {isCustomSource && (processedStreamUrl || streamUrl) ? (
           <PlyrPlayer
-            src={streamUrl}
+            src={processedStreamUrl || streamUrl}
             title={title}
             poster={poster}
             onLoaded={onLoaded}

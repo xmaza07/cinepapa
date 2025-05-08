@@ -1,16 +1,22 @@
-// iframe-proxy-sw.js - Service Worker to block iframe pop-ups
+// iframe-proxy-sw.js - Service Worker to block iframe pop-ups and handle proxying
 console.log('[IframeProxy] Service Worker initialized');
 
+// Domains we're allowing to proxy through our service worker
 const ALLOWED_HOSTNAMES = [
   'tmdb-embed-api.vercel.app',
   'cdn-centaurus.com',
   'premilkyway.com',
   'j5m9wakcpz.cdn-centaurus.com',
-  'self'
+  'm3u8.streamifycdn.xyz',
+  'uqloads.xyz',
+  'embedsito.com',
+  'swish.today'
 ];
 
 // Keep track of iframe origins
 let knownIframeOrigins = new Set();
+// Keep track of proxy headers for different domains
+let proxyHeaders = new Map();
 
 self.addEventListener('install', (event) => {
   console.log('[IframeProxy] Service Worker installed');
@@ -24,9 +30,24 @@ self.addEventListener('activate', (event) => {
 
 // Listen for messages from main page
 self.addEventListener('message', (event) => {
-  if (event.data && event.data.type === 'REGISTER_IFRAME_ORIGIN') {
-    console.log('[IframeProxy] Registering iframe origin:', event.data.origin);
-    knownIframeOrigins.add(event.data.origin);
+  const data = event.data;
+  
+  if (!data || !data.type) return;
+  
+  console.log('[IframeProxy] Received message:', data.type);
+  
+  switch (data.type) {
+    case 'REGISTER_IFRAME_ORIGIN':
+      console.log('[IframeProxy] Registering iframe origin:', data.origin);
+      knownIframeOrigins.add(data.origin);
+      break;
+      
+    case 'SET_PROXY_HEADERS':
+      if (data.domain && data.headers) {
+        console.log('[IframeProxy] Setting proxy headers for domain:', data.domain);
+        proxyHeaders.set(data.domain, data.headers);
+      }
+      break;
   }
 });
 
@@ -40,16 +61,18 @@ self.addEventListener('fetch', (event) => {
     return;
   }
   
-  // Debug logging for all intercepted requests
+  // Handle different types of requests
+  if (request.url.includes('/worker-proxy')) {
+    // Handle proxy requests
+    handleProxyRequest(event);
+    return;
+  }
+  
+  // Debug logging for intercepted requests
   console.log('[IframeProxy] Intercepted request:', {
     url: request.url,
     mode: request.mode,
-    destination: request.destination,
-    referrer: request.referrer,
-    headers: {
-      referer: request.headers.get('referer'),
-      origin: request.headers.get('origin')
-    }
+    destination: request.destination
   });
   
   // Check if this is likely a pop-up from an iframe
@@ -68,7 +91,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
   
-  // If this is a known streaming URL, proxy it through the CORS proxy
+  // If this is a known streaming URL, proxy it through our CORS proxy
   if (shouldUseProxy(url.hostname)) {
     const proxyUrl = createProxyUrl(request.url);
     console.log('[IframeProxy] Proxying through CORS proxy:', proxyUrl);
@@ -88,6 +111,74 @@ self.addEventListener('fetch', (event) => {
   }
 });
 
+// Handle proxy requests specifically
+function handleProxyRequest(event) {
+  const url = new URL(event.request.url);
+  const targetUrl = url.searchParams.get('url');
+  
+  if (!targetUrl) {
+    event.respondWith(new Response('Missing URL parameter', { status: 400 }));
+    return;
+  }
+  
+  console.log('[IframeProxy] Proxying request to:', targetUrl);
+  
+  // Get any custom headers from URL or from our header store
+  let customHeaders = {};
+  const headersParam = url.searchParams.get('headers');
+  
+  if (headersParam) {
+    try {
+      customHeaders = JSON.parse(headersParam);
+    } catch (e) {
+      console.error('[IframeProxy] Failed to parse headers:', e);
+    }
+  } else {
+    // Try to find headers for this domain
+    const targetDomain = new URL(targetUrl).hostname;
+    const storedHeaders = proxyHeaders.get(targetDomain);
+    if (storedHeaders) {
+      customHeaders = storedHeaders;
+    }
+  }
+  
+  // Create a new request with appropriate headers
+  const proxyRequest = new Request(targetUrl, {
+    method: event.request.method,
+    headers: {
+      ...Object.fromEntries(event.request.headers),
+      ...customHeaders,
+      'Origin': new URL(targetUrl).origin,
+      'Referer': new URL(targetUrl).origin
+    },
+    body: event.request.body,
+    mode: 'cors',
+    credentials: 'omit'
+  });
+  
+  event.respondWith(
+    fetch(proxyRequest)
+      .then(response => {
+        // Log successful response
+        console.log('[IframeProxy] Proxy successful:', response.status);
+        
+        // Create a new response with CORS headers
+        const modifiedHeaders = new Headers(response.headers);
+        modifiedHeaders.set('Access-Control-Allow-Origin', '*');
+        
+        return new Response(response.body, {
+          status: response.status,
+          statusText: response.statusText,
+          headers: modifiedHeaders
+        });
+      })
+      .catch(error => {
+        console.error('[IframeProxy] Proxy fetch error:', error);
+        return new Response(`Proxy error: ${error.message}`, { status: 500 });
+      })
+  );
+}
+
 // Helper function to determine if a request is likely a pop-up from an iframe
 function isProbablyPopupFromIframe(request) {
   // If we detect it's a navigation request and has a referer from a known iframe origin
@@ -104,7 +195,16 @@ function isProbablyPopupFromIframe(request) {
         request.url.includes('popup') || 
         request.url.includes('banner') ||
         request.url.includes('track') ||
-        request.url.includes('analytics')) {
+        request.url.includes('analytics') ||
+        request.url.includes('trafficjunky') ||
+        request.url.includes('popcash') ||
+        request.url.includes('exoclick')) {
+      return true;
+    }
+    
+    // Check for window open attempts
+    if (request.url.includes('window.open') || 
+        request.url.includes('window_open')) {
       return true;
     }
   }

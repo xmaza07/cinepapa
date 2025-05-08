@@ -66,8 +66,8 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <ServiceWorkerErrorBoundary>
-          <AuthProvider>
-            <ThemeProvider>
+          <ThemeProvider>
+            <AuthProvider>
               <UserPreferencesProvider>
                 <WatchHistoryProvider>
                   <ChatbotProvider>
@@ -88,8 +88,8 @@ function App() {
                   </ChatbotProvider>
                 </WatchHistoryProvider>
               </UserPreferencesProvider>
-            </ThemeProvider>
-          </AuthProvider>
+            </AuthProvider>
+          </ThemeProvider>
         </ServiceWorkerErrorBoundary>
       </BrowserRouter>
     </QueryClientProvider>

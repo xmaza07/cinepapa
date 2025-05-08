@@ -10,6 +10,9 @@ import { injectPopupBlocker } from './cors-proxy-api';
 // Initialize the proxy system
 export async function initializeProxySystem(): Promise<boolean> {
   try {
+    // Wait a brief moment to avoid conflicts with other initializations
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
     // Try to register the service worker
     const registered = await registerIframeProxySW();
     

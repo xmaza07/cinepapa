@@ -20,6 +20,13 @@ self.addEventListener('activate', (event) => {
   console.log('Service Worker activated');
   // Claim clients so that the service worker starts controlling all pages
   event.waitUntil(self.clients.claim());
+  
+  // Enable navigation preload if it's supported
+  if (self.registration.navigationPreload) {
+    event.waitUntil(
+      self.registration.navigationPreload.enable()
+    );
+  }
 });
 
 // This helps with dynamic imports
@@ -58,10 +65,32 @@ const cacheFirstWithNetworkFallback = async (request) => {
 };
 
 self.addEventListener('fetch', (event) => {
-  // Special handling for dynamic JS imports
-  if (event.request.url.includes('/assets/') && 
+  // Properly handle navigation preload
+  if (event.request.mode === 'navigate') {
+    event.respondWith((async () => {
+      try {
+        // First, try to use the navigation preload response if it's available
+        const preloadResponse = await event.preloadResponse;
+        if (preloadResponse) {
+          return preloadResponse;
+        }
+
+        // If preload isn't available or fails, use the network (with cache fallback)
+        return await cacheFirstWithNetworkFallback(event.request);
+      } catch (error) {
+        // If all fails, show offline page
+        const cache = await caches.open('v1');
+        return await cache.match('/offline.html') || new Response('Offline', {
+          status: 503,
+          headers: { 'Content-Type': 'text/plain' }
+        });
+      }
+    })());
+  } 
+  else if (event.request.url.includes('/assets/') && 
       (event.request.url.endsWith('.js') || event.request.url.includes('.js?'))) {
     
+    // Special handling for dynamic JS imports
     event.respondWith(
       fetch(event.request)
         .then(response => {
@@ -80,7 +109,6 @@ self.addEventListener('fetch', (event) => {
           }
           
           console.error('Failed to fetch dynamic import:', event.request.url);
-          // Return a simple error response if we can't fetch and don't have it cached
           return new Response('Failed to load dynamic import', {
             status: 500,
             headers: { 'Content-Type': 'text/plain' }

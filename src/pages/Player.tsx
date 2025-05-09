@@ -9,7 +9,7 @@ import VideoSourceSelector from '@/components/player/VideoSourceSelector';
 import EpisodeNavigation from '@/components/player/EpisodeNavigation';
 import MediaActions from '@/components/player/MediaActions';
 import { useMediaPlayer } from '@/hooks/use-media-player';
-import { videoSources } from '@/utils/api';
+import { videoSources } from '@/utils/video-sources';
 import { useAuth } from '@/hooks';
 
 const Player = () => {

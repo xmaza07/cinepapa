@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { getMovieDetails, getTVDetails, getSeasonDetails } from '@/utils/api';
 import { getMovieStream, getTVStream } from '@/utils/custom-api';
 import { MovieDetails, TVDetails, VideoSource, Episode } from '@/utils/types';
-import { videoSources } from '@/utils/api';
+import { videoSources } from '@/utils/video-sources';
 import { useWatchHistory } from '@/hooks/watch-history';
 import { useAuth } from '@/hooks';
 import { useUserPreferences } from '@/hooks/user-preferences';

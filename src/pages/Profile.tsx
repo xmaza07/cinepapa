@@ -15,7 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import AccentColorPicker from '@/components/AccentColorPicker';
-import { videoSources } from '@/utils/api';
+import { videoSources } from '@/utils/video-sources';
 
 const Profile = () => {
   const { user, logout } = useAuth();

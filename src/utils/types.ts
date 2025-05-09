@@ -80,7 +80,7 @@ export interface Season {
   name: string;
   season_number: number;
   episode_count: number;
-  poster_path: string | null;  // updated to allow null
+  poster_path?: string;
   overview?: string;
   air_date?: string;
 }

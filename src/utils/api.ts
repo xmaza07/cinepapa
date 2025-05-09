@@ -10,6 +10,7 @@ export * from './services/videos';
 export * from './services/credits';
 export * from './services/reviews';
 export * from './services/validate';
+export * from './services/trending';
 export * from './config/constants';
 
 // Re-export types

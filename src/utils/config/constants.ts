@@ -7,8 +7,7 @@ const TMDB = {
     medium: 'w342',
     large: 'w500',
     original: 'original',
-  },
-  backdropSizes: {
+  },  backdropSizes: {
     small: 'w300',
     medium: 'w780',
     large: 'w1280',
@@ -18,4 +17,3 @@ const TMDB = {
 
 export { TMDB };
 export const { posterSizes, backdropSizes } = TMDB;
-};

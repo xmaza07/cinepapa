@@ -2,6 +2,7 @@
 import { Tv, Heart, Bookmark, History, Play, Calendar, Star, List, Shield } from 'lucide-react';
 import { format } from 'date-fns';
 import { backdropSizes, posterSizes } from '@/utils/api';
+import { getImageUrl } from '@/utils/services/tmdb';
 import { TVDetails } from '@/utils/types';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -43,9 +44,8 @@ export const TVShowHeader = ({
       {!backdropLoaded && (
         <div className="absolute inset-0 bg-background image-skeleton" />
       )}
-        
-      <img
-        src={`${backdropSizes.original}${tvShow.backdrop_path}`}
+          <img
+        src={getImageUrl(tvShow.backdrop_path, backdropSizes.original)}
         alt={tvShow.name || 'TV Show backdrop'}
         className={`w-full h-full object-cover transition-opacity duration-700 ${
           backdropLoaded ? 'opacity-100' : 'opacity-0'
@@ -57,9 +57,8 @@ export const TVShowHeader = ({
         
       <div className="absolute bottom-0 left-0 right-0 p-6 md:p-12 lg:p-16">
         <div className="flex flex-col md:flex-row items-start gap-6 max-w-6xl mx-auto">
-          <div className="hidden md:block flex-shrink-0 w-48 xl:w-64 rounded-lg overflow-hidden shadow-lg">
-            <img 
-              src={`${posterSizes.medium}${tvShow.poster_path}`} 
+          <div className="hidden md:block flex-shrink-0 w-48 xl:w-64 rounded-lg overflow-hidden shadow-lg">            <img 
+              src={getImageUrl(tvShow.poster_path, posterSizes.medium)}
               alt={tvShow.name || 'TV show poster'} 
               className="w-full h-auto"
             />
@@ -73,8 +72,7 @@ export const TVShowHeader = ({
                   <div className="absolute inset-0 bg-background image-skeleton rounded-lg" />
                 )}
                   
-                <img
-                  src={`${backdropSizes.original}${tvShow.logo_path}`}
+                <img                  src={getImageUrl(tvShow.logo_path, backdropSizes.original)}
                   alt={tvShow.name}
                   className={`w-full h-auto object-contain filter drop-shadow-lg
                             transition-opacity duration-700 ease-in-out

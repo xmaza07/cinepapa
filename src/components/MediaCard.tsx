@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { cn } from "@/lib/utils";
 import { Media } from '@/utils/types';
 import { posterSizes } from '@/utils/api';
+import { getImageUrl } from '@/utils/services/tmdb';
 import { Star, Info } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -36,9 +37,8 @@ const MediaCard = ({ media, className, featured = false, minimal = false }: Medi
           className
         )}
       >
-        <div className="relative h-full rounded-md overflow-hidden shadow-md">
-          <img
-            src={imageError ? '/placeholder.svg' : `${posterSizes.medium}${media.poster_path}`}
+        <div className="relative h-full rounded-md overflow-hidden shadow-md">          <img
+            src={imageError ? '/placeholder.svg' : getImageUrl(media.poster_path, posterSizes.medium) || '/placeholder.svg'}
             alt={media.title || media.name || 'Media Poster'}
             className="object-cover w-full h-full"
             loading="lazy"
@@ -58,9 +58,8 @@ const MediaCard = ({ media, className, featured = false, minimal = false }: Medi
       )}
     >
       <motion.div>
-        <div className="relative rounded-md overflow-hidden shadow-md aspect-[2/3]">
-          <img
-            src={imageError ? '/placeholder.svg' : `${posterSizes.medium}${media.poster_path}`}
+        <div className="relative rounded-md overflow-hidden shadow-md aspect-[2/3]">          <img
+            src={imageError ? '/placeholder.svg' : getImageUrl(media.poster_path, posterSizes.medium) || '/placeholder.svg'}
             alt={media.title || media.name || 'Media Poster'}
             className="object-cover w-full h-full transition-transform duration-500 group-hover/card:scale-110"
             loading="lazy"

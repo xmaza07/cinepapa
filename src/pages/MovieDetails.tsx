@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getMovieDetails, getMovieRecommendations, getMovieTrailer, backdropSizes, posterSizes, getMovieCast } from '@/utils/api';
+import { getImageUrl } from '@/utils/services/tmdb';
 import { MovieDetails, Media, CastMember } from '@/utils/types';
 import { Button } from '@/components/ui/button';
 import Navbar from '@/components/Navbar';
@@ -203,7 +204,7 @@ const MovieDetailsPage = () => {
         </button>
         
         <img
-          src={`${backdropSizes.original}${movie.backdrop_path}`}
+          src={getImageUrl(movie.backdrop_path, backdropSizes.original)}
           alt={movie.title || 'Movie backdrop'}
           className={`w-full h-full object-cover transition-opacity duration-700 ${
             backdropLoaded ? 'opacity-100' : 'opacity-0'
@@ -231,7 +232,7 @@ const MovieDetailsPage = () => {
           <div className="flex flex-col md:flex-row items-start gap-6 max-w-6xl mx-auto">
             <div className="hidden md:block flex-shrink-0 w-48 xl:w-64 rounded-lg overflow-hidden shadow-lg">
               <img 
-                src={`${posterSizes.medium}${movie.poster_path}`} 
+                src={getImageUrl(movie.poster_path, posterSizes.medium)} 
                 alt={movie.title || 'Movie poster'} 
                 className="w-full h-auto"
               />
@@ -247,7 +248,7 @@ const MovieDetailsPage = () => {
                   )}
                   
                   <img
-                    src={`${backdropSizes.original}${movie.logo_path}`}
+                    src={getImageUrl(movie.logo_path, backdropSizes.original)}
                     alt={movie.title}
                     className={`w-full h-auto object-contain filter drop-shadow-lg
                               transition-opacity duration-700 ease-in-out
@@ -414,7 +415,7 @@ const MovieDetailsPage = () => {
                       {company.logo_path ? (
                         <div className="bg-white/10 p-3 rounded-lg w-24 h-16 flex items-center justify-center mb-2">
                           <img 
-                            src={`${posterSizes.small}${company.logo_path}`} 
+                            src={getImageUrl(company.logo_path, posterSizes.small)} 
                             alt={company.name} 
                             className="max-w-full max-h-full"
                           />
@@ -440,7 +441,7 @@ const MovieDetailsPage = () => {
                   <div key={member.id} className="w-32 text-center">
                     {member.profile_path ? (
                       <img
-                        src={`https://image.tmdb.org/t/p/w185${member.profile_path}`}
+                        src={getImageUrl(member.profile_path, 'w185')}
                         alt={member.name}
                         className="rounded-lg w-24 h-32 object-cover mx-auto mb-2"
                       />

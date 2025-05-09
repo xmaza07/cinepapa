@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Media } from '@/utils/types';
 import { backdropSizes } from '@/utils/api';
+import { getImageUrl } from '@/utils/services/tmdb';
 import { Button } from '@/components/ui/button';
 import { Play, Info, Star, Calendar } from 'lucide-react';
 import Spinner from '@/components/ui/spinner';
@@ -176,9 +177,8 @@ const Hero = ({ media, className }: HeroProps) => {
           exit={{ opacity: 0, scale: 1.05 }}
           transition={{ duration: 0.8, ease: "easeInOut" }}
           className="absolute inset-0"
-        >
-          <img
-            src={`${backdropSizes.original}${featuredMedia.backdrop_path}`}
+        >          <img
+            src={getImageUrl(featuredMedia.backdrop_path, backdropSizes.original)}
             alt={title}
             className="w-full h-full object-cover"
             onLoad={() => setIsLoaded(true)}

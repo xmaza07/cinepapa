@@ -1,10 +1,10 @@
-
 import { Play, Calendar, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { backdropSizes } from '@/utils/api';
 import { Episode, Season } from '@/utils/types';
 import { format } from 'date-fns';
+import { getImageUrl } from '@/utils/services/tmdb';
 
 interface TVShowEpisodesProps {
   seasons: Season[];
@@ -63,7 +63,7 @@ export const TVShowEpisodes = ({
                 {episode.still_path && (
                   <div className="flex-shrink-0 w-full md:w-48">
                     <img 
-                      src={`${backdropSizes.small}${episode.still_path}`} 
+                      src={getImageUrl(episode.still_path, backdropSizes.small)} 
                       alt={`${episode.name} still`}
                       className="w-full h-auto rounded-lg"
                     />

@@ -67,9 +67,9 @@ const Index = () => {
           getTopRatedTVShows()
         ]);
 
-        console.log('Trending data before filter:', trendingData);
+        // console.log('Trending data before filter:', trendingData);
         const filteredTrendingData = trendingData.filter(item => item.backdrop_path);
-        console.log('Trending data after filter:', filteredTrendingData);
+        // console.log('Trending data after filter:', filteredTrendingData);
 
         setTrendingMedia(filteredTrendingData);
         setPopularMovies(popularMoviesData);
@@ -107,7 +107,7 @@ const Index = () => {
     fetchExtraSections();
   }, []);
 
-  console.log('Current trendingMedia state:', trendingMedia);
+  // console.log('Current trendingMedia state:', trendingMedia);
 
   return (
     <main className="min-h-screen bg-background pb-16">

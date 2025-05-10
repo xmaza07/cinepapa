@@ -18,9 +18,7 @@ const BLOCKED_DOMAINS = [
   'adservice',
   'doubleclick',
   'googlesyndication',
-  'google-analytics',
   'googleadservices',
-  'analytics',
   'tracker',
   'popads',
   'popcash',
@@ -28,6 +26,13 @@ const BLOCKED_DOMAINS = [
   'exoclick',
   'trafficjunky',
   'juicyads'
+];
+
+// Whitelist specific analytics domains that we need
+const ANALYTICS_WHITELIST = [
+  'www.google-analytics.com',
+  'analytics.google.com',
+  'www.googletagmanager.com'
 ];
 
 // Common popup patterns
@@ -210,7 +215,7 @@ function handleProxyRequest(event) {
     return;
   }
   
-  console.log('[IframeProxy] Proxying request to:', targetUrl);
+  // console.log('[IframeProxy] Proxying request to:', targetUrl);
   
   // Get any custom headers from URL or from our header store
   let customHeaders = {};
@@ -249,7 +254,7 @@ function handleProxyRequest(event) {
     fetch(proxyRequest)
       .then(response => {
         // Log successful response
-        console.log('[IframeProxy] Proxy successful:', response.status);
+        // console.log('[IframeProxy] Proxy successful:', response.status);
         
         // Create a new response with CORS headers
         const modifiedHeaders = new Headers(response.headers);
@@ -305,6 +310,13 @@ function isProbablyPopupFromIframe(request) {
 // Helper to check if hostname is a blocked ad/tracking domain
 function isBlockedDomain(hostname) {
   hostname = hostname.toLowerCase();
+  
+  // Check whitelist first
+  if (ANALYTICS_WHITELIST.some(domain => hostname === domain)) {
+    return false;
+  }
+  
+  // Then check blocked domains
   return BLOCKED_DOMAINS.some(domain => hostname.includes(domain));
 }
 

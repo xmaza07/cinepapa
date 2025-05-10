@@ -54,11 +54,11 @@ export const db = initializeFirestore(app, {
 });
 
 // Log Firebase configuration for debugging
-console.log("Firebase config:", firebaseConfig);
-if (!firebaseConfig.apiKey) {
-  console.warn("Firebase API key: Missing");
-} else {
-  console.log("Firebase API key: Using provided key");
-}
+// console.log("Firebase config:", firebaseConfig);
+// if (!firebaseConfig.apiKey) {
+//   console.warn("Firebase API key: Missing");
+// } else {
+//   console.log("Firebase API key: Using provided key");
+// }
 
 export { app };

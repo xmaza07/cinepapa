@@ -72,12 +72,8 @@ define(['./workbox-b1546880'], (function (workbox) { 'use strict';
   workbox.enable();
   self.skipWaiting();
   workbox.clientsClaim();
-
-  /**
-   * The precacheAndRoute() method efficiently caches and responds to
-   * requests for URLs in the manifest.
-   * See https://goo.gl/S9QRab
-   */
+  
+  // Precache and route
   workbox.precacheAndRoute([{
     "url": "registerSW.js",
     "revision": "3ca0b8505b4bec776b69afdba2768812"
@@ -85,7 +81,58 @@ define(['./workbox-b1546880'], (function (workbox) { 'use strict';
     "url": "index.html",
     "revision": "0.7c0m3r3mru"
   }], {});
+  
   workbox.cleanupOutdatedCaches();
+  
+  // Handle Google API requests
+  workbox.registerRoute(
+    /^https:\/\/(apis\.google\.com|www\.googleapis\.com)\/.*/i,
+    new workbox.NetworkFirst({
+      cacheName: "google-apis-v0.0.0",
+      networkTimeoutSeconds: 3,
+      plugins: [
+        new workbox.ExpirationPlugin({
+          maxEntries: 50,
+          maxAgeSeconds: 3600
+        }),
+        {
+          requestWillFetch: async ({request}) => {
+            // Add necessary CORS headers
+            const modifiedRequest = new Request(request.url, {
+              method: request.method,
+              headers: {
+                ...Object.fromEntries(request.headers),
+                'Origin': self.location.origin,
+                'Access-Control-Request-Method': '*',
+                'Access-Control-Request-Headers': '*'
+              },
+              mode: 'cors',
+              credentials: 'omit'
+            });
+            return modifiedRequest;
+          },
+          fetchDidSucceed: async ({response}) => {
+            // Add CORS headers to response
+            const modifiedHeaders = new Headers(response.headers);
+            modifiedHeaders.set('Access-Control-Allow-Origin', '*');
+            modifiedHeaders.set('Access-Control-Allow-Methods', '*');
+            modifiedHeaders.set('Access-Control-Allow-Headers', '*');
+            
+            return new Response(response.body, {
+              status: response.status,
+              statusText: response.statusText,
+              headers: modifiedHeaders
+            });
+          },
+          handlerDidError: async ({request}) => {
+            console.error("Google API request failed:", request.url);
+            return void 0;
+          }
+        }
+      ]
+    }),
+    'GET'
+  );
   workbox.registerRoute(new workbox.NavigationRoute(workbox.createHandlerBoundToURL("index.html"), {
     allowlist: [/^\/$/]
   }));
@@ -206,21 +253,6 @@ define(['./workbox-b1546880'], (function (workbox) { 'use strict';
     plugins: [{
       fetchDidFail: async () => {
         console.error("Firebase request failed - network only strategy");
-      }
-    }]
-  }), 'GET');
-  workbox.registerRoute(/^https:\/\/(apis\.google\.com|www\.googleapis\.com)\/.*/i, new workbox.NetworkFirst({
-    "cacheName": "google-apis-v0.0.0",
-    "networkTimeoutSeconds": 3,
-    plugins: [new workbox.ExpirationPlugin({
-      maxEntries: 50,
-      maxAgeSeconds: 3600
-    }), {
-      handlerDidError: async ({
-        request
-      }) => {
-        console.error("Google API request failed:", request.url);
-        return void 0;
       }
     }]
   }), 'GET');

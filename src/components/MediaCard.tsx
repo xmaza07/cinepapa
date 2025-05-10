@@ -6,6 +6,7 @@ import { posterSizes } from '@/utils/api';
 import { getImageUrl } from '@/utils/services/tmdb';
 import { Star, Info } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { trackMediaPreference, trackMediaView } from '@/lib/analytics';
 
 interface MediaCardProps {
   media: Media;
@@ -27,6 +28,25 @@ const MediaCard = ({ media, className, featured = false, minimal = false }: Medi
   const detailPath = media.media_type === 'movie' 
     ? `/movie/${mediaId}` 
     : `/tv/${mediaId}`;
+  const handleClick = async () => {
+    const detailPath = `/${media.media_type}/${media.id}`;
+    // Track the media selection
+    await Promise.all([
+      trackMediaPreference(media.media_type, 'select'),
+      trackMediaView({
+        mediaType: media.media_type as 'movie' | 'tv',
+        mediaId: media.id.toString(),
+        title: media.title || media.name || '',
+      })
+    ]);
+    navigate(detailPath);
+  };
+
+  const handleFavoriteClick = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    await trackMediaPreference(media.media_type as 'movie' | 'tv', 'favorite');
+  };
 
   if (minimal) {
     return (
@@ -56,6 +76,7 @@ const MediaCard = ({ media, className, featured = false, minimal = false }: Medi
         "relative block group/card transform transition-all duration-300 hover:-translate-y-2",
         className
       )}
+      onClick={handleClick}
     >
       <motion.div>
         <div className="relative rounded-md overflow-hidden shadow-md aspect-[2/3]">          <img

@@ -1,6 +1,7 @@
 import { Routes, Route, Outlet } from 'react-router-dom';
 import { lazy, Suspense } from 'react';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import { AnalyticsWrapper } from '@/components/AnalyticsWrapper';
 
 // Lazy load pages
 const Index = lazy(() => import('./pages/Index'));
@@ -29,39 +30,41 @@ const DMCANotice = lazy(() => import('./pages/DMCANotice'));
 export default function AppRoutes() {
   return (
     <Suspense fallback={<div>Loading...</div>}>
-      <Routes>
-        <Route path="/" element={<Index />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
-        
-        {/* Protected routes */}
-        <Route element={<ProtectedRoute><Outlet /></ProtectedRoute>}>
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/watch-history" element={<WatchHistory />} />
-        </Route>
+      <AnalyticsWrapper>
+        <Routes>
+          <Route path="/" element={<Index />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          
+          {/* Protected routes */}
+          <Route element={<ProtectedRoute><Outlet /></ProtectedRoute>}>
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/watch-history" element={<WatchHistory />} />
+          </Route>
 
-        {/* Content routes */}
-        <Route path="/movie" element={<Movies />} />
-        <Route path="/movie/:id" element={<MovieDetails />} />
-        <Route path="/tv" element={<TVShowsPage />} />
-        <Route path="/tv/:id" element={<TVDetails />} />
-        <Route path="/sports" element={<Sports />} />
-        <Route path="/sports/:id" element={<SportMatch />} />
-        <Route path="/sports/player/:id" element={<SportMatchPlayer />} />
-        <Route path="/watch/:type/:id" element={<Player />} />
-        <Route path="/watch/:type/:id/:season/:episode" element={<Player />} />
-        <Route path="/search" element={<Search />} />
-        <Route path="/trending" element={<Trending />} />
+          {/* Content routes */}
+          <Route path="/movie" element={<Movies />} />
+          <Route path="/movie/:id" element={<MovieDetails />} />
+          <Route path="/tv" element={<TVShowsPage />} />
+          <Route path="/tv/:id" element={<TVDetails />} />
+          <Route path="/sports" element={<Sports />} />
+          <Route path="/sports/:id" element={<SportMatch />} />
+          <Route path="/sports/player/:id" element={<SportMatchPlayer />} />
+          <Route path="/watch/:type/:id" element={<Player />} />
+          <Route path="/watch/:type/:id/:season/:episode" element={<Player />} />
+          <Route path="/search" element={<Search />} />
+          <Route path="/trending" element={<Trending />} />
 
-        {/* Legal routes */}
-        <Route path="/privacy" element={<PrivacyPolicy />} />
-        <Route path="/terms" element={<TermsOfService />} />
-        <Route path="/content-removal" element={<ContentRemoval />} />
-        <Route path="/dmca" element={<DMCANotice />} />
+          {/* Legal routes */}
+          <Route path="/privacy" element={<PrivacyPolicy />} />
+          <Route path="/terms" element={<TermsOfService />} />
+          <Route path="/content-removal" element={<ContentRemoval />} />
+          <Route path="/dmca" element={<DMCANotice />} />
 
-        {/* 404 route */}
-        <Route path="*" element={<NotFound />} />
-      </Routes>
+          {/* 404 route */}
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </AnalyticsWrapper>
     </Suspense>
   );
 }

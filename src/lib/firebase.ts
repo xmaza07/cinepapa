@@ -1,4 +1,3 @@
-
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getAnalytics, isSupported } from 'firebase/analytics';
@@ -15,12 +14,39 @@ const firebaseConfig = {
   measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || "G-691PPKTFXS"
 };
 
-// Initialize Firebase with specified config (will use fallbacks if env vars not set)
-const app = initializeApp(firebaseConfig);
+// Initialize Firebase with specified config or get existing instance
+let app: ReturnType<typeof initializeApp>;
+try {
+  app = initializeApp(firebaseConfig);
+} catch (error) {
+  // If an app already exists, get that instance
+  if (error instanceof Error && error.message.includes('duplicate-app')) {
+    app = initializeApp();
+  } else {
+    throw error;
+  }
+}
+
 export const auth = getAuth(app);
 
 // Initialize analytics only if it's supported in the current environment
-export const analytics = isSupported().then(yes => yes ? getAnalytics(app) : null);
+let analyticsInstance: ReturnType<typeof getAnalytics> | null = null;
+
+export const initAnalytics = async () => {
+  if (await isSupported()) {
+    analyticsInstance = getAnalytics(app);
+    return analyticsInstance;
+  }
+  return null;
+};
+
+// Get the analytics instance, initializing it if necessary
+export const getAnalyticsInstance = async () => {
+  if (!analyticsInstance) {
+    return initAnalytics();
+  }
+  return analyticsInstance;
+};
 
 // Initialize Firestore with memory-only cache to disable persistence
 export const db = initializeFirestore(app, {
@@ -35,4 +61,4 @@ if (!firebaseConfig.apiKey) {
   console.log("Firebase API key: Using provided key");
 }
 
-export default app;
+export { app };

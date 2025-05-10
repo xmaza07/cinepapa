@@ -1,4 +1,3 @@
-
 // Service Worker file for offline functionality
 self.addEventListener('install', (event) => {
   console.log('Service Worker installed');
@@ -14,6 +13,42 @@ self.addEventListener('install', (event) => {
   );
   // Force the service worker to become active right away
   self.skipWaiting();
+});
+
+// Store for offline analytics events
+const analyticsQueue = [];
+
+// Listen for analytics events from the main thread
+self.addEventListener('message', (event) => {
+  if (event.data.type === 'ANALYTICS_EVENT') {
+    if (self.navigator.onLine) {
+      // If online, try to send immediately
+      fetch('https://www.google-analytics.com/mp/collect?' + new URLSearchParams(event.data.payload))
+        .catch(() => {
+          // If sending fails, queue the event
+          analyticsQueue.push(event.data.payload);
+        });
+    } else {
+      // If offline, queue the event
+      analyticsQueue.push(event.data.payload);
+    }
+  }
+});
+
+// When coming back online, try to send queued events
+self.addEventListener('sync', (event) => {
+  if (event.tag === 'sync-analytics') {
+    event.waitUntil(
+      Promise.all(
+        analyticsQueue.map(payload =>
+          fetch('https://www.google-analytics.com/mp/collect?' + new URLSearchParams(payload))
+        )
+      ).then(() => {
+        // Clear the queue after successful sync
+        analyticsQueue.length = 0;
+      })
+    );
+  }
 });
 
 self.addEventListener('activate', (event) => {

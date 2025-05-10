@@ -1,6 +1,5 @@
-
-import React from 'react';
-import { BrowserRouter } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { BrowserRouter, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from './components/ui/toaster';
 import { Toaster as Sonner } from './components/ui/sonner';
@@ -15,6 +14,7 @@ import ChatbotButton from './components/chatbot/ChatbotButton';
 import ChatbotWindow from './components/chatbot/ChatbotWindow';
 import AppRoutes from './routes.tsx';
 import { initializeProxySystem } from './utils/proxy-sw-registration';
+import { trackPageView } from './lib/analytics';
 import './App.css';
 
 // Create a client
@@ -26,6 +26,18 @@ const queryClient = new QueryClient({
     },
   },
 });
+
+// Analytics wrapper component
+function AnalyticsWrapper({ children }: { children: React.ReactNode }) {
+  const location = useLocation();
+
+  useEffect(() => {
+    // Track page view on route change
+    trackPageView(location.pathname);
+  }, [location]);
+
+  return <>{children}</>;
+}
 
 function App() {
   const isDevelopment = import.meta.env.DEV;
@@ -122,7 +134,9 @@ function App() {
               <UserPreferencesProvider>
                 <WatchHistoryProvider>
                   <ChatbotProvider>
-                    <AppRoutes />
+                    <AnalyticsWrapper>
+                      <AppRoutes />
+                    </AnalyticsWrapper>
                     <Toaster />
                     <Sonner />
                     {isDevelopment && (

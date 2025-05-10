@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Play, Info, Star, Calendar } from 'lucide-react';
 import Spinner from '@/components/ui/spinner';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useMediaPreferences } from '@/hooks/use-media-preferences';
+import { trackMediaPreference } from '@/lib/analytics';
 
 interface HeroProps {
   media: Media[];
@@ -21,13 +23,28 @@ const Hero = ({ media, className }: HeroProps) => {
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
   const navigate = useNavigate();
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const { preference } = useMediaPreferences();
   
-  const filteredMedia = useMemo(() => 
-    media.filter(item => item.backdrop_path), 
-    [media]
-  );
+  const filteredMedia = useMemo(() => {
+    // First filter out items without backdrop
+    const withBackdrop = media.filter(item => item.backdrop_path);
+    
+    // If user has a preference, prioritize that content type
+    if (preference && preference !== 'balanced') {
+      const preferred = withBackdrop.filter(item => item.media_type === preference);
+      const others = withBackdrop.filter(item => item.media_type !== preference);
+      return [...preferred, ...others];
+    }
+    
+    return withBackdrop;
+  }, [media, preference]);
   
   const featuredMedia = filteredMedia[currentIndex];
+
+  const handleMediaClick = useCallback((media: Media) => {
+    trackMediaPreference(media.media_type as 'movie' | 'tv', 'select');
+    navigate(media.media_type === 'movie' ? `/movie/${media.id}` : `/tv/${media.id}`);
+  }, [navigate]);
 
   // Required minimum distance between touch start and touch end to be detected as swipe
   const minSwipeDistance = 50;
@@ -142,6 +159,10 @@ const Hero = ({ media, className }: HeroProps) => {
     const id = featuredMedia.id;
 
     navigate(`/${mediaType}/${id}`);
+  };
+  const handleClick = async () => {
+    await trackMediaPreference(featuredMedia.media_type, 'select');
+    navigate(`/${featuredMedia.media_type}/${featuredMedia.id}`);
   };
 
   return (

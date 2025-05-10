@@ -1,26 +1,31 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import Plyr from 'plyr';
 import Hls from 'hls.js';
+import { trackMediaComplete } from '@/lib/analytics';
 
 interface PlyrPlayerProps {
   src: string;
   title?: string;
   poster?: string;
+  mediaType: 'movie' | 'tv';
+  mediaId: string;
   onLoaded?: () => void;
   onError?: (error: string) => void;
 }
 
 const PlyrPlayer: React.FC<PlyrPlayerProps> = ({
   src,
-  title,
+  title = '',
   poster,
+  mediaType,
+  mediaId,
   onLoaded,
   onError
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const playerRef = useRef<Plyr | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const startTimeRef = useRef<number>(Date.now());
 
   useEffect(() => {
     if (!videoRef.current) return;
@@ -56,6 +61,22 @@ const PlyrPlayer: React.FC<PlyrPlayerProps> = ({
       };
 
       playerRef.current = new Plyr(videoRef.current, plyrOptions);
+
+      // Track video completion
+      playerRef.current.on('ended', () => {
+        const watchTime = (Date.now() - startTimeRef.current) / 1000; // Convert to seconds
+        void trackMediaComplete({
+          mediaType,
+          mediaId,
+          title,
+          watchTime
+        });
+      });
+
+      // Reset start time when video starts playing
+      playerRef.current.on('play', () => {
+        startTimeRef.current = Date.now();
+      });
 
       // Setup event listeners
       playerRef.current.on('ready', () => {
@@ -121,7 +142,7 @@ const PlyrPlayer: React.FC<PlyrPlayerProps> = ({
         hls.destroy();
       }
     };
-  }, [src, onLoaded, onError]);
+  }, [src, onLoaded, onError, mediaType, mediaId, title]);
 
   return (
     <div className="w-full h-full">

@@ -215,15 +215,25 @@ function handleProxyRequest(event) {
     return;
   }
   
-  // console.log('[IframeProxy] Proxying request to:', targetUrl);
+  // Set up storage access
+  const storageAccessPromise = 'hasStorageAccess' in document ?
+    document.hasStorageAccess().then(hasAccess => {
+      if (!hasAccess) return document.requestStorageAccess();
+    }).catch(() => {}) : Promise.resolve();
   
   // Get any custom headers from URL or from our header store
-  let customHeaders = {};
+  let customHeaders = {
+    'Sec-Fetch-Dest': 'iframe',
+    'Sec-Fetch-Mode': 'cors',
+    'Sec-Fetch-Site': 'cross-site',
+    'Upgrade-Insecure-Requests': '1'
+  };
+  
   const headersParam = url.searchParams.get('headers');
   
   if (headersParam) {
     try {
-      customHeaders = JSON.parse(headersParam);
+      customHeaders = { ...customHeaders, ...JSON.parse(headersParam) };
     } catch (e) {
       console.error('[IframeProxy] Failed to parse headers:', e);
     }
@@ -232,33 +242,43 @@ function handleProxyRequest(event) {
     const targetDomain = new URL(targetUrl).hostname;
     const storedHeaders = proxyHeaders.get(targetDomain);
     if (storedHeaders) {
-      customHeaders = storedHeaders;
+      customHeaders = { ...customHeaders, ...storedHeaders };
     }
   }
-  
-  // Create a new request with appropriate headers
+    // Create a new request with appropriate headers
   const proxyRequest = new Request(targetUrl, {
     method: event.request.method,
     headers: {
       ...Object.fromEntries(event.request.headers),
       ...customHeaders,
       'Origin': new URL(targetUrl).origin,
-      'Referer': new URL(targetUrl).origin
+      'Referer': new URL(targetUrl).origin,
+      'Cross-Origin-Embedder-Policy': 'require-corp',
+      'Cross-Origin-Opener-Policy': 'same-origin',
+      'Cross-Origin-Resource-Policy': 'cross-origin'
     },
     body: event.request.body,
     mode: 'cors',
-    credentials: 'omit'
+    credentials: 'include'
   });
   
   event.respondWith(
-    fetch(proxyRequest)
-      .then(response => {
-        // Log successful response
-        // console.log('[IframeProxy] Proxy successful:', response.status);
-        
-        // Create a new response with CORS headers
+    fetch(proxyRequest)      .then(response => {
+        // Create a new response with enhanced CORS headers
         const modifiedHeaders = new Headers(response.headers);
         modifiedHeaders.set('Access-Control-Allow-Origin', '*');
+        modifiedHeaders.set('Access-Control-Allow-Methods', 'GET, HEAD, POST, OPTIONS, PUT');
+        modifiedHeaders.set('Access-Control-Allow-Headers', 'Content-Type, Accept, Range, Origin, Referer');
+        modifiedHeaders.set('Access-Control-Allow-Private-Network', 'true');
+        modifiedHeaders.set('Access-Control-Allow-Credentials', 'true');
+        modifiedHeaders.set('Cross-Origin-Embedder-Policy', 'require-corp');
+        modifiedHeaders.set('Cross-Origin-Opener-Policy', 'same-origin');
+        modifiedHeaders.set('Cross-Origin-Resource-Policy', 'cross-origin');
+        
+        // Remove problematic headers
+        ['X-Frame-Options', 'Content-Security-Policy', 'Frame-Options'].forEach(
+          header => modifiedHeaders.delete(header)
+        );
         
         return new Response(response.body, {
           status: response.status,

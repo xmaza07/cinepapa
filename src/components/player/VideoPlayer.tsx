@@ -150,19 +150,22 @@ const VideoPlayer = ({
         className="w-full h-full"
       >
         {isCustomSource && (processedStreamUrl || streamUrl) ? (
-          <PlyrPlayer
-            src={processedStreamUrl || streamUrl}
+          <PlyrPlayer            src={processedStreamUrl || streamUrl}
             title={title}
             poster={poster}
+            mediaType="movie"
+            mediaId="custom"
             onLoaded={onLoaded}
             onError={onError}
           />
-        ) : (
-          <iframe
+        ) : (          <iframe
             ref={iframeRef}
             src={iframeUrl}
-            className="w-full h-full"
+            className="w-full h-full"            
             allowFullScreen
+            allow="autoplay; encrypted-media; picture-in-picture"
+            referrerPolicy="no-referrer"
+            loading="lazy"
             onLoad={handleIframeLoad}
             onError={handleIframeError}
             key={`iframe-${iframeUrl}-${iframeAttempts}`}

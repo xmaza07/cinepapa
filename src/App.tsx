@@ -8,6 +8,7 @@ import { UserPreferencesProvider } from './contexts/user-preferences';
 import { WatchHistoryProvider } from './contexts/watch-history';
 import { ServiceWorkerErrorBoundary } from './components/ServiceWorkerErrorBoundary';
 import { ServiceWorkerUpdateNotification } from './components/ServiceWorkerUpdateNotification';
+import { ServiceWorkerDebugPanel } from './components/ServiceWorkerDebugPanel';
 import { AuthProvider } from './hooks/auth-context';
 import { ChatbotProvider } from './contexts/chatbot-context';
 import ChatbotButton from './components/chatbot/ChatbotButton';
@@ -139,9 +140,7 @@ function App() {
                     </AnalyticsWrapper>
                     <Toaster />
                     <Sonner />
-                    {isDevelopment && (
-                      <div id="service-worker-debug" className="hidden"></div>
-                    )}
+                    {isDevelopment && <ServiceWorkerDebugPanel />}
                     {swUpdateAvailable && (
                       <ServiceWorkerUpdateNotification 
                         onAcceptUpdate={handleSwUpdateAccept}

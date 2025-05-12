@@ -41,12 +41,60 @@ const POPUP_PATTERNS = [
   'promo', 'window.open', '.php?', '.html?', 'redirect'
 ];
 
+// Bypass control state
+let bypassActive = false;
+let bypassTimeout = null;
+const MAX_BYPASS_DURATION = 3600000; // Maximum 1 hour bypass
+
+// Function to handle bypass activation
+function activateBypass(duration) {
+  // Cap the duration to maximum allowed
+  const bypassDuration = Math.min(duration || 300000, MAX_BYPASS_DURATION);
+  
+  bypassActive = true;
+  console.log(`[IframeProxy] Blocking bypassed for ${bypassDuration/1000} seconds`);
+  
+  // Clear any existing timeout
+  if (bypassTimeout) {
+    clearTimeout(bypassTimeout);
+  }
+  
+  // Set timeout to disable bypass
+  bypassTimeout = setTimeout(() => {
+    bypassActive = false;
+    bypassTimeout = null;
+    console.log('[IframeProxy] Blocking re-enabled automatically');
+    
+    // Notify all clients that bypass has ended
+    self.clients.matchAll().then(clients => {
+      clients.forEach(client => {
+        client.postMessage({
+          type: 'BYPASS_STATUS',
+          active: false
+        });
+      });
+    });
+  }, bypassDuration);
+}
+
 // Keep track of iframe origins
 let knownIframeOrigins = new Set();
 // Keep track of proxy headers for different domains
 let proxyHeaders = new Map();
 // Track navigation attempts to detect potential popups
 let navigationAttempts = new Map();
+
+// Track performance metrics
+const performanceMetrics = {
+  cacheSize: 0,
+  cacheHits: 0,
+  cacheMisses: 0,
+  networkRequests: 0
+};
+
+// Network condition simulation
+let networkCondition = 'online';
+let debugLevel = 'info';
 
 self.addEventListener('install', (event) => {
   console.log('[IframeProxy] Service Worker installed');
@@ -57,6 +105,43 @@ self.addEventListener('activate', (event) => {
   console.log('[IframeProxy] Service Worker activated');
   event.waitUntil(self.clients.claim());
 });
+
+// Helper function to update metrics
+async function updateMetrics() {
+  try {
+    const caches = await self.caches.keys();
+    let totalSize = 0;
+    
+    for (const cacheName of caches) {
+      const cache = await self.caches.open(cacheName);
+      const requests = await cache.keys();
+      for (const request of requests) {
+        const response = await cache.match(request);
+        if (response) {
+          const blob = await response.blob();
+          totalSize += blob.size;
+        }
+      }
+    }
+    
+    performanceMetrics.cacheSize = totalSize;
+    
+    // Notify all clients of metric update
+    self.clients.matchAll().then(clients => {
+      clients.forEach(client => {
+        client.postMessage({
+          type: 'METRICS_UPDATE',
+          metrics: performanceMetrics
+        });
+      });
+    });
+  } catch (error) {
+    console.error('[IframeProxy] Error updating metrics:', error);
+  }
+}
+
+// Update metrics periodically
+setInterval(updateMetrics, 30000); // Every 30 seconds
 
 // Listen for messages from main page
 self.addEventListener('message', (event) => {
@@ -79,12 +164,72 @@ self.addEventListener('message', (event) => {
       }
       break;
       
+    case 'TOGGLE_BYPASS':
+      if (data.enable) {
+        activateBypass(data.duration);
+        // Notify the requesting client of the new status
+        event.source.postMessage({
+          type: 'BYPASS_STATUS',
+          active: true,
+          duration: data.duration
+        });
+      } else {
+        bypassActive = false;
+        if (bypassTimeout) {
+          clearTimeout(bypassTimeout);
+          bypassTimeout = null;
+        }
+        console.log('[IframeProxy] Blocking re-enabled manually');
+        // Notify the requesting client of the new status
+        event.source.postMessage({
+          type: 'BYPASS_STATUS',
+          active: false
+        });
+      }
+      break;
+      
+    case 'GET_BYPASS_STATUS':
+      // Respond with current bypass status
+      event.source.postMessage({
+        type: 'BYPASS_STATUS',
+        active: bypassActive
+      });
+      break;
+      
     case 'CLEAR_DATA':
       // Reset all stored data - useful for debugging
       knownIframeOrigins.clear();
       proxyHeaders.clear();
       navigationAttempts.clear();
+      bypassActive = false;
+      if (bypassTimeout) {
+        clearTimeout(bypassTimeout);
+        bypassTimeout = null;
+      }
       console.log('[IframeProxy] Cleared all stored data');
+      break;
+      
+    case 'GET_METRICS':
+      updateMetrics().then(() => {
+        event.source.postMessage({
+          type: 'METRICS_UPDATE',
+          metrics: performanceMetrics
+        });
+      });
+      break;
+      
+    case 'SIMULATE_NETWORK':
+      if (data.condition) {
+        networkCondition = data.condition;
+        console.log(`[IframeProxy] Network condition set to: ${networkCondition}`);
+      }
+      break;
+      
+    case 'SET_DEBUG_LEVEL':
+      if (data.level) {
+        debugLevel = data.level;
+        console.log(`[IframeProxy] Debug level set to: ${debugLevel}`);
+      }
       break;
   }
 });
@@ -93,6 +238,38 @@ self.addEventListener('message', (event) => {
 self.addEventListener('fetch', (event) => {
   const request = event.request;
   const url = new URL(request.url);
+  
+  // Increment network requests counter
+  performanceMetrics.networkRequests++;
+
+  // Apply network condition simulation
+  if (networkCondition !== 'online' && request.mode !== 'navigate') {
+    switch (networkCondition) {
+      case 'offline':
+        event.respondWith(new Response('Simulated offline mode', { status: 503 }));
+        return;
+      case 'slow-3g':
+        // Simulate slow 3G with delay
+        event.respondWith(
+          new Promise(resolve => {
+            setTimeout(() => {
+              resolve(fetch(request));
+            }, 2000);
+          })
+        );
+        return;
+      case 'fast-3g':
+        // Simulate fast 3G with shorter delay
+        event.respondWith(
+          new Promise(resolve => {
+            setTimeout(() => {
+              resolve(fetch(request));
+            }, 500);
+          })
+        );
+        return;
+    }
+  }
   
   // Handle proxy requests
   if (request.url.includes('/worker-proxy')) {
@@ -115,18 +292,26 @@ self.addEventListener('fetch', (event) => {
     });
   }
   
-  // Check if this is a blocked domain
-  if (isBlockedDomain(url.hostname)) {
-    console.warn('[IframeProxy] Blocked request to ad/tracking domain:', url.hostname);
-    event.respondWith(blockResponse('Ad or tracking domain blocked'));
-    return;
-  }
-  
-  // Check if this is likely a pop-up from an iframe
-  if (isProbablyPopupFromIframe(request)) {
-    console.warn('[IframeProxy] Blocked potential pop-up:', request.url);
-    event.respondWith(blockResponse('Pop-up blocked'));
-    return;
+  // Only apply blocking if bypass is not active
+  if (!bypassActive) {
+    // Check if this is a blocked domain
+    if (isBlockedDomain(url.hostname)) {
+      console.warn('[IframeProxy] Blocked request to ad/tracking domain:', url.hostname);
+      event.respondWith(blockResponse('Ad or tracking domain blocked'));
+      return;
+    }
+    
+    // Check if this is likely a pop-up from an iframe
+    if (isProbablyPopupFromIframe(request)) {
+      console.warn('[IframeProxy] Blocked potential pop-up:', request.url);
+      event.respondWith(blockResponse('Pop-up blocked'));
+      return;
+    }
+  } else {
+    // Log bypassed requests for security auditing
+    if (isBlockedDomain(url.hostname) || isProbablyPopupFromIframe(request)) {
+      console.log('[IframeProxy] Bypass active - allowing normally blocked request:', request.url);
+    }
   }
   
   // Handle rapid navigation attempts (likely pop-up chains)
@@ -352,3 +537,20 @@ function createProxyUrl(originalUrl) {
   const encodedUrl = encodeURIComponent(originalUrl);
   return `${proxyBase}?url=${encodedUrl}`;
 }
+
+// Enhanced logging function
+function log(level, ...args) {
+  const levels = ['debug', 'info', 'warn', 'error'];
+  const currentLevelIndex = levels.indexOf(debugLevel);
+  const msgLevelIndex = levels.indexOf(level);
+  
+  if (msgLevelIndex >= currentLevelIndex) {
+    console[level]('[IframeProxy]', ...args);
+  }
+}
+
+// Replace console.log calls with the new logging system
+function logDebug(...args) { log('debug', ...args); }
+function logInfo(...args) { log('info', ...args); }
+function logWarn(...args) { log('warn', ...args); }
+function logError(...args) { log('error', ...args); }

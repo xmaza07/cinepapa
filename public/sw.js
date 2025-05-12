@@ -1,68 +1,117 @@
-// Service Worker file for offline functionality
+// Import all service worker modules
+importScripts(
+  './sw-logging.js',
+  './sw-performance.js',
+  './sw-network.js',
+  './sw-analytics.js'
+);
+
+// Core service worker initialization
 self.addEventListener('install', (event) => {
-  console.log('Service Worker installed');
   event.waitUntil(
-    caches.open('v1').then((cache) => {
-      return cache.addAll([
-        '/',
-        '/index.html',
-        '/offline.html',
-        '/favicon.ico'
-      ]);
-    })
+    Promise.all([
+      self.initializeLogging(),
+      self.initializePerformanceTracking(),
+      self.initializeNetworkSimulation(),
+      self.initializeAnalytics(),
+      caches.open('v1').then((cache) => {
+        return cache.addAll([
+          '/',
+          '/index.html',
+          '/offline.html',
+          '/favicon.ico',
+          '/manifest.json',
+          '/logo.jpeg'
+        ]);
+      })
+    ])
   );
-  // Force the service worker to become active right away
   self.skipWaiting();
 });
 
-// Store for offline analytics events
-const analyticsQueue = [];
-
-// Listen for analytics events from the main thread
-self.addEventListener('message', (event) => {
-  if (event.data.type === 'ANALYTICS_EVENT') {
-    if (self.navigator.onLine) {
-      // If online, try to send immediately
-      fetch('https://www.google-analytics.com/mp/collect?' + new URLSearchParams(event.data.payload))
-        .catch(() => {
-          // If sending fails, queue the event
-          analyticsQueue.push(event.data.payload);
-        });
-    } else {
-      // If offline, queue the event
-      analyticsQueue.push(event.data.payload);
-    }
-  }
-});
-
-// When coming back online, try to send queued events
-self.addEventListener('sync', (event) => {
-  if (event.tag === 'sync-analytics') {
-    event.waitUntil(
-      Promise.all(
-        analyticsQueue.map(payload =>
-          fetch('https://www.google-analytics.com/mp/collect?' + new URLSearchParams(payload))
-        )
-      ).then(() => {
-        // Clear the queue after successful sync
-        analyticsQueue.length = 0;
-      })
-    );
-  }
-});
-
 self.addEventListener('activate', (event) => {
-  console.log('Service Worker activated');
-  // Claim clients so that the service worker starts controlling all pages
-  event.waitUntil(self.clients.claim());
+  self.log('info', 'Service Worker activating');
+  event.waitUntil(Promise.all([
+    self.clients.claim(),
+    // Enable navigation preload if it's supported
+    self.registration.navigationPreload?.enable()
+  ]));
+});
+
+// Intercept fetch requests to apply network simulation and tracking
+self.addEventListener('fetch', (event) => {
+  const tracker = self.trackRequest(event.request.url, performance.now());
   
-  // Enable navigation preload if it's supported
-  if (self.registration.navigationPreload) {
-    event.waitUntil(
-      self.registration.navigationPreload.enable()
-    );
+  event.respondWith(
+    // Check cache first
+    caches.match(event.request)
+      .then(cachedResponse => {
+        if (cachedResponse) {
+          tracker.cacheHit();
+          return cachedResponse;
+        }
+        
+        tracker.cacheMiss();
+        return self.simulateNetworkConditions(event.request)
+          .then(response => {
+            tracker.success(performance.now());
+            // Cache successful responses
+            if (response.ok) {
+              const responseToCache = response.clone();
+              caches.open('v1').then(cache => {
+                cache.put(event.request, responseToCache);
+              });
+            }
+            return response;
+          })
+          .catch(error => {
+            tracker.error();
+            // For navigation requests, return the offline page
+            if (event.request.mode === 'navigate') {
+              return caches.match('/offline.html');
+            }
+            throw error;
+          });
+      })
+  );
+});
+
+// Handle messages from the debug panel and clients
+self.addEventListener('message', (event) => {
+  const { type, payload } = event.data;
+
+  switch (type) {
+    case 'SET_LOG_LEVEL':
+      self.setLogLevel(payload.level);
+      break;
+    case 'SET_NETWORK_CONDITIONS':
+      self.setNetworkConditions(payload);
+      break;
+    case 'GET_METRICS':
+      event.source.postMessage({
+        type: 'METRICS_UPDATE',
+        payload: self.getMetrics()
+      });
+      break;
+    case 'GET_LOGS':
+      event.source.postMessage({
+        type: 'LOGS_UPDATE',
+        payload: self.getLogs()
+      });
+      break;
+    case 'CLEAR_LOGS':
+      self.clearLogs();
+      break;
+    case 'ANALYTICS_EVENT':
+      self.queueAnalyticsEvent(payload);
+      break;
+    case 'SKIP_WAITING':
+      self.skipWaiting();
+      break;
   }
 });
+
+// Remove duplicate activate event listener
 
 // This helps with dynamic imports
 const cacheFirstWithNetworkFallback = async (request) => {
@@ -99,66 +148,6 @@ const cacheFirstWithNetworkFallback = async (request) => {
   }
 };
 
-self.addEventListener('fetch', (event) => {
-  // Properly handle navigation preload
-  if (event.request.mode === 'navigate') {
-    event.respondWith((async () => {
-      try {
-        // First, try to use the navigation preload response if it's available
-        const preloadResponse = await event.preloadResponse;
-        if (preloadResponse) {
-          return preloadResponse;
-        }
+// Remove duplicate fetch event listener and redundant functions
 
-        // If preload isn't available or fails, use the network (with cache fallback)
-        return await cacheFirstWithNetworkFallback(event.request);
-      } catch (error) {
-        // If all fails, show offline page
-        const cache = await caches.open('v1');
-        return await cache.match('/offline.html') || new Response('Offline', {
-          status: 503,
-          headers: { 'Content-Type': 'text/plain' }
-        });
-      }
-    })());
-  } 
-  else if (event.request.url.includes('/assets/') && 
-      (event.request.url.endsWith('.js') || event.request.url.includes('.js?'))) {
-    
-    // Special handling for dynamic JS imports
-    event.respondWith(
-      fetch(event.request)
-        .then(response => {
-          // Clone the response to store in cache
-          const responseToCache = response.clone();
-          caches.open('v1').then(cache => {
-            cache.put(event.request, responseToCache);
-          });
-          return response;
-        })
-        .catch(async () => {
-          // Try to return from cache if network fails
-          const cachedResponse = await caches.match(event.request);
-          if (cachedResponse) {
-            return cachedResponse;
-          }
-          
-          console.error('Failed to fetch dynamic import:', event.request.url);
-          return new Response('Failed to load dynamic import', {
-            status: 500,
-            headers: { 'Content-Type': 'text/plain' }
-          });
-        })
-    );
-  } else {
-    // Regular fetch handling for other resources
-    event.respondWith(cacheFirstWithNetworkFallback(event.request));
-  }
-});
-
-// Handle messages from clients
-self.addEventListener('message', (event) => {
-  if (event.data && event.data.type === 'SKIP_WAITING') {
-    self.skipWaiting();
-  }
-});
+// Remove duplicate message event listener

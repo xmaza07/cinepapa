@@ -1,13 +1,29 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
+import { Switch } from './ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
+import { MinimizeIcon, MaximizeIcon, RefreshCcw, WifiOff, Activity } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 
 interface WebVitalMetric {
   name: string;
   value: number;
   rating: 'good' | 'needs-improvement' | 'poor';
-  timestamp?: number;  // Make it optional since not all metrics might have it
+  timestamp?: number;
+}
+
+interface ServiceWorkerEvent {
+  type: string;
+  timestamp: number;
+  details?: string;
+}
+
+interface ServiceWorkerMetrics {
+  cacheSize: number;
+  cacheHits: number;
+  cacheMisses: number;
+  networkRequests: number;
 }
 
 export function ServiceWorkerDebugPanel() {
@@ -15,139 +31,297 @@ export function ServiceWorkerDebugPanel() {
   const [waiting, setWaiting] = useState(false);
   const [controllerState, setControllerState] = useState<string>('');
   const [webVitals, setWebVitals] = useState<WebVitalMetric[]>([]);
+  const [bypassEnabled, setBypassEnabled] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(false);
+  const [events, setEvents] = useState<ServiceWorkerEvent[]>([]);
+  const [metrics, setMetrics] = useState<ServiceWorkerMetrics>({
+    cacheSize: 0,
+    cacheHits: 0,
+    cacheMisses: 0,
+    networkRequests: 0
+  });
+  const [networkCondition, setNetworkCondition] = useState('online');
+  const [logLevel, setLogLevel] = useState('info');
+
+  const addEvent = useCallback((type: string, details?: string) => {
+    setEvents(prevEvents => [
+      { type, timestamp: Date.now(), details },
+      ...prevEvents.slice(0, 99)
+    ]);
+  }, []);
+
+  const checkRegistration = useCallback(async () => {
+    try {
+      const reg = await navigator.serviceWorker.getRegistration();
+      setRegistration(reg || null);
+      setWaiting(!!reg?.waiting);
+      setControllerState(navigator.serviceWorker.controller ? 'active' : 'none');
+      
+      if (reg?.active) {
+        reg.active.postMessage({ type: 'GET_BYPASS_STATUS' });
+        reg.active.postMessage({ type: 'GET_METRICS' });
+      }
+
+      addEvent('Registration', 'Service worker registration status checked');
+    } catch (error) {
+      console.error('Failed to get service worker registration:', error);
+      addEvent('Error', 'Failed to get service worker registration');
+    }
+  }, [addEvent]);
 
   useEffect(() => {
-    // Don't run effect in production
-    if (!import.meta.env.DEV) return;
-
-    async function getRegistration() {
-      try {
-        const reg = await navigator.serviceWorker.getRegistration();
-        setRegistration(reg || null);
-        setWaiting(!!reg?.waiting);
-        setControllerState(navigator.serviceWorker.controller ? 'active' : 'none');
-      } catch (error) {
-        console.error('Failed to get service worker registration:', error);
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'BYPASS_STATUS') {
+        setBypassEnabled(event.data.active);
+        addEvent('Bypass', `Bypass ${event.data.active ? 'enabled' : 'disabled'}`);
+      } else if (event.data?.type === 'METRICS_UPDATE') {
+        setMetrics(event.data.metrics);
+        addEvent('Metrics', 'Performance metrics updated');
       }
-    }
-
-    getRegistration();
-
-    // Listen for service worker state changes
-    const handleServiceWorkerUpdate = (reg: ServiceWorkerRegistration) => {
-      setWaiting(!!reg.waiting);
-      setRegistration(reg);
     };
+
+    const handleNetworkChange = () => {
+      const status = navigator.onLine ? 'online' : 'offline';
+      setNetworkCondition(status);
+      addEvent('Network', `Network status changed to ${status}`);
+    };
+
+    const handleStateChange = () => {
+      checkRegistration();
+      addEvent('State', 'Service worker state changed');
+    };
+
+    const handleControllerChange = () => {
+      setControllerState(navigator.serviceWorker.controller ? 'active' : 'none');
+      addEvent('Controller', 'Service worker controller changed');
+    };
+
+    checkRegistration();
 
     if (registration) {
-      registration.addEventListener('statechange', () => getRegistration());
-      registration.addEventListener('controllerchange', () => {
-        getRegistration();
-        // Reload once the new service worker has taken control
-        window.location.reload();
+      registration.addEventListener('statechange', handleStateChange);
+    }
+
+    window.addEventListener('online', handleNetworkChange);
+    window.addEventListener('offline', handleNetworkChange);
+    navigator.serviceWorker.addEventListener('message', handleMessage);
+    navigator.serviceWorker.addEventListener('controllerchange', handleControllerChange);
+
+    return () => {
+      if (registration) {
+        registration.removeEventListener('statechange', handleStateChange);
+      }
+      window.removeEventListener('online', handleNetworkChange);
+      window.removeEventListener('offline', handleNetworkChange);
+      navigator.serviceWorker.removeEventListener('message', handleMessage);
+      navigator.serviceWorker.removeEventListener('controllerchange', handleControllerChange);
+    };
+  }, [registration, checkRegistration, addEvent]);
+
+  const handleSkipWaiting = useCallback(() => {
+    if (registration?.waiting) {
+      registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+      addEvent('Action', 'Skip waiting triggered');
+    }
+  }, [registration, addEvent]);
+
+  const handleBypassToggle = useCallback(() => {
+    if (registration?.active) {
+      registration.active.postMessage({
+        type: 'TOGGLE_BYPASS',
+        enable: !bypassEnabled,
+        duration: 300000
       });
     }
+  }, [registration, bypassEnabled]);
 
-    // Listen for new service workers
-    navigator.serviceWorker.addEventListener('controllerchange', () => {
-      setControllerState(navigator.serviceWorker.controller ? 'active' : 'none');
-    });
-
-    // Listen for messages from performance monitor
-    const handleMessage = (event: MessageEvent) => {
-      if (event.data && event.data.type === 'web-vital') {
-        setWebVitals(prev => {
-          // Find and update existing metric or add new one
-          const exists = prev.findIndex(m => m.name === event.data.name);
-          if (exists >= 0) {
-            const updated = [...prev];
-            updated[exists] = {
-              ...updated[exists],
-              value: event.data.value,
-              timestamp: Date.now()
-            };
-            return updated;
-          }
-          return [...prev, { ...event.data, timestamp: Date.now() }];
-        });
-      }
-    };
-
-    window.addEventListener('message', handleMessage);
-
-    // Cleanup
-    return () => {
-      window.removeEventListener('message', handleMessage);
-      if (registration) {
-        registration.removeEventListener('statechange', () => getRegistration());
-        registration.removeEventListener('controllerchange', () => getRegistration());
-      }
-    };
-  }, [registration]);
-
-  const handleSkipWaiting = async () => {
-    if (registration?.waiting) {
-      // Send skip waiting message to waiting service worker
-      registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+  const handleNetworkSimulation = useCallback((condition: string) => {
+    if (registration?.active) {
+      registration.active.postMessage({
+        type: 'SIMULATE_NETWORK',
+        condition
+      });
+      setNetworkCondition(condition);
+      addEvent('Network', `Network condition simulated: ${condition}`);
     }
-  };
+  }, [registration, addEvent]);
 
-  // Return null in production or if no registration
+  // Return early if not in development environment or no registration
   if (!import.meta.env.DEV || !registration) {
     return null;
   }
 
+  if (isMinimized) {
+    return (
+      <Button
+        className="fixed bottom-4 right-4 p-2"
+        variant="outline"
+        size="icon"
+        onClick={() => setIsMinimized(false)}
+        title="Expand Debug Panel"
+      >
+        <MaximizeIcon className="h-4 w-4" />
+      </Button>
+    );
+  }
+
   return (
-    <Card className="fixed bottom-4 right-4 p-4 space-y-4 w-80 z-50 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-      <Tabs defaultValue="sw">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="sw">Service Worker</TabsTrigger>
-          <TabsTrigger value="vitals">Web Vitals</TabsTrigger>
+    <Card className="fixed bottom-4 right-4 p-4 space-y-4 w-96 max-h-[80vh] overflow-auto z-50 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+      <div className="flex justify-between items-center">
+        <h2 className="font-semibold">Service Worker Debug</h2>
+        <div className="flex gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={checkRegistration}
+            title="Refresh Status"
+          >
+            <RefreshCcw className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsMinimized(true)}
+            title="Minimize Panel"
+          >
+            <MinimizeIcon className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+
+      <Tabs defaultValue="status">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="status">Status</TabsTrigger>
+          <TabsTrigger value="events">Events</TabsTrigger>
+          <TabsTrigger value="perf">Performance</TabsTrigger>
+          <TabsTrigger value="network">Network</TabsTrigger>
         </TabsList>
         
-        <TabsContent value="sw" className="space-y-4">
+        <TabsContent value="status" className="space-y-4">
           <div className="space-y-2">
-            <h3 className="font-semibold">Service Worker Status</h3>
-            <p className="text-sm text-muted-foreground">
-              Controller: {controllerState}
-              {waiting && ' (update available)'}
-            </p>
+            <div className="flex items-center justify-between">
+              <span className="text-sm">Controller:</span>
+              <span className="text-sm font-medium">{controllerState}</span>
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <span className="text-sm">Iframe Proxy Bypass:</span>
+              <Switch
+                checked={bypassEnabled}
+                onCheckedChange={handleBypassToggle}
+                aria-label="Toggle iframe proxy bypass"
+              />
+            </div>
+
             {registration.active && (
-              <p className="text-sm text-muted-foreground">
-                Active: {registration.active.state}
-              </p>
+              <div className="flex items-center justify-between">
+                <span className="text-sm">Active State:</span>
+                <span className="text-sm font-medium">{registration.active.state}</span>
+              </div>
             )}
-            {registration.installing && (
-              <p className="text-sm text-muted-foreground">
-                Installing: {registration.installing.state}
-              </p>
-            )}
+            
             {registration.waiting && (
               <div className="space-y-2">
-                <p className="text-sm text-muted-foreground">
-                  Waiting: {registration.waiting.state}
-                </p>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm">Waiting State:</span>
+                  <span className="text-sm font-medium">{registration.waiting.state}</span>
+                </div>
                 <Button 
                   variant="outline" 
                   size="sm"
                   onClick={handleSkipWaiting}
+                  className="w-full"
                 >
                   Apply Update
                 </Button>
               </div>
             )}
+
+            <div className="flex items-center justify-between">
+              <span className="text-sm">Log Level:</span>
+              <Select value={logLevel} onValueChange={setLogLevel}>
+                <SelectTrigger className="w-[120px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="debug">Debug</SelectItem>
+                  <SelectItem value="info">Info</SelectItem>
+                  <SelectItem value="warn">Warning</SelectItem>
+                  <SelectItem value="error">Error</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </TabsContent>
 
-        <TabsContent value="vitals" className="space-y-4">
-          <div className="space-y-2">
-            <h3 className="font-semibold">Web Vitals</h3>
-            {webVitals.map((metric) => (
-              <div key={metric.name} className="flex justify-between items-center">
-                <span className="text-sm text-muted-foreground">{metric.name}:</span>
-                <span className="text-sm font-medium">{metric.value.toFixed(2)}</span>
+        <TabsContent value="events" className="space-y-4">
+          <div className="space-y-2 max-h-[300px] overflow-y-auto">
+            {events.map((event, index) => (
+              <div key={index} className="text-sm border-l-2 border-accent pl-2">
+                <div className="flex justify-between">
+                  <span className="font-medium">{event.type}</span>
+                  <span className="text-muted-foreground">
+                    {new Date(event.timestamp).toLocaleTimeString()}
+                  </span>
+                </div>
+                {event.details && (
+                  <p className="text-muted-foreground">{event.details}</p>
+                )}
               </div>
             ))}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="perf" className="space-y-4">
+          <div className="space-y-2">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <span className="text-sm font-medium">Cache Hits</span>
+                <div className="text-2xl font-bold">{metrics.cacheHits}</div>
+              </div>
+              <div className="space-y-1">
+                <span className="text-sm font-medium">Cache Misses</span>
+                <div className="text-2xl font-bold">{metrics.cacheMisses}</div>
+              </div>
+              <div className="space-y-1">
+                <span className="text-sm font-medium">Network Requests</span>
+                <div className="text-2xl font-bold">{metrics.networkRequests}</div>
+              </div>
+              <div className="space-y-1">
+                <span className="text-sm font-medium">Cache Size</span>
+                <div className="text-2xl font-bold">{(metrics.cacheSize / 1024 / 1024).toFixed(2)} MB</div>
+              </div>
+            </div>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="network" className="space-y-4">
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-sm">Network Status:</span>
+              <div className="flex items-center gap-2">
+                {navigator.onLine ? (
+                  <Activity className="h-4 w-4 text-green-500" />
+                ) : (
+                  <WifiOff className="h-4 w-4 text-red-500" />
+                )}
+                <span className="text-sm font-medium capitalize">{networkCondition}</span>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Select value={networkCondition} onValueChange={handleNetworkSimulation}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Simulate Network Condition" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="online">Online (Normal)</SelectItem>
+                  <SelectItem value="slow-3g">Slow 3G</SelectItem>
+                  <SelectItem value="fast-3g">Fast 3G</SelectItem>
+                  <SelectItem value="offline">Offline</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </TabsContent>
       </Tabs>

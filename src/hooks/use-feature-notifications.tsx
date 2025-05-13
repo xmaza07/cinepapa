@@ -42,6 +42,7 @@ export function useFeatureNotifications(): void {
               action: (
                 <ToastAction
                   aria-label="Acknowledge new feature"
+                  altText="Acknowledge new feature"
                   onClick={() => {
                     localStorage.setItem(`lastSeenFeature-${user.uid}`, feature.version);
                   }}
@@ -62,6 +63,7 @@ export function useFeatureNotifications(): void {
                   action: (
                     <ToastAction
                       aria-label="Learn more about the new feature"
+                      altText="Learn more about the new feature"
                       onClick={() => {
                         window.open(feature.details?.link || "", "_blank");
                       }}

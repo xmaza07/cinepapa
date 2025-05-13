@@ -154,9 +154,9 @@ const MediaGrid = ({
           initial="hidden"
           animate="show"
         >
-          {media.map((mediaItem) => (
+          {media.map((mediaItem, idx) => (
             <motion.div 
-              key={`${mediaItem.media_type}-${mediaItem.id}`}
+              key={`${mediaItem.media_type}-${mediaItem.id}-${mediaItem.docId ?? idx}`}
               variants={item}
               className="glass p-4 rounded-lg hover:bg-white/10 transition-colors group"
             >
@@ -212,9 +212,9 @@ const MediaGrid = ({
           initial="hidden"
           animate="show"
         >
-          {media.map((mediaItem) => (
+          {media.map((mediaItem, idx) => (
             <motion.div 
-              key={`${mediaItem.media_type}-${mediaItem.id}`} 
+              key={`${mediaItem.media_type}-${mediaItem.id}-${mediaItem.docId ?? idx}`} 
               variants={item}
               className="group relative"
             >

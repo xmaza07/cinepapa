@@ -1,8 +1,10 @@
 // Core service worker functionality
-import { initializeLogging, log } from './sw-logging.js';
-import { initializePerformanceTracking } from './sw-performance.js';
-import { initializeNetworkSimulation } from './sw-network.js';
-import { initializeAnalytics } from './sw-analytics.js';
+// All dependencies are attached to self by their respective files
+const log = self.log;
+const initializeLogging = self.initializeLogging;
+const initializePerformanceTracking = self.initializePerformanceTracking;
+const initializeNetworkSimulation = self.initializeNetworkSimulation;
+const initializeAnalytics = self.initializeAnalytics;
 
 // Initialize all modules
 self.addEventListener('install', (event) => {
@@ -34,13 +36,12 @@ self.addEventListener('activate', (event) => {
 // Message handling from debug panel
 self.addEventListener('message', (event) => {
   const { type, payload } = event.data;
-  
   switch (type) {
     case 'SET_LOG_LEVEL':
-      setLogLevel(payload.level);
+      self.setLogLevel(payload.level);
       break;
     case 'SET_NETWORK_CONDITIONS':
-      setNetworkConditions(payload);
+      self.setNetworkConditions(payload);
       break;
     default:
       // Forward to appropriate module based on message type

@@ -1,5 +1,7 @@
 // Network condition simulation
-import { log } from './sw-logging.js';
+
+// Use the logging functions attached to self by sw-logging.js
+const log = self.log;
 
 let networkConditions = {
   latency: 0,
@@ -8,12 +10,12 @@ let networkConditions = {
   offline: false
 };
 
-export function initializeNetworkSimulation() {
+self.initializeNetworkSimulation = function() {
   log('info', 'Initializing network simulation');
   return Promise.resolve();
 }
 
-export function setNetworkConditions(conditions) {
+self.setNetworkConditions = function(conditions) {
   networkConditions = {
     ...networkConditions,
     ...conditions
@@ -21,7 +23,8 @@ export function setNetworkConditions(conditions) {
   log('info', 'Network conditions updated:', networkConditions);
 }
 
-export function simulateNetworkConditions(request) {
+// Simulate network conditions for a request
+self.simulateNetworkConditions = function(request) {
   if (networkConditions.offline) {
     return Promise.reject(new Error('Network is offline'));
   }

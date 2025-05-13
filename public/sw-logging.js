@@ -5,19 +5,22 @@ const LOG_LEVELS = ['error', 'warn', 'info', 'debug'];
 const logBuffer = [];
 const MAX_LOG_ENTRIES = 1000;
 
-export function initializeLogging() {
+
+self.initializeLogging = function() {
   log('info', 'Initializing logging system');
   return Promise.resolve();
 }
 
-export function setLogLevel(level) {
+
+self.setLogLevel = function(level) {
   if (LOG_LEVELS.includes(level)) {
     logLevel = level;
     log('info', `Log level set to ${level}`);
   }
 }
 
-export function log(level, ...args) {
+
+self.log = function(level, ...args) {
   const levelIndex = LOG_LEVELS.indexOf(level);
   const currentLevelIndex = LOG_LEVELS.indexOf(logLevel);
   
@@ -52,11 +55,13 @@ export function log(level, ...args) {
   }
 }
 
-export function getLogs() {
+
+self.getLogs = function() {
   return [...logBuffer];
 }
 
-export function clearLogs() {
+
+self.clearLogs = function() {
   logBuffer.length = 0;
   log('info', 'Logs cleared');
 }

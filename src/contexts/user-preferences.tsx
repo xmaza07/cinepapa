@@ -55,6 +55,39 @@ export function UserPreferencesProvider({ children }: { children: ReactNode }) {
     }
   }, [getHSLFromHex]);
 
+  const toggleNotifications = useCallback(async () => {
+    if (!user || !userPreferences) return;
+
+    try {
+      const updatedPreferences = {
+        ...userPreferences,
+        isNotificationsEnabled: !userPreferences.isNotificationsEnabled,
+        updated_at: new Date().toISOString(),
+      };
+
+      const userPreferencesRef = doc(db, 'userPreferences', user.uid);
+      await setDoc(userPreferencesRef, updatedPreferences, { merge: true });
+      setUserPreferences(updatedPreferences);
+
+      toast({
+        title: updatedPreferences.isNotificationsEnabled ? 'Notifications enabled' : 'Notifications disabled',
+        description: updatedPreferences.isNotificationsEnabled 
+          ? "You'll receive notifications about new features and updates" 
+          : "You won't receive notifications about new features and updates",
+        duration: 3000,
+      });
+
+    } catch (error) {
+      console.error('Error updating notification preferences:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update notification preferences',
+        variant: 'destructive',
+      });
+    }
+  }, [user, userPreferences, toast]);
+
+  // Fetch user preferences
   useEffect(() => {
     const fetchPreferences = async () => {
       if (!user) {
@@ -64,12 +97,11 @@ export function UserPreferencesProvider({ children }: { children: ReactNode }) {
       }
 
       try {
-        setIsLoading(true);
-        const userPrefsRef = doc(db, 'userPreferences', user.uid);
-        const userPrefsDoc = await getDoc(userPrefsRef);
+        const userPreferencesRef = doc(db, 'userPreferences', user.uid);
+        const userPreferencesDoc = await getDoc(userPreferencesRef);
 
-        if (userPrefsDoc.exists()) {
-          const prefs = userPrefsDoc.data() as UserPreferences;
+        if (userPreferencesDoc.exists()) {
+          const prefs = userPreferencesDoc.data() as UserPreferences;
           setUserPreferences(prefs);
           
           // Apply accent color if it exists
@@ -81,13 +113,14 @@ export function UserPreferencesProvider({ children }: { children: ReactNode }) {
           const defaultPreferences: UserPreferences = {
             user_id: user.uid,
             isWatchHistoryEnabled: true,
+            isNotificationsEnabled: true, // Enable notifications by default
             accentColor: '#E63462', // Default accent color
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
           };
 
           try {
-            await setDoc(userPrefsRef, defaultPreferences);
+            await setDoc(userPreferencesRef, defaultPreferences);
             setUserPreferences(defaultPreferences);
             
             // Apply default accent color
@@ -112,6 +145,7 @@ export function UserPreferencesProvider({ children }: { children: ReactNode }) {
         setUserPreferences({
           user_id: user.uid,
           isWatchHistoryEnabled: true,
+          isNotificationsEnabled: true,
           accentColor: '#E63462',
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
@@ -202,7 +236,8 @@ export function UserPreferencesProvider({ children }: { children: ReactNode }) {
       updatePreferences,
       isLoading,
       toggleWatchHistory,
-      setAccentColor
+      setAccentColor,
+      toggleNotifications
     }}>
       {children}
     </UserPreferencesContext.Provider>

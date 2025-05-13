@@ -1,24 +1,24 @@
 // Analytics handling
-import { log } from './sw-logging.js';
+// Use the logging functions attached to self by sw-logging.js
+const log = self.log;
 
 const analyticsQueue = [];
 
-export function initializeAnalytics() {
+self.initializeAnalytics = function() {
   log('info', 'Initializing analytics system');
   return Promise.resolve();
 }
 
-export function queueAnalyticsEvent(payload) {
+self.queueAnalyticsEvent = function(payload) {
   analyticsQueue.push(payload);
   log('debug', 'Analytics event queued:', payload);
-  
   // Try to sync if online
   if (self.navigator.onLine) {
-    syncAnalytics();
+    self.syncAnalytics();
   }
 }
 
-export function syncAnalytics() {
+self.syncAnalytics = function() {
   return Promise.all(
     analyticsQueue.map(payload =>
       fetch('https://www.google-analytics.com/mp/collect?' + new URLSearchParams(payload))
@@ -39,6 +39,6 @@ export function syncAnalytics() {
 // Register for background sync
 self.addEventListener('sync', (event) => {
   if (event.tag === 'sync-analytics') {
-    event.waitUntil(syncAnalytics());
+    event.waitUntil(self.syncAnalytics());
   }
 });

@@ -1,5 +1,7 @@
 // Performance metrics tracking
-import { log } from './sw-logging.js';
+
+// Use the logging functions attached to self by sw-logging.js
+const log = self.log;
 
 let metrics = {
   requestCount: 0,
@@ -9,12 +11,13 @@ let metrics = {
   errors: 0
 };
 
-export function initializePerformanceTracking() {
+
+self.initializePerformanceTracking = function() {
   log('info', 'Initializing performance tracking');
   return Promise.resolve();
 }
 
-export function trackRequest(url, startTime) {
+self.trackRequest = function(url, startTime) {
   metrics.requestCount++;
   return {
     success: (responseTime) => {
@@ -36,7 +39,7 @@ export function trackRequest(url, startTime) {
   };
 }
 
-export function getMetrics() {
+self.getMetrics = function() {
   return {
     ...metrics,
     averageResponseTime: metrics.requestCount ? metrics.totalResponseTime / metrics.requestCount : 0
@@ -44,7 +47,7 @@ export function getMetrics() {
 }
 
 // Reset metrics (e.g., for periodic reporting)
-export function resetMetrics() {
+self.resetMetrics = function() {
   metrics = {
     requestCount: 0,
     totalResponseTime: 0,

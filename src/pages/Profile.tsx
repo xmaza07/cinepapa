@@ -20,7 +20,7 @@ import { videoSources } from '@/utils/video-sources';
 const Profile = () => {
   const { user, logout } = useAuth();
   const { watchHistory, clearWatchHistory, hasMore, isLoading, loadMore } = useWatchHistory();
-  const { userPreferences, toggleWatchHistory, updatePreferences } = useUserPreferences();
+  const { userPreferences, toggleWatchHistory, toggleNotifications, updatePreferences } = useUserPreferences();
   const [activeTab, setActiveTab] = useState('history');
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const loader = useRef(null);
@@ -252,6 +252,21 @@ const Profile = () => {
                       ))}
                     </SelectContent>
                   </Select>
+                </div>
+
+                {/* Feature Notifications Toggle */}
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <h3 className="text-lg font-medium">Feature Notifications</h3>
+                    <p className="text-sm text-white/70">
+                      Get notified about new features and updates
+                    </p>
+                  </div>
+                  <Switch
+                    checked={userPreferences?.isNotificationsEnabled}
+                    onCheckedChange={toggleNotifications}
+                    aria-label="Toggle feature notifications"
+                  />
                 </div>
               </div>
             </div>

@@ -23,7 +23,12 @@
 
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@/hooks": ["./src/hooks/index.ts"],
+      "@/hooks/*": ["./src/hooks/*"],
+      "@/components/ui/*": ["./src/components/ui/*"],
+      "@/lib/*": ["./src/lib/*"],
+      "@/contexts/types/*": ["./src/contexts/types/*"]
     }
   },
   "include": ["src"]

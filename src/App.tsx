@@ -1,11 +1,10 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Toaster } from './components/ui/toaster';
-import { Toaster as Sonner } from './components/ui/sonner';
 import { ThemeProvider } from './contexts/theme';
 import { UserPreferencesProvider } from './contexts/user-preferences';
 import { WatchHistoryProvider } from './contexts/watch-history';
+import { NotificationProvider } from './contexts/notification-context';
 import { ServiceWorkerErrorBoundary } from './components/ServiceWorkerErrorBoundary';
 import { ServiceWorkerUpdateNotification } from './components/ServiceWorkerUpdateNotification';
 import { ServiceWorkerDebugPanel } from './components/ServiceWorkerDebugPanel';
@@ -17,6 +16,8 @@ import AppRoutes from './routes.tsx';
 import { initializeProxySystem } from './utils/proxy-sw-registration';
 import { trackPageView } from './lib/analytics';
 import './App.css';
+import './styles/notifications.css';
+import { FeatureNotificationsListener } from './hooks/FeatureNotificationsListener';
 
 // Create a client
 const queryClient = new QueryClient({
@@ -40,6 +41,7 @@ function AnalyticsWrapper({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+
 function App() {
   const isDevelopment = import.meta.env.DEV;
   const [swUpdateAvailable, setSwUpdateAvailable] = React.useState(false);
@@ -51,39 +53,8 @@ function App() {
         console.log(`Proxy system ${registered ? 'registered successfully' : 'not registered or using fallback'}`);
       })
       .catch(error => {
-        // Enhanced error handling: show user-friendly message
-        console.error('Failed to initialize proxy system:', error);
-        if (window && 'Notification' in window) {
-          Notification.requestPermission().then(permission => {
-            if (permission === 'granted') {
-              new Notification('Proxy System Error', {
-                body: 'Failed to initialize proxy system. Some features may not work offline.',
-              });
-            }
-          });
-        }
+        console.error('Error initializing proxy system:', error);
       });
-
-    // Listen for service worker updates
-    const handleSwUpdate = () => {
-      try {
-        console.log('Service worker update detected');
-        setSwUpdateAvailable(true);
-      } catch (err) {
-        console.error('Error handling service worker update:', err);
-      }
-    };
-
-    window.addEventListener('sw-update-available', handleSwUpdate);
-
-    // Enhanced error handling for event listener
-    return () => {
-      try {
-        window.removeEventListener('sw-update-available', handleSwUpdate);
-      } catch (err) {
-        console.error('Error removing sw-update-available event listener:', err);
-      }
-    };
   }, []);
 
 
@@ -131,28 +102,29 @@ function App() {
       <BrowserRouter>
         <ServiceWorkerErrorBoundary>
           <ThemeProvider>
-            <AuthProvider>
-              <UserPreferencesProvider>
-                <WatchHistoryProvider>
-                  <ChatbotProvider>
-                    <AnalyticsWrapper>
-                      <AppRoutes />
-                    </AnalyticsWrapper>
-                    <Toaster />
-                    <Sonner />
-                    {isDevelopment && <ServiceWorkerDebugPanel />}
-                    {swUpdateAvailable && (
-                      <ServiceWorkerUpdateNotification 
-                        onAcceptUpdate={handleSwUpdateAccept}
-                        onDismiss={() => setSwUpdateAvailable(false)}
-                      />
-                    )}
-                    <ChatbotButton />
-                    <ChatbotWindow />
-                  </ChatbotProvider>
-                </WatchHistoryProvider>
-              </UserPreferencesProvider>
-            </AuthProvider>
+            <NotificationProvider>
+              <AuthProvider>
+                <UserPreferencesProvider>
+                  <WatchHistoryProvider>
+                    <ChatbotProvider>
+                      <AnalyticsWrapper>
+                        <FeatureNotificationsListener />
+                        {swUpdateAvailable && (
+                          <ServiceWorkerUpdateNotification 
+                            onAcceptUpdate={handleSwUpdateAccept}
+                            onDismiss={() => setSwUpdateAvailable(false)}
+                          />
+                        )}
+                        {isDevelopment && <ServiceWorkerDebugPanel />}
+                        <AppRoutes />
+                        <ChatbotButton />
+                        <ChatbotWindow />
+                      </AnalyticsWrapper>
+                    </ChatbotProvider>
+                  </WatchHistoryProvider>
+                </UserPreferencesProvider>
+              </AuthProvider>
+            </NotificationProvider>
           </ThemeProvider>
         </ServiceWorkerErrorBoundary>
       </BrowserRouter>

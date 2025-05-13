@@ -31,7 +31,36 @@ service cloud.firestore {
     }
 
     // New collection-centric rules (new config)
+
+    // Allow both camelCase and kebab-case for user preferences and notifications
     match /userPreferences/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+    match /user-preferences/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+
+    match /feature-notifications/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+    match /featureNotifications/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+
+    match /media-preferences/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+    match /mediaPreferences/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+
+    // Allow users to read their own feature notifications
+    match /feature-notifications/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+
+    // Allow users to read their own media preferences
+    match /media-preferences/{userId} {
       allow read, write: if isOwner(userId);
     }
     

@@ -78,7 +78,7 @@ export async function analyzeUserPreferences(
     });
 
     // Get watch history
-    const historyRef = collection(db, 'watch_history');
+    const historyRef = collection(db, 'watchHistory');
     const historyQuery = query(historyRef, where('user_id', '==', userId));
     const historySnapshot = await getDocs(historyQuery);
     

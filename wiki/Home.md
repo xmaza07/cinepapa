@@ -3,6 +3,7 @@
 
 Welcome to the Let's Stream V2.0 wiki! This documentation will help you understand, deploy, and contribute to the project.
 
+
 ## Navigation
 
 - [Getting Started](./Getting-Started)
@@ -12,6 +13,7 @@ Welcome to the Let's Stream V2.0 wiki! This documentation will help you understa
 - [Backend Setup](./Backend-Setup)
 - [API Reference](./API-Reference)
 - [Features Documentation](./Features-Documentation)
+- [Notifications](./Notifications)
 - [PWA Integration](./PWA-Integration)
 - [Troubleshooting](./Troubleshooting)
 

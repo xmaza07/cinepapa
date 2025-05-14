@@ -1,11 +1,10 @@
-
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Media } from '@/utils/types';
 import { backdropSizes } from '@/utils/api';
 import { getImageUrl } from '@/utils/services/tmdb';
 import { Button } from '@/components/ui/button';
-import { Play, Info, Star, Calendar } from 'lucide-react';
+import { Play, Info, Star, Calendar, Pause, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useMediaPreferences } from '@/hooks/use-media-preferences';
@@ -22,30 +21,52 @@ const Hero = ({ media, className = '' }: HeroProps) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
+  const [isAutoRotating, setIsAutoRotating] = useState(true);
   const navigate = useNavigate();
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const { preference } = useMediaPreferences();
-  
+
   // Filter and prioritize media based on user preferences
   const filteredMedia = useMemo(() => {
     // First filter out items without backdrop
     const withBackdrop = media.filter(item => item.backdrop_path);
-    
+
     // If user has a preference, prioritize that content type
     if (preference && preference !== 'balanced') {
       const preferred = withBackdrop.filter(item => item.media_type === preference);
       const others = withBackdrop.filter(item => item.media_type !== preference);
       return [...preferred, ...others];
     }
-    
+
     return withBackdrop;
   }, [media, preference]);
-  
+
+  // Auto-rotation control
+  const toggleAutoRotation = () => {
+    if (isAutoRotating) {
+      pauseAutoRotation();
+    } else {
+      restartAutoRotation();
+    }
+    setIsAutoRotating(!isAutoRotating);
+  };
+
   const featuredMedia = filteredMedia[currentIndex];
+
+  // Handle mouse interactions
+  const handleMouseEnter = () => {
+    pauseAutoRotation();
+  };
+
+  const handleMouseLeave = () => {
+    if (isAutoRotating) {
+      restartAutoRotation();
+    }
+  };
 
   // Navigation functions
   const goToNext = useCallback(() => {
-    setIsLoaded(false); 
+    setIsLoaded(false);
     setCurrentIndex((prev) => (prev + 1) % filteredMedia.length);
   }, [filteredMedia.length]);
 
@@ -57,11 +78,7 @@ const Hero = ({ media, className = '' }: HeroProps) => {
   // Keyboard navigation
   useKeyPress("ArrowRight", goToNext);
   useKeyPress("ArrowLeft", goToPrev);
-  
-  const handleMediaClick = useCallback((media: Media) => {
-    trackMediaPreference(media.media_type as 'movie' | 'tv', 'select');
-    navigate(media.media_type === 'movie' ? `/movie/${media.id}` : `/tv/${media.id}`);
-  }, [navigate]);
+  useKeyPress("Space", toggleAutoRotation);
 
   // Touch handling for swipes
   const minSwipeDistance = 50;
@@ -89,13 +106,20 @@ const Hero = ({ media, className = '' }: HeroProps) => {
       goToPrev();
     }
 
-    restartAutoRotation();
+    if (isAutoRotating) {
+      restartAutoRotation();
+    }
   };
+
+  const handleMediaClick = useCallback((media: Media) => {
+    trackMediaPreference(media.media_type as 'movie' | 'tv', 'select');
+    navigate(media.media_type === 'movie' ? `/movie/${media.id}` : `/tv/${media.id}`);
+  }, [navigate]);
 
   // Auto rotation management
   const startAutoRotation = useCallback(() => {
     if (filteredMedia.length <= 1) return;
-    
+
     intervalRef.current = setInterval(() => {
       goToNext();
     }, 10000); // 10 seconds interval
@@ -115,13 +139,11 @@ const Hero = ({ media, className = '' }: HeroProps) => {
 
   // Initialize and clean up auto rotation
   useEffect(() => {
-    startAutoRotation();
+    if (isAutoRotating) {
+      startAutoRotation();
+    }
     return pauseAutoRotation;
-  }, [startAutoRotation]);
-
-  // Handle mouse interactions
-  const handleMouseEnter = pauseAutoRotation;
-  const handleMouseLeave = restartAutoRotation;
+  }, [startAutoRotation, isAutoRotating]);
 
   // Render nothing if no media is available
   if (!featuredMedia) return null;
@@ -171,9 +193,9 @@ const Hero = ({ media, className = '' }: HeroProps) => {
         <motion.div
           key={currentIndex}
           initial={{ opacity: 0, scale: 1.05 }}
-          animate={{ 
-            opacity: isLoaded ? 1 : 0, 
-            scale: isLoaded ? 1 : 1.05 
+          animate={{
+            opacity: isLoaded ? 1 : 0,
+            scale: isLoaded ? 1 : 1.05
           }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.8, ease: "easeInOut" }}
@@ -189,11 +211,11 @@ const Hero = ({ media, className = '' }: HeroProps) => {
           />
 
           {/* Combined gradient overlay */}
-          <div 
-            className="absolute inset-0 bg-gradient-to-t from-background via-background/70 to-transparent" 
+          <div
+            className="absolute inset-0 bg-gradient-to-t from-background via-background/70 to-transparent"
             style={{ backdropFilter: 'brightness(0.8)' }}
           />
-          
+
           {/* Side gradient for better text contrast */}
           <div className="absolute inset-0 md:w-1/2 bg-gradient-to-r from-background/90 to-transparent" />
         </motion.div>
@@ -201,7 +223,7 @@ const Hero = ({ media, className = '' }: HeroProps) => {
 
       {/* Content Section */}
       <AnimatePresence mode="wait">
-        <motion.div 
+        <motion.div
           key={currentIndex}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: isLoaded ? 1 : 0, y: isLoaded ? 0 : 20 }}
@@ -214,14 +236,14 @@ const Hero = ({ media, className = '' }: HeroProps) => {
             <span className="px-3 py-1 rounded-full bg-accent/90 backdrop-blur-sm text-xs font-medium text-white uppercase tracking-wider">
               {featuredMedia.media_type === 'movie' ? 'Movie' : 'TV Series'}
             </span>
-            
+
             {releaseYear && (
               <span className="flex items-center px-3 py-1 rounded-full bg-white/10 backdrop-blur-sm text-xs font-medium text-white">
                 <Calendar className="w-3 h-3 mr-1" />
                 {releaseYear}
               </span>
             )}
-            
+
             {featuredMedia.vote_average > 0 && (
               <span className="flex items-center px-3 py-1 rounded-full bg-white/10 backdrop-blur-sm text-xs font-medium text-white">
                 <Star className="w-3 h-3 mr-1 fill-amber-400 text-amber-400" />
@@ -231,14 +253,14 @@ const Hero = ({ media, className = '' }: HeroProps) => {
           </div>
 
           {/* Title */}
-          <h1 
+          <h1
             className="text-4xl md:text-6xl font-bold text-white mb-3 text-shadow text-balance"
           >
             {title}
           </h1>
 
           {/* Overview */}
-          <p 
+          <p
             className="text-white/90 mb-8 line-clamp-3 md:line-clamp-3 text-sm md:text-base max-w-2xl text-shadow"
           >
             {featuredMedia.overview}
@@ -254,7 +276,7 @@ const Hero = ({ media, className = '' }: HeroProps) => {
               <Play className="h-4 w-4 mr-2" />
               Play Now
             </Button>
-            
+
             <Button
               onClick={handleMoreInfo}
               variant="outline"
@@ -270,7 +292,7 @@ const Hero = ({ media, className = '' }: HeroProps) => {
 
       {/* Pagination indicators */}
       {filteredMedia.length > 1 && (
-        <nav 
+        <nav
           className="absolute bottom-6 right-6 md:bottom-12 md:right-12 flex space-x-2 z-10"
           aria-label="Hero carousel navigation"
         >
@@ -292,7 +314,7 @@ const Hero = ({ media, className = '' }: HeroProps) => {
           ))}
         </nav>
       )}
-      
+
       {/* Previous/Next buttons (visible on larger screens) */}
       {filteredMedia.length > 1 && (
         <>
@@ -301,21 +323,26 @@ const Hero = ({ media, className = '' }: HeroProps) => {
             onClick={goToPrev}
             aria-label="Previous slide"
           >
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
+            <ChevronLeft className="w-6 h-6" />
           </button>
           <button
             className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/30 backdrop-blur-sm text-white p-2 hidden md:flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
             onClick={goToNext}
             aria-label="Next slide"
           >
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
+            <ChevronRight className="w-6 h-6" />
           </button>
         </>
       )}
+
+      {/* Auto-rotation control */}
+      <button
+        className="absolute top-4 right-4 w-10 h-10 rounded-full bg-black/30 backdrop-blur-sm text-white p-2 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+        onClick={toggleAutoRotation}
+        aria-label={isAutoRotating ? "Pause auto-rotation" : "Resume auto-rotation"}
+      >
+        {isAutoRotating ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6" />}
+      </button>
     </section>
   );
 };

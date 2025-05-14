@@ -1,22 +1,11 @@
-import { useState, useEffect } from 'react';
+
+import { useState, useEffect, Suspense, lazy } from 'react';
 import {
   getTrending,
   getPopularMovies,
   getPopularTVShows,
   getTopRatedMovies,
   getTopRatedTVShows,
-  getBollywoodMovies,
-  getActionMovies,
-  getDramaMovies,
-  getNetflixContent,
-  getHuluContent,
-  getPrimeContent,
-  getParamountContent,
-  getDisneyContent,
-  getHotstarContent,
-  getAppleTVContent,
-  getJioCinemaContent,
-  getSonyLivContent
 } from '@/utils/api';
 import { Media } from '@/utils/types';
 import { useAuth } from '@/hooks';
@@ -27,6 +16,10 @@ import ContinueWatching from '@/components/ContinueWatching';
 import Footer from '@/components/Footer';
 import Spinner from '@/components/ui/spinner';
 import PWAInstallPrompt from '@/components/PWAInstallPrompt';
+import { Skeleton } from '@/components/ui/skeleton';
+
+// Lazy-loaded secondary content
+const SecondaryContent = lazy(() => import('./components/SecondaryContent'));
 
 const Index = () => {
   const { user } = useAuth();
@@ -35,24 +28,15 @@ const Index = () => {
   const [popularTVShows, setPopularTVShows] = useState<Media[]>([]);
   const [topRatedMovies, setTopRatedMovies] = useState<Media[]>([]);
   const [topRatedTVShows, setTopRatedTVShows] = useState<Media[]>([]);
-  const [bollywoodMovies, setBollywoodMovies] = useState<Media[]>([]);
-  const [actionMovies, setActionMovies] = useState<Media[]>([]);
-  const [dramaMovies, setDramaMovies] = useState<Media[]>([]);
-  const [netflixContent, setNetflixContent] = useState<Media[]>([]);
-  const [huluContent, setHuluContent] = useState<Media[]>([]);
-  const [primeContent, setPrimeContent] = useState<Media[]>([]);
-  const [paramountContent, setParamountContent] = useState<Media[]>([]);
-  const [disneyContent, setDisneyContent] = useState<Media[]>([]);
-  const [hotstarContent, setHotstarContent] = useState<Media[]>([]);
-  const [appleTVContent, setAppleTVContent] = useState<Media[]>([]);
-  const [jioCinemaContent, setJioCinemaContent] = useState<Media[]>([]);
-  const [sonyLivContent, setSonyLivContent] = useState<Media[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [contentVisible, setContentVisible] = useState(false);
+  const [secondaryLoaded, setSecondaryLoaded] = useState(false);
 
+  // Primary data fetch - critical for initial render
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchPrimaryData = async () => {
       try {
+        // Use Promise.all for parallel requests
         const [
           trendingData,
           popularMoviesData,
@@ -67,9 +51,7 @@ const Index = () => {
           getTopRatedTVShows()
         ]);
 
-        // console.log('Trending data before filter:', trendingData);
         const filteredTrendingData = trendingData.filter(item => item.backdrop_path);
-        // console.log('Trending data after filter:', filteredTrendingData);
 
         setTrendingMedia(filteredTrendingData);
         setPopularMovies(popularMoviesData);
@@ -80,34 +62,32 @@ const Index = () => {
         console.error('Error fetching homepage data:', error);
       } finally {
         setIsLoading(false);
+        // Add a slight delay for content fade-in
         setTimeout(() => {
           setContentVisible(true);
-        }, 300);
+        }, 100); // Reduced from 300ms to 100ms for faster perceived performance
+        
+        // After primary content is visible, load secondary content
+        setTimeout(() => {
+          setSecondaryLoaded(true);
+        }, 1000);
       }
     };
 
-    fetchData();
+    fetchPrimaryData();
   }, []);
 
-  useEffect(() => {
-    const fetchExtraSections = async () => {
-      setBollywoodMovies(await getBollywoodMovies());
-      setActionMovies(await getActionMovies());
-      setDramaMovies(await getDramaMovies());
-      setNetflixContent(await getNetflixContent());
-      setHuluContent(await getHuluContent());
-      setPrimeContent(await getPrimeContent());
-      setParamountContent(await getParamountContent());
-      setDisneyContent(await getDisneyContent());
-      setHotstarContent(await getHotstarContent());
-      setAppleTVContent(await getAppleTVContent());
-      setJioCinemaContent(await getJioCinemaContent());
-      setSonyLivContent(await getSonyLivContent());
-    };
-    fetchExtraSections();
-  }, []);
-
-  // console.log('Current trendingMedia state:', trendingMedia);
+  // Content placeholder skeleton
+  const RowSkeleton = () => (
+    <div className="mb-8">
+      <Skeleton className="h-8 w-48 mb-4" />
+      <div className="flex gap-4 overflow-hidden">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <Skeleton key={i} className="w-64 h-36 rounded-lg flex-shrink-0" />
+        ))}
+      </div>
+    </div>
+  );
 
   return (
     <main className="min-h-screen bg-background pb-16">
@@ -115,8 +95,10 @@ const Index = () => {
       <PWAInstallPrompt />
 
       {isLoading ? (
-        <div className="flex items-center justify-center min-h-screen">
-          <Spinner size="lg" className="text-accent" />
+        <div className="flex flex-col gap-8 pt-24 px-6">
+          <Skeleton className="w-full h-[60vh] rounded-lg" /> {/* Hero skeleton */}
+          <RowSkeleton />
+          <RowSkeleton />
         </div>
       ) : (
         <>
@@ -124,26 +106,20 @@ const Index = () => {
             {trendingMedia.length > 0 && <Hero media={trendingMedia.slice(0, 5)} className="hero" />}
           </div>
 
-          <div className={`mt-8 md:mt-12 transition-opacity duration-500 ${contentVisible ? 'opacity-100' : 'opacity-0'}`}>
+          <div className={`mt-8 md:mt-12 transition-opacity duration-300 ${contentVisible ? 'opacity-100' : 'opacity-0'}`}>
             {user && <ContinueWatching />}
             <ContentRow title="Trending Now" media={trendingMedia} featured />
             <ContentRow title="Popular Movies" media={popularMovies} />
             <ContentRow title="Popular TV Shows" media={popularTVShows} />
             <ContentRow title="Top Rated Movies" media={topRatedMovies} />
             <ContentRow title="Top Rated TV Shows" media={topRatedTVShows} />
-            {/* New Sections */}
-            <ContentRow title="Bollywood" media={bollywoodMovies} />
-            <ContentRow title="Action" media={actionMovies} />
-            <ContentRow title="Drama" media={dramaMovies} />
-            <ContentRow title="Netflix" media={netflixContent} />
-            <ContentRow title="Hulu" media={huluContent} />
-            <ContentRow title="Prime Video" media={primeContent} />
-            <ContentRow title="Paramount+" media={paramountContent} />
-            <ContentRow title="Disney+" media={disneyContent} />
-            <ContentRow title="Hotstar" media={hotstarContent} />
-            <ContentRow title="Apple TV+" media={appleTVContent} />
-            <ContentRow title="JioCinema" media={jioCinemaContent} />
-            <ContentRow title="Sony Liv" media={sonyLivContent} />
+            
+            {/* Lazy load secondary content */}
+            {secondaryLoaded && (
+              <Suspense fallback={<div className="py-8"><Spinner size="lg" className="mx-auto" /></div>}>
+                <SecondaryContent />
+              </Suspense>
+            )}
           </div>
         </>
       )}

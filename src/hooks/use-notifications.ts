@@ -1,3 +1,4 @@
+
 import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 import { ToastActionElement } from "@/components/ui/toast";
@@ -33,12 +34,17 @@ export function useNotifications() {
 
     let toastAction: ToastActionElement | undefined;
     if (action) {
-      toastAction = React.createElement(Button, {
-        onClick: action.onClick,
-        className: action.className || "bg-primary text-primary-foreground hover:bg-primary/90",
-        variant: "secondary",
-        "aria-label": action.label
-      }, action.label);
+      // Using the proper way to create a ToastActionElement
+      toastAction = (
+        <Button 
+          onClick={action.onClick}
+          className={action.className || "bg-primary text-primary-foreground hover:bg-primary/90"}
+          variant="secondary"
+          aria-label={action.label}
+        >
+          {action.label}
+        </Button>
+      ) as ToastActionElement;
     }
 
     return toast({

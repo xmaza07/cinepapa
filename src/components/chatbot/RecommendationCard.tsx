@@ -24,15 +24,18 @@ const RecommendationCard = ({ media, genres, rating, expectedTmdbId }: Recommend
   const handleWatchClick = async () => {
     setIsValidating(true);
     try {
+      // Convert media.id to number if it's a string
+      const mediaId = typeof media.id === 'string' ? parseInt(media.id, 10) : media.id;
+      
       // Validate TMDB ID before redirecting
-      const isValid = await validateTMDBId(media.media_type, media.id);
+      const isValid = await validateTMDBId(media.media_type, mediaId);
       // Check if the recommended TMDB ID matches the expected one
-      if (isValid && (!expectedTmdbId || media.id === expectedTmdbId)) {
-        navigate(`/watch/${media.media_type}/${media.id}`);
-      } else if (isValid && expectedTmdbId && media.id !== expectedTmdbId) {
+      if (isValid && (!expectedTmdbId || mediaId === expectedTmdbId)) {
+        navigate(`/watch/${media.media_type}/${mediaId}`);
+      } else if (isValid && expectedTmdbId && mediaId !== expectedTmdbId) {
         toast({
           title: 'Content Link Mismatch',
-          description: `Expected TMDB ID: ${expectedTmdbId}, but got: ${media.id}. Please use the correct link or contact support.`,
+          description: `Expected TMDB ID: ${expectedTmdbId}, but got: ${mediaId}. Please use the correct link or contact support.`,
           variant: 'destructive',
         });
       } else {

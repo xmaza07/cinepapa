@@ -31,7 +31,7 @@ const TabContent = ({ type, viewMode, sortBy, genreFilter, platformFilters }: Ta
       case 'top_rated':
         return () => getTopRatedTVShows(page);
       case 'trending':
-        return () => getTrendingTVShows(page);
+        return () => getTrendingTVShows('week'); // Change from number to 'week' string literal
       default:
         return () => getPopularTVShows(page);
     }
@@ -77,7 +77,7 @@ const TabContent = ({ type, viewMode, sortBy, genreFilter, platformFilters }: Ta
             case 'top_rated':
               return getTopRatedTVShows(page + 1);
             case 'trending':
-              return getTrendingTVShows(page + 1);
+              return getTrendingTVShows('week'); // Change from number to 'week' string literal
             default:
               return getPopularTVShows(page + 1);
           }

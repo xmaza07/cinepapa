@@ -1,3 +1,4 @@
+
 /// <reference lib="webworker" />
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
@@ -172,7 +173,7 @@ export default defineConfig(({ mode }) => ({
         runtimeCaching: [
           // SPA Navigation Routes
           {
-            urlPattern: ({ request }) => request.mode === 'navigate',
+            urlPattern: ({ request }: { request: Request }) => request.mode === 'navigate',
             handler: 'NetworkFirst',
             options: {
               cacheName: CACHE_NAMES.pages,
@@ -192,7 +193,7 @@ export default defineConfig(({ mode }) => ({
                     return event.request;
                   }
                 },
-                handlerDidError: async ({ request }) => {
+                handlerDidError: async ({ request }: { request: Request }) => {
                   try {
                     const cache = await self.caches.open(CACHE_NAMES.pages);
                     const response = await cache.match('/offline.html');
@@ -241,7 +242,7 @@ export default defineConfig(({ mode }) => ({
                 statuses: [0, 200]
               },
               plugins: [{
-                handlerDidError: async ({ request }) => {
+                handlerDidError: async ({ request }: { request: Request }) => {
                   // Return placeholder image on error
                   const cache = await self.caches.open(CACHE_NAMES.static);
                   return cache.match('/placeholder.svg');
@@ -256,7 +257,7 @@ export default defineConfig(({ mode }) => ({
               cacheName: CACHE_NAMES.tmdbApi,
               networkTimeoutSeconds: 3,
               plugins: [{
-                cacheWillUpdate: async ({ response }) => {
+                cacheWillUpdate: async ({ response }: { response: Response }) => {
                   if (response && response.status === 200) {
                     try {
                       const clonedResponse = response.clone();
@@ -302,7 +303,8 @@ export default defineConfig(({ mode }) => ({
               }]
             }
           },
-          {            urlPattern: ({ url }) => {
+          {
+            urlPattern: ({ url }: { url: URL }) => {
               return url.hostname.includes('firestore.googleapis.com') ||
                      url.hostname.includes('firebase.googleapis.com') ||
                      url.hostname.includes('firebaseio.com');
@@ -327,7 +329,7 @@ export default defineConfig(({ mode }) => ({
                 maxAgeSeconds: 60 * 60 // 1 hour
               },
               plugins: [{
-                handlerDidError: async ({ request }) => {
+                handlerDidError: async ({ request }: { request: Request }) => {
                   console.error('Google API request failed:', request.url);
                   return undefined;
                 }

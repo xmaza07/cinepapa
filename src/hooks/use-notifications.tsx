@@ -34,6 +34,7 @@ export function useNotifications() {
 
     let toastAction: ToastActionElement | undefined;
     if (action) {
+      // Cast the Button component to ToastActionElement type to avoid TypeScript errors
       toastAction = (
         <Button 
           onClick={action.onClick}

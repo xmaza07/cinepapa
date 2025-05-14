@@ -1,4 +1,5 @@
 /// <reference lib="webworker" />
+/// <reference path="./src/workbox-build.d.ts" />
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
@@ -16,48 +17,6 @@ interface TMDBResponse {
   data: unknown;
 }
 
-// Define custom plugin types
-interface CustomPluginAPI {
-  handlerDidError?: (details: { request: Request }) => Promise<Response | undefined>;
-  cacheWillUpdate?: (details: { response: Response }) => Promise<Response | null>;
-  cacheDidUpdate?: (details: {
-    cacheName: string;
-    request: Request;
-    oldResponse?: Response;
-    newResponse: Response;
-  }) => Promise<void>;
-  requestWillFetch?: (details: { event: FetchEvent }) => Promise<Request | Response>;
-}
-
-// Define cache key type
-interface CacheKey extends Request {
-  url: string;
-}
-
-// Define RuntimeCaching type as it's missing from workbox-build
-interface RuntimeCaching {
-  urlPattern: RegExp | string | ((options: { url: URL } | { request: Request }) => boolean);
-  handler: string;
-  options?: {
-    cacheName?: string;
-    expiration?: {
-      maxEntries?: number;
-      maxAgeSeconds?: number;
-    };
-    cacheableResponse?: {
-      statuses?: number[];
-      headers?: {
-        [key: string]: string;
-      };
-    };
-    matchOptions?: {
-      ignoreVary?: boolean;
-    };
-    networkTimeoutSeconds?: number;
-    plugins?: Array<Partial<CustomPluginAPI>>;
-  };
-}
-
 // Cache version based on package version
 const CACHE_VERSION = `v${pkg.version}`;
 
@@ -65,7 +24,7 @@ const CACHE_VERSION = `v${pkg.version}`;
 const CACHE_NAMES = {
   pages: `pages-cache-${CACHE_VERSION}`,
   static: `static-assets-${CACHE_VERSION}`,
-  images: `images-${CACHE_VERSION}`,
+  images: `images-cache-${CACHE_VERSION}`,
   tmdbApi: `tmdb-api-${CACHE_VERSION}`,
   tmdbImages: `tmdb-images-${CACHE_VERSION}`,
   firebaseData: `firebase-data-${CACHE_VERSION}`,
@@ -116,8 +75,7 @@ export default defineConfig(({ mode }) => ({
             '@radix-ui/react-tabs',
             '@radix-ui/react-toast',
             '@radix-ui/react-toggle',
-            '@radix-ui/react-toggle-group',
-            '@radix-ui/react-tooltip'
+            '@radix-ui/react-toggle-group'
           ],
           'firebase-auth': [
             'firebase/auth',

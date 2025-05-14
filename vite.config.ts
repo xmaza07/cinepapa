@@ -4,7 +4,6 @@ import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
 import { VitePWA } from 'vite-plugin-pwa';
-import type { ManifestEntry, RuntimeCaching } from 'workbox-build';
 import pkg from './package.json';
 
 declare const self: ServiceWorkerGlobalScope;
@@ -33,6 +32,30 @@ interface CustomPluginAPI {
 // Define cache key type
 interface CacheKey extends Request {
   url: string;
+}
+
+// Define RuntimeCaching type as it's missing from workbox-build
+interface RuntimeCaching {
+  urlPattern: RegExp | string | ((options: { url: URL } | { request: Request }) => boolean);
+  handler: string;
+  options?: {
+    cacheName?: string;
+    expiration?: {
+      maxEntries?: number;
+      maxAgeSeconds?: number;
+    };
+    cacheableResponse?: {
+      statuses?: number[];
+      headers?: {
+        [key: string]: string;
+      };
+    };
+    matchOptions?: {
+      ignoreVary?: boolean;
+    };
+    networkTimeoutSeconds?: number;
+    plugins?: Array<Partial<CustomPluginAPI>>;
+  };
 }
 
 // Cache version based on package version

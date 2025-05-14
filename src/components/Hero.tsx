@@ -5,13 +5,12 @@ import { Media } from '@/utils/types';
 import { backdropSizes } from '@/utils/api';
 import { getImageUrl } from '@/utils/services/tmdb';
 import { Button } from '@/components/ui/button';
-import { Play, Info, Star, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Play, Info, Star, Calendar } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useMediaPreferences } from '@/hooks/use-media-preferences';
 import { trackMediaPreference } from '@/lib/analytics';
 import useKeyPress from '@/hooks/use-key-press';
-import { cn } from '@/lib/utils';
 
 interface HeroProps {
   media: Media[];
@@ -148,10 +147,7 @@ const Hero = ({ media, className = '' }: HeroProps) => {
 
   return (
     <section
-      className={cn(
-        "group relative w-full h-[70vh] md:h-[85vh] overflow-hidden",
-        className
-      )}
+      className={`relative w-full h-[70vh] md:h-[80vh] overflow-hidden ${className}`}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       onTouchStart={onTouchStart}
@@ -164,7 +160,9 @@ const Hero = ({ media, className = '' }: HeroProps) => {
       {/* Loading Skeleton */}
       {!isLoaded && (
         <div className="absolute inset-0 bg-background flex items-center justify-center z-10">
-          <Skeleton className="w-full h-full" />
+          <div className="w-full h-full">
+            <Skeleton className="w-full h-full" />
+          </div>
         </div>
       )}
 
@@ -190,11 +188,14 @@ const Hero = ({ media, className = '' }: HeroProps) => {
             loading={currentIndex === 0 ? "eager" : "lazy"}
           />
 
-          {/* Combined gradient overlay - enhanced styling */}
-          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-background/20" />
+          {/* Combined gradient overlay */}
+          <div 
+            className="absolute inset-0 bg-gradient-to-t from-background via-background/70 to-transparent" 
+            style={{ backdropFilter: 'brightness(0.8)' }}
+          />
           
-          {/* Side gradient for better text contrast - enhanced styling */}
-          <div className="absolute inset-0 w-full md:w-1/2 lg:w-2/5 bg-gradient-to-r from-background/90 via-background/70 to-transparent" />
+          {/* Side gradient for better text contrast */}
+          <div className="absolute inset-0 md:w-1/2 bg-gradient-to-r from-background/90 to-transparent" />
         </motion.div>
       </AnimatePresence>
 
@@ -206,93 +207,81 @@ const Hero = ({ media, className = '' }: HeroProps) => {
           animate={{ opacity: isLoaded ? 1 : 0, y: isLoaded ? 0 : 20 }}
           exit={{ opacity: 0, y: -20 }}
           transition={{ duration: 0.5, ease: "easeOut", delay: 0.2 }}
-          className="absolute inset-0 flex flex-col justify-end md:justify-center items-start p-6 md:p-16 lg:p-20"
+          className="absolute inset-x-0 bottom-0 p-6 md:p-12 lg:p-16 flex flex-col items-start max-w-3xl"
         >
-          <div className="container max-w-screen-lg mx-auto">
-            <div className="max-w-xl">
-              {/* Badge with gradient effect */}
-              <div className="flex flex-wrap items-center gap-3 mb-6">
-                <span className="px-3 py-1 rounded-full bg-gradient-to-r from-accent to-accent/80 backdrop-blur-md text-xs font-medium text-white uppercase tracking-wider shadow-lg shadow-accent/20 animate-pulse-slow">
-                  {featuredMedia.media_type === 'movie' ? 'Movie' : 'TV Series'}
-                </span>
-                
-                {releaseYear && (
-                  <span className="flex items-center px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-xs font-medium text-white">
-                    <Calendar className="w-3 h-3 mr-1" />
-                    {releaseYear}
-                  </span>
-                )}
-                
-                {featuredMedia.vote_average > 0 && (
-                  <span className="flex items-center px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-xs font-medium text-white">
-                    <Star className="w-3 h-3 mr-1 fill-amber-400 text-amber-400" />
-                    {featuredMedia.vote_average.toFixed(1)}
-                  </span>
-                )}
-              </div>
+          {/* Metadata badges */}
+          <div className="flex flex-wrap items-center gap-3 mb-4">
+            <span className="px-3 py-1 rounded-full bg-accent/90 backdrop-blur-sm text-xs font-medium text-white uppercase tracking-wider">
+              {featuredMedia.media_type === 'movie' ? 'Movie' : 'TV Series'}
+            </span>
+            
+            {releaseYear && (
+              <span className="flex items-center px-3 py-1 rounded-full bg-white/10 backdrop-blur-sm text-xs font-medium text-white">
+                <Calendar className="w-3 h-3 mr-1" />
+                {releaseYear}
+              </span>
+            )}
+            
+            {featuredMedia.vote_average > 0 && (
+              <span className="flex items-center px-3 py-1 rounded-full bg-white/10 backdrop-blur-sm text-xs font-medium text-white">
+                <Star className="w-3 h-3 mr-1 fill-amber-400 text-amber-400" />
+                {featuredMedia.vote_average.toFixed(1)}
+              </span>
+            )}
+          </div>
 
-              {/* Title with enhanced styling */}
-              <motion.h1 
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.7, delay: 0.3 }}
-                className="text-4xl md:text-6xl lg:text-7xl font-extrabold text-white mb-4 text-shadow-sm bg-clip-text relative"
-              >
-                <span className="hero-title-shimmer text-transparent bg-white">{title}</span>
-              </motion.h1>
+          {/* Title */}
+          <h1 
+            className="text-4xl md:text-6xl font-bold text-white mb-3 text-shadow text-balance"
+          >
+            {title}
+          </h1>
 
-              {/* Overview with enhanced styling */}
-              <motion.p 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.7, delay: 0.5 }}
-                className="text-white/90 mb-8 line-clamp-3 md:line-clamp-4 text-sm md:text-base max-w-2xl text-shadow-sm backdrop-blur-sm bg-black/10 p-3 rounded-md border border-white/5"
-              >
-                {featuredMedia.overview}
-              </motion.p>
+          {/* Overview */}
+          <p 
+            className="text-white/90 mb-8 line-clamp-3 md:line-clamp-3 text-sm md:text-base max-w-2xl text-shadow"
+          >
+            {featuredMedia.overview}
+          </p>
 
-              {/* Action buttons with enhanced styling */}
-              <div className="flex flex-wrap gap-4">
-                <Button
-                  onClick={handlePlay}
-                  className="relative overflow-hidden bg-gradient-to-r from-accent to-accent/90 hover:from-accent/90 hover:to-accent text-white flex items-center transition-all hover:scale-105 shadow-lg shadow-accent/20 group"
-                  size="lg"
-                >
-                  <Play className="h-4 w-4 mr-2 transition-transform duration-300 group-hover:scale-125" />
-                  Watch Now
-                  <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-white/0 via-white/20 to-white/0 transform -translate-x-full animate-shimmer" />
-                </Button>
-                
-                <Button
-                  onClick={handleMoreInfo}
-                  variant="outline"
-                  size="lg"
-                  className="border-white/30 bg-black/40 text-white hover:bg-black/60 hover:border-white/50 flex items-center transition-all hover:scale-105 backdrop-blur-sm"
-                >
-                  <Info className="h-4 w-4 mr-2" />
-                  More Info
-                </Button>
-              </div>
-            </div>
+          {/* Action buttons */}
+          <div className="flex flex-wrap gap-4">
+            <Button
+              onClick={handlePlay}
+              className="hero-button bg-accent hover:bg-accent/90 text-white flex items-center transition-all hover:scale-105 shadow-lg shadow-accent/20"
+              size="lg"
+            >
+              <Play className="h-4 w-4 mr-2" />
+              Play Now
+            </Button>
+            
+            <Button
+              onClick={handleMoreInfo}
+              variant="outline"
+              size="lg"
+              className="hero-button border-white/30 bg-black/40 text-white hover:bg-black/60 hover:border-white/50 flex items-center transition-all hover:scale-105"
+            >
+              <Info className="h-4 w-4 mr-2" />
+              More Info
+            </Button>
           </div>
         </motion.div>
       </AnimatePresence>
 
-      {/* Enhanced pagination indicators */}
+      {/* Pagination indicators */}
       {filteredMedia.length > 1 && (
-        <div 
-          className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex space-x-3 z-10"
+        <nav 
+          className="absolute bottom-6 right-6 md:bottom-12 md:right-12 flex space-x-2 z-10"
           aria-label="Hero carousel navigation"
         >
           {filteredMedia.slice(0, 5).map((_, index) => (
             <button
               key={index}
-              className={cn(
-                "transition-all duration-300 rounded-full",
+              className={`h-2 rounded-full transition-all ${
                 index === currentIndex
-                  ? "bg-accent h-2 w-12 animate-pulse-slow"
-                  : "bg-white/30 h-2 w-2 hover:bg-white/50"
-              )}
+                  ? 'bg-accent w-8 animate-pulse'
+                  : 'bg-white/30 w-2 hover:bg-white/50'
+              }`}
               onClick={() => {
                 setIsLoaded(false);
                 setCurrentIndex(index);
@@ -301,25 +290,29 @@ const Hero = ({ media, className = '' }: HeroProps) => {
               aria-current={index === currentIndex ? 'true' : 'false'}
             />
           ))}
-        </div>
+        </nav>
       )}
       
-      {/* Enhanced Previous/Next buttons */}
+      {/* Previous/Next buttons (visible on larger screens) */}
       {filteredMedia.length > 1 && (
         <>
           <button
-            className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-black/40 backdrop-blur-sm text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-accent/50"
+            className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/30 backdrop-blur-sm text-white p-2 hidden md:flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
             onClick={goToPrev}
             aria-label="Previous slide"
           >
-            <ChevronLeft className="w-6 h-6" />
+            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
           </button>
           <button
-            className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-black/40 backdrop-blur-sm text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-accent/50"
+            className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/30 backdrop-blur-sm text-white p-2 hidden md:flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
             onClick={goToNext}
             aria-label="Next slide"
           >
-            <ChevronRight className="w-6 h-6" />
+            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
           </button>
         </>
       )}

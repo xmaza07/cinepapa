@@ -34,7 +34,6 @@ export function useNotifications() {
 
     let toastAction: ToastActionElement | undefined;
     if (action) {
-      // Using the proper way to create a ToastActionElement
       toastAction = (
         <Button 
           onClick={action.onClick}
@@ -44,7 +43,7 @@ export function useNotifications() {
         >
           {action.label}
         </Button>
-      ) as ToastActionElement;
+      ) as unknown as ToastActionElement;
     }
 
     return toast({

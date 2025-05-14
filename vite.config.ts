@@ -1,4 +1,3 @@
-
 /// <reference lib="webworker" />
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
@@ -167,7 +166,6 @@ export default defineConfig(({ mode }) => ({
       workbox: {
         globPatterns: [
           '**/*.{js,css,html,ico,png,svg,json,woff2,ttf}'
-          // Removed the 'manifest-icon-*.png' pattern that's causing the warning
         ],
         maximumFileSizeToCacheInBytes: 5000000,
         runtimeCaching: [

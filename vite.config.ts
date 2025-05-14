@@ -1,4 +1,3 @@
-
 /// <reference lib="webworker" />
 /// <reference path="./workbox.d.ts" />
 import { defineConfig } from "vite";
@@ -31,6 +30,9 @@ const CACHE_NAMES = {
   firebaseData: `firebase-data-${CACHE_VERSION}`,
   googleApis: `google-apis-${CACHE_VERSION}`
 };
+
+// Import RuntimeCaching type from the workbox-build module
+import type { RuntimeCaching } from 'workbox-build';
 
 export default defineConfig(({ mode }) => ({
   base: '/',

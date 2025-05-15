@@ -186,7 +186,28 @@ const Hero = ({ media, className = '' }: HeroProps) => {
     }
   }, [isLoaded, preloadNextImage]);
 
-  // Render nothing if no media is available
+
+
+  // Always call hooks at the top level
+  useEffect(() => {
+    const node = carouselRef.current;
+    if (!node) return;
+
+    const handleTouchMove = (e: TouchEvent) => {
+      // Only handle single touch events
+      if (e.touches.length === 1) {
+        setTouchEnd(e.touches[0].clientX);
+        if (touchStart && Math.abs(e.touches[0].clientX - touchStart) > 10) {
+          e.preventDefault();
+        }
+      }
+    };
+    node.addEventListener('touchmove', handleTouchMove, { passive: false });
+    return () => {
+      node.removeEventListener('touchmove', handleTouchMove);
+    };
+  }, [touchStart]);
+
   if (!featuredMedia) return null;
 
   const title = featuredMedia.title || featuredMedia.name || 'Untitled';
@@ -208,6 +229,26 @@ const Hero = ({ media, className = '' }: HeroProps) => {
     navigate(`/${featuredMedia.media_type}/${featuredMedia.id}`);
   };
 
+  // --- Fix for passive event listener issue ---
+  useEffect(() => {
+    const node = carouselRef.current;
+    if (!node) return;
+
+    const handleTouchMove = (e: TouchEvent) => {
+      // Only handle single touch events
+      if (e.touches.length === 1) {
+        setTouchEnd(e.touches[0].clientX);
+        if (touchStart && Math.abs(e.touches[0].clientX - touchStart) > 10) {
+          e.preventDefault();
+        }
+      }
+    };
+    node.addEventListener('touchmove', handleTouchMove, { passive: false });
+    return () => {
+      node.removeEventListener('touchmove', handleTouchMove);
+    };
+  }, [touchStart]);
+
   return (
     <section
       ref={carouselRef}
@@ -215,7 +256,7 @@ const Hero = ({ media, className = '' }: HeroProps) => {
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       onTouchStart={onTouchStart}
-      onTouchMove={onTouchMove}
+      // REMOVE onTouchMove to avoid passive event error
       onTouchEnd={onTouchEnd}
       role="region"
       aria-label="Featured media carousel"
@@ -250,7 +291,7 @@ const Hero = ({ media, className = '' }: HeroProps) => {
             className="w-full h-full object-cover"
             onLoad={() => setIsLoaded(true)}
             loading={currentIndex === 0 ? "eager" : "lazy"}
-            fetchPriority={currentIndex === 0 ? "high" : "auto"}
+            fetchpriority={currentIndex === 0 ? "high" : "auto"}
             sizes="100vw"
           />
 
@@ -332,7 +373,7 @@ const Hero = ({ media, className = '' }: HeroProps) => {
       {/* Enhanced pagination indicators with progress animation */}
       {filteredMedia.length > 1 && (
         <div className="absolute bottom-3 left-1/2 -translate-x-1/2 md:bottom-6 flex space-x-2 z-10">
-          {filteredMedia.slice(0, 5).map((_, index) => (
+          {filteredMedia.map((_, index) => (
             <button
               key={index}
               className={`h-1.5 rounded-full transition-all ${

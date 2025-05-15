@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Media } from '@/utils/types';
@@ -10,6 +11,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useMediaPreferences } from '@/hooks/use-media-preferences';
 import { trackMediaPreference } from '@/lib/analytics';
 import useKeyPress from '@/hooks/use-key-press';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface HeroProps {
   media: Media[];
@@ -25,6 +27,8 @@ const Hero = ({ media, className = '' }: HeroProps) => {
   const navigate = useNavigate();
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const { preference } = useMediaPreferences();
+  const isMobile = useIsMobile();
+  const carouselRef = useRef<HTMLDivElement>(null);
 
   // Filter and prioritize media based on user preferences
   const filteredMedia = useMemo(() => {
@@ -40,6 +44,18 @@ const Hero = ({ media, className = '' }: HeroProps) => {
 
     return withBackdrop;
   }, [media, preference]);
+
+  // Preload next image
+  const preloadNextImage = useCallback(() => {
+    if (filteredMedia.length > 1) {
+      const nextIndex = (currentIndex + 1) % filteredMedia.length;
+      const nextMedia = filteredMedia[nextIndex];
+      if (nextMedia && nextMedia.backdrop_path) {
+        const img = new Image();
+        img.src = getImageUrl(nextMedia.backdrop_path, backdropSizes.original);
+      }
+    }
+  }, [filteredMedia, currentIndex]);
 
   // Auto-rotation control
   const toggleAutoRotation = () => {
@@ -80,25 +96,37 @@ const Hero = ({ media, className = '' }: HeroProps) => {
   useKeyPress("ArrowLeft", goToPrev);
   useKeyPress("Space", toggleAutoRotation);
 
-  // Touch handling for swipes
-  const minSwipeDistance = 50;
+  // Touch handling for swipes with improved sensitivity
+  const minSwipeDistance = isMobile ? 30 : 50;
+  const touchSensitivity = isMobile ? 1.5 : 1;
 
   const onTouchStart = (e: React.TouchEvent) => {
-    setTouchEnd(null);
-    setTouchStart(e.targetTouches[0].clientX);
-    pauseAutoRotation();
+    // Only handle single touch events
+    if (e.touches.length === 1) {
+      setTouchEnd(null);
+      setTouchStart(e.touches[0].clientX);
+      pauseAutoRotation();
+    }
   };
 
   const onTouchMove = (e: React.TouchEvent) => {
-    setTouchEnd(e.targetTouches[0].clientX);
+    // Only handle single touch events
+    if (e.touches.length === 1) {
+      setTouchEnd(e.touches[0].clientX);
+      
+      // Prevent default behavior (page scroll) when swiping horizontally
+      if (touchStart && Math.abs(e.touches[0].clientX - touchStart) > 10) {
+        e.preventDefault();
+      }
+    }
   };
 
   const onTouchEnd = () => {
     if (!touchStart || !touchEnd) return;
 
     const distance = touchStart - touchEnd;
-    const isLeftSwipe = distance > minSwipeDistance;
-    const isRightSwipe = distance < -minSwipeDistance;
+    const isLeftSwipe = distance > minSwipeDistance * touchSensitivity;
+    const isRightSwipe = distance < -minSwipeDistance * touchSensitivity;
 
     if (isLeftSwipe) {
       goToNext();
@@ -109,6 +137,10 @@ const Hero = ({ media, className = '' }: HeroProps) => {
     if (isAutoRotating) {
       restartAutoRotation();
     }
+    
+    // Reset touch states
+    setTouchStart(null);
+    setTouchEnd(null);
   };
 
   const handleMediaClick = useCallback((media: Media) => {
@@ -116,14 +148,16 @@ const Hero = ({ media, className = '' }: HeroProps) => {
     navigate(media.media_type === 'movie' ? `/movie/${media.id}` : `/tv/${media.id}`);
   }, [navigate]);
 
-  // Auto rotation management
+  // Auto rotation management with improved timing
   const startAutoRotation = useCallback(() => {
     if (filteredMedia.length <= 1) return;
 
     intervalRef.current = setInterval(() => {
       goToNext();
-    }, 10000); // 10 seconds interval
-  }, [filteredMedia.length, goToNext]);
+      // Preload the next image during rotation
+      preloadNextImage();
+    }, 8000); // Reduced to 8 seconds for better engagement
+  }, [filteredMedia.length, goToNext, preloadNextImage]);
 
   const pauseAutoRotation = () => {
     if (intervalRef.current) {
@@ -144,6 +178,13 @@ const Hero = ({ media, className = '' }: HeroProps) => {
     }
     return pauseAutoRotation;
   }, [startAutoRotation, isAutoRotating]);
+
+  // Preload next image when current one loads
+  useEffect(() => {
+    if (isLoaded) {
+      preloadNextImage();
+    }
+  }, [isLoaded, preloadNextImage]);
 
   // Render nothing if no media is available
   if (!featuredMedia) return null;
@@ -169,7 +210,8 @@ const Hero = ({ media, className = '' }: HeroProps) => {
 
   return (
     <section
-      className={`relative w-full h-[70vh] md:h-[80vh] overflow-hidden ${className}`}
+      ref={carouselRef}
+      className={`relative w-full h-[60vh] sm:h-[65vh] md:h-[75vh] lg:h-[80vh] overflow-hidden group ${className}`}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       onTouchStart={onTouchStart}
@@ -183,125 +225,119 @@ const Hero = ({ media, className = '' }: HeroProps) => {
       {!isLoaded && (
         <div className="absolute inset-0 bg-background flex items-center justify-center z-10">
           <div className="w-full h-full">
-            <Skeleton className="w-full h-full" />
+            <Skeleton className="w-full h-full animate-pulse bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900" />
           </div>
         </div>
       )}
 
-      {/* Background Image with Gradient Overlay */}
+      {/* Background Image with Enhanced Gradient Overlay */}
       <AnimatePresence mode="wait">
         <motion.div
-          key={currentIndex}
+          key={`bg-${currentIndex}`}
           initial={{ opacity: 0, scale: 1.05 }}
           animate={{
             opacity: isLoaded ? 1 : 0,
             scale: isLoaded ? 1 : 1.05
           }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.8, ease: "easeInOut" }}
+          transition={{ duration: 0.7, ease: "easeInOut" }}
           className="absolute inset-0"
         >
-          {/* Hero Image */}
+          {/* Hero Image with priority loading for first image */}
           <img
             src={getImageUrl(featuredMedia.backdrop_path, backdropSizes.original)}
             alt={title}
             className="w-full h-full object-cover"
             onLoad={() => setIsLoaded(true)}
             loading={currentIndex === 0 ? "eager" : "lazy"}
+            fetchPriority={currentIndex === 0 ? "high" : "auto"}
+            sizes="100vw"
           />
 
-          {/* Combined gradient overlay */}
-          <div
-            className="absolute inset-0 bg-gradient-to-t from-background via-background/70 to-transparent"
-            style={{ backdropFilter: 'brightness(0.8)' }}
-          />
+          {/* Enhanced gradient overlay for better text contrast */}
+          <div className="absolute inset-0 bg-gradient-to-t from-background from-10% via-background/70 via-40% to-transparent" />
 
-          {/* Side gradient for better text contrast */}
-          <div className="absolute inset-0 md:w-1/2 bg-gradient-to-r from-background/90 to-transparent" />
+          {/* Enhanced side gradient for better text contrast on mobile */}
+          <div className="absolute inset-0 bg-gradient-to-r from-background/95 via-background/70 to-transparent lg:from-background/90 lg:via-background/50 lg:to-transparent" />
         </motion.div>
       </AnimatePresence>
 
-      {/* Content Section */}
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={currentIndex}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: isLoaded ? 1 : 0, y: isLoaded ? 0 : 20 }}
-          exit={{ opacity: 0, y: -20 }}
-          transition={{ duration: 0.5, ease: "easeOut", delay: 0.2 }}
-          className="absolute inset-x-0 bottom-0 p-6 md:p-12 lg:p-16 flex flex-col items-start max-w-3xl"
-        >
-          {/* Metadata badges */}
-          <div className="flex flex-wrap items-center gap-3 mb-4">
-            <span className="px-3 py-1 rounded-full bg-accent/90 backdrop-blur-sm text-xs font-medium text-white uppercase tracking-wider">
-              {featuredMedia.media_type === 'movie' ? 'Movie' : 'TV Series'}
-            </span>
-
-            {releaseYear && (
-              <span className="flex items-center px-3 py-1 rounded-full bg-white/10 backdrop-blur-sm text-xs font-medium text-white">
-                <Calendar className="w-3 h-3 mr-1" />
-                {releaseYear}
-              </span>
-            )}
-
-            {featuredMedia.vote_average > 0 && (
-              <span className="flex items-center px-3 py-1 rounded-full bg-white/10 backdrop-blur-sm text-xs font-medium text-white">
-                <Star className="w-3 h-3 mr-1 fill-amber-400 text-amber-400" />
-                {featuredMedia.vote_average.toFixed(1)}
-              </span>
-            )}
-          </div>
-
-          {/* Title */}
-          <h1
-            className="text-4xl md:text-6xl font-bold text-white mb-3 text-shadow text-balance"
+      {/* Content Container - Positioned closer to bottom on mobile, more centered on desktop */}
+      <div className="absolute inset-0 flex flex-col justify-end sm:justify-center items-start">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={`content-${currentIndex}`}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: isLoaded ? 1 : 0, y: isLoaded ? 0 : 20 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.5, ease: "easeOut", delay: 0.2 }}
+            className="px-5 pb-12 pt-4 sm:p-8 md:p-12 lg:p-16 lg:pb-20 flex flex-col items-start max-w-3xl"
           >
-            {title}
-          </h1>
+            {/* Metadata badges - More compact on mobile */}
+            <div className="flex flex-wrap items-center gap-2 md:gap-3 mb-2 md:mb-4">
+              <span className="px-2 py-1 md:px-3 md:py-1 rounded-full bg-accent/90 backdrop-blur-sm text-xs font-medium text-white uppercase tracking-wider">
+                {featuredMedia.media_type === 'movie' ? 'Movie' : 'TV Series'}
+              </span>
 
-          {/* Overview */}
-          <p
-            className="text-white/90 mb-8 line-clamp-3 md:line-clamp-3 text-sm md:text-base max-w-2xl text-shadow"
-          >
-            {featuredMedia.overview}
-          </p>
+              {releaseYear && (
+                <span className="flex items-center px-2 py-1 md:px-3 md:py-1 rounded-full bg-white/10 backdrop-blur-sm text-xs font-medium text-white">
+                  <Calendar className="w-3 h-3 mr-1" />
+                  {releaseYear}
+                </span>
+              )}
 
-          {/* Action buttons */}
-          <div className="flex flex-wrap gap-4">
-            <Button
-              onClick={handlePlay}
-              className="hero-button bg-accent hover:bg-accent/90 text-white flex items-center transition-all hover:scale-105 shadow-lg shadow-accent/20"
-              size="lg"
-            >
-              <Play className="h-4 w-4 mr-2" />
-              Play Now
-            </Button>
+              {featuredMedia.vote_average > 0 && (
+                <span className="flex items-center px-2 py-1 md:px-3 md:py-1 rounded-full bg-white/10 backdrop-blur-sm text-xs font-medium text-white">
+                  <Star className="w-3 h-3 mr-1 fill-amber-400 text-amber-400" />
+                  {featuredMedia.vote_average.toFixed(1)}
+                </span>
+              )}
+            </div>
 
-            <Button
-              onClick={handleMoreInfo}
-              variant="outline"
-              size="lg"
-              className="hero-button border-white/30 bg-black/40 text-white hover:bg-black/60 hover:border-white/50 flex items-center transition-all hover:scale-105"
-            >
-              <Info className="h-4 w-4 mr-2" />
-              More Info
-            </Button>
-          </div>
-        </motion.div>
-      </AnimatePresence>
+            {/* Title with shimmer effect */}
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-2 md:mb-3 text-balance hero-title-shimmer">
+              {title}
+            </h1>
 
-      {/* Pagination indicators */}
+            {/* Overview - Fewer lines on mobile */}
+            <p className="text-white/90 mb-4 md:mb-8 line-clamp-2 sm:line-clamp-3 text-sm md:text-base max-w-2xl text-shadow-lg">
+              {featuredMedia.overview}
+            </p>
+
+            {/* Action buttons - Smaller on mobile */}
+            <div className="flex flex-wrap gap-3 md:gap-4">
+              <Button
+                onClick={handlePlay}
+                className="hero-button bg-accent hover:bg-accent/90 text-white flex items-center transition-all hover:scale-105 shadow-lg shadow-accent/20"
+                size={isMobile ? "default" : "lg"}
+              >
+                <Play className="h-4 w-4 mr-2" />
+                Play Now
+              </Button>
+
+              <Button
+                onClick={handleMoreInfo}
+                variant="outline"
+                size={isMobile ? "default" : "lg"}
+                className="hero-button border-white/30 bg-black/40 text-white hover:bg-black/60 hover:border-white/50 flex items-center transition-all hover:scale-105"
+              >
+                <Info className="h-4 w-4 mr-2" />
+                More Info
+              </Button>
+            </div>
+          </motion.div>
+        </AnimatePresence>
+      </div>
+
+      {/* Enhanced pagination indicators with progress animation */}
       {filteredMedia.length > 1 && (
-        <nav
-          className="absolute bottom-6 right-6 md:bottom-12 md:right-12 flex space-x-2 z-10"
-          aria-label="Hero carousel navigation"
-        >
+        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 md:bottom-6 flex space-x-2 z-10">
           {filteredMedia.slice(0, 5).map((_, index) => (
             <button
               key={index}
-              className={`h-2 rounded-full transition-all ${
+              className={`h-1.5 rounded-full transition-all ${
                 index === currentIndex
-                  ? 'bg-accent w-8 animate-pulse'
+                  ? 'bg-accent w-8 pagination-indicator-active'
                   : 'bg-white/30 w-2 hover:bg-white/50'
               }`}
               onClick={() => {
@@ -312,36 +348,36 @@ const Hero = ({ media, className = '' }: HeroProps) => {
               aria-current={index === currentIndex ? 'true' : 'false'}
             />
           ))}
-        </nav>
+        </div>
       )}
 
-      {/* Previous/Next buttons (visible on larger screens) */}
+      {/* Previous/Next buttons - More visible on mobile */}
       {filteredMedia.length > 1 && (
         <>
           <button
-            className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/30 backdrop-blur-sm text-white p-2 hidden md:flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+            className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-black/50 backdrop-blur-sm text-white p-1.5 sm:p-2 flex items-center justify-center opacity-60 hover:opacity-100 transition-opacity"
             onClick={goToPrev}
             aria-label="Previous slide"
           >
-            <ChevronLeft className="w-6 h-6" />
+            <ChevronLeft className="w-5 h-5" />
           </button>
           <button
-            className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/30 backdrop-blur-sm text-white p-2 hidden md:flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+            className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-black/50 backdrop-blur-sm text-white p-1.5 sm:p-2 flex items-center justify-center opacity-60 hover:opacity-100 transition-opacity"
             onClick={goToNext}
             aria-label="Next slide"
           >
-            <ChevronRight className="w-6 h-6" />
+            <ChevronRight className="w-5 h-5" />
           </button>
         </>
       )}
 
       {/* Auto-rotation control */}
       <button
-        className="absolute top-4 right-4 w-10 h-10 rounded-full bg-black/30 backdrop-blur-sm text-white p-2 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+        className="absolute top-4 right-4 w-8 h-8 rounded-full bg-black/50 backdrop-blur-sm text-white p-1.5 flex items-center justify-center opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
         onClick={toggleAutoRotation}
         aria-label={isAutoRotating ? "Pause auto-rotation" : "Resume auto-rotation"}
       >
-        {isAutoRotating ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6" />}
+        {isAutoRotating ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
       </button>
     </section>
   );

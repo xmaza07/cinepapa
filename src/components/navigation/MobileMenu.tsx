@@ -6,7 +6,7 @@ import {
   Home, Film, Tv2, Trophy, Flame, Search, User, History, X
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useAuth } from '@/hooks/use-auth';
+import { useAuth } from '@/hooks';
 
 interface MobileMenuProps {
   isOpen: boolean;

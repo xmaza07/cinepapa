@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { ArrowLeft, ExternalLink, Share2 } from 'lucide-react';
@@ -90,7 +89,7 @@ const LiveStreamPlayer = () => {
                 src={stream.stream_link}
                 title={stream.match_name}
                 poster={stream.banner}
-                mediaType="live"
+                mediaType="movie"
                 mediaId={`live-${stream.match_id}`}
               />
             </div>

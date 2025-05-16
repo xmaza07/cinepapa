@@ -1,3 +1,4 @@
+
 import { Routes, Route, Outlet } from 'react-router-dom';
 import { lazy, Suspense } from 'react';
 import { ProtectedRoute } from './components/ProtectedRoute';
@@ -20,6 +21,10 @@ const SportMatchPlayer = lazy(() => import('./pages/SportMatchPlayer'));
 const Player = lazy(() => import('./pages/Player'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 const Trending = lazy(() => import('./pages/Trending'));
+
+// Live streams pages
+const LiveStreams = lazy(() => import('./pages/LiveStreams'));
+const LiveStreamPlayer = lazy(() => import('./pages/LiveStreamPlayer'));
 
 // Legal pages
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
@@ -54,6 +59,10 @@ export default function AppRoutes() {
           <Route path="/watch/:type/:id/:season/:episode" element={<Player />} />
           <Route path="/search" element={<Search />} />
           <Route path="/trending" element={<Trending />} />
+          
+          {/* Live streams routes */}
+          <Route path="/live" element={<LiveStreams />} />
+          <Route path="/watch/live/:id" element={<LiveStreamPlayer />} />
 
           {/* Legal routes */}
           <Route path="/privacy" element={<PrivacyPolicy />} />

@@ -125,6 +125,12 @@
       "name": "VidBinge",
       "movieUrlPattern": "https://vidbinge.dev/embed/movie/{id}",
       "tvUrlPattern": "https://vidbinge.dev/embed/tv/{id}/{season}/{episode}"
+    },
+    {
+      "key": "pstream",
+      "name": "PStream",
+      "movieUrlPattern": "https://iframe.pstream.org/embed/tmdb-movie-{id}&logo=false",
+      "tvUrlPattern": "https://iframe.pstream.org/embed/tmdb-tv-{id}/{season}/{episode}&logo=false"
     }
   ]
 }

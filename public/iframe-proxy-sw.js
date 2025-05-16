@@ -10,7 +10,10 @@ const ALLOWED_HOSTNAMES = [
   'm3u8.streamifycdn.xyz',
   'uqloads.xyz',
   'embedsito.com',
-  'swish.today'
+  'swish.today',
+  'dai.google.com',
+  'd13ir53smqqeyp.cloudfront.net',
+  'www.fancode.com'
 ];
 
 // Common ad/tracking domains to block
@@ -400,12 +403,6 @@ function handleProxyRequest(event) {
     return;
   }
   
-  // Set up storage access
-  const storageAccessPromise = 'hasStorageAccess' in document ?
-    document.hasStorageAccess().then(hasAccess => {
-      if (!hasAccess) return document.requestStorageAccess();
-    }).catch(() => {}) : Promise.resolve();
-  
   // Get any custom headers from URL or from our header store
   let customHeaders = {
     'Sec-Fetch-Dest': 'iframe',
@@ -430,7 +427,8 @@ function handleProxyRequest(event) {
       customHeaders = { ...customHeaders, ...storedHeaders };
     }
   }
-    // Create a new request with appropriate headers
+
+  // Create a new request with appropriate headers
   const proxyRequest = new Request(targetUrl, {
     method: event.request.method,
     headers: {
@@ -448,7 +446,8 @@ function handleProxyRequest(event) {
   });
   
   event.respondWith(
-    fetch(proxyRequest)      .then(response => {
+    fetch(proxyRequest)
+      .then(response => {
         // Create a new response with enhanced CORS headers
         const modifiedHeaders = new Headers(response.headers);
         modifiedHeaders.set('Access-Control-Allow-Origin', '*');

@@ -18,10 +18,24 @@ const LiveStreamCard: FC<LiveStreamCardProps> = ({ stream }) => {
     navigate(`/watch/live/${stream.match_id}`, { state: { stream } });
   };
 
-  // Use proxy URLs for all external images
-  const banner = createProxyStreamUrl(stream.banner);
-  const team1Flag = createProxyStreamUrl(stream.team_1_flag);
-  const team2Flag = createProxyStreamUrl(stream.team_2_flag);
+  // Use proxy URLs for all external images with additional headers for better compatibility
+  const banner = createProxyStreamUrl(stream.banner, {
+    'Referer': 'https://www.fancode.com/',
+    'Origin': 'https://www.fancode.com',
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36'
+  });
+  
+  const team1Flag = createProxyStreamUrl(stream.team_1_flag, {
+    'Referer': 'https://www.fancode.com/',
+    'Origin': 'https://www.fancode.com',
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36'
+  });
+  
+  const team2Flag = createProxyStreamUrl(stream.team_2_flag, {
+    'Referer': 'https://www.fancode.com/',
+    'Origin': 'https://www.fancode.com',
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36'
+  });
 
   return (
     <motion.div

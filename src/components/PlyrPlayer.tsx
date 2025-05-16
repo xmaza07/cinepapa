@@ -94,11 +94,15 @@ const PlyrPlayer: React.FC<PlyrPlayerProps> = ({
       });
     };
 
-    // Create a proxied URL to handle CORS issues
-    const proxiedSrc = src.includes('.m3u8') ? createProxyStreamUrl(src, {
-      'Referer': 'https://www.fancode.com/',
-      'Origin': 'https://www.fancode.com'
-    }) : src;
+    // Determine if we need to proxy the URL
+    const proxiedSrc = src.includes('.m3u8') ? 
+      createProxyStreamUrl(src, {
+        'Referer': 'https://www.fancode.com/',
+        'Origin': 'https://www.fancode.com',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36'
+      }) : src;
+    
+    console.log('Using proxied source:', proxiedSrc);
     
     // Check if the source is HLS (m3u8)
     if (proxiedSrc.includes('.m3u8')) {
@@ -119,7 +123,7 @@ const PlyrPlayer: React.FC<PlyrPlayerProps> = ({
         hls.attachMedia(videoRef.current);
         
         hls.on(Hls.Events.MANIFEST_PARSED, () => {
-          console.log('HLS manifest parsed');
+          console.log('HLS manifest parsed successfully');
           initPlayer();
         });
         

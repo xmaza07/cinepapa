@@ -5,8 +5,7 @@ import { ArrowLeft, ExternalLink, Share2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { toast } from '@/hooks/use-toast';
-import { useEffect as useEffectCleanup } from 'react';
-import VideoPlayer from '@/components/player/VideoPlayer';
+import PlyrPlayer from '@/components/PlyrPlayer';
 import PageTransition from '@/components/PageTransition';
 import { useLiveStreams } from '@/hooks/use-live-streams';
 import { LiveStream } from '@/pages/LiveStreams';
@@ -117,20 +116,17 @@ const LiveStreamPlayer = () => {
         ) : (
           <>
             <div className="w-full aspect-video mb-6 overflow-hidden rounded-lg shadow-xl">
-              <VideoPlayer
-                isLoading={!isPlayerLoaded}
-                isCustomSource={true}
-                streamUrl={stream.stream_link}
-                iframeUrl=""
-                title={stream.match_name}
-                poster={createProxyStreamUrl(stream.banner)}
-                headers={{
-                  'Referer': 'https://www.fancode.com/',
-                  'Origin': 'https://www.fancode.com'
-                }}
-                onLoaded={handlePlayerLoad}
-                onError={handlePlayerError}
-              />
+              {stream && (
+                <PlyrPlayer
+                  src={stream.stream_link}
+                  poster={createProxyStreamUrl(stream.banner)}
+                  title={stream.match_name}
+                  mediaType="movie" // Using movie as the type for the LiveStream
+                  mediaId={stream.match_id.toString()}
+                  onLoaded={handlePlayerLoad}
+                  onError={handlePlayerError}
+                />
+              )}
             </div>
             
             <div className="bg-card/30 rounded-lg backdrop-blur-sm p-6">

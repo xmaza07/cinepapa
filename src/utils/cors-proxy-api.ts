@@ -1,7 +1,7 @@
 
 /**
  * CORS Proxy API utilities
- * Interface with our Cloudflare worker proxy for CORS-protected resources
+ * Interface with our service worker proxy for CORS-protected resources
  */
 
 import { setProxyHeaders } from './iframe-proxy-sw';
@@ -12,27 +12,11 @@ import { setProxyHeaders } from './iframe-proxy-sw';
  * @param headers Optional headers to include in the request
  */
 export async function fetchWithProxy(url: string, headers?: Record<string, string>) {
-  // Build the proxy URL
-  const params = new URLSearchParams();
-  params.append('url', url);
-  
-  if (headers) {
-    params.append('headers', JSON.stringify(headers));
-    
-    // Also register these headers with the service worker for future requests
-    try {
-      const domain = new URL(url).hostname;
-      setProxyHeaders(domain, headers);
-    } catch (e) {
-      console.error('Failed to register proxy headers with service worker:', e);
-    }
-  }
-  
-  // Use the worker proxy
-  const proxyUrl = `/worker-proxy?${params.toString()}`;
-  
   try {
-    const response = await fetch(proxyUrl);
+    // Build the proxy URL
+    const proxiedUrl = createProxyStreamUrl(url, headers);
+    
+    const response = await fetch(proxiedUrl);
     
     if (!response.ok) {
       throw new Error(`Proxy responded with status: ${response.status}`);
@@ -51,6 +35,8 @@ export async function fetchWithProxy(url: string, headers?: Record<string, strin
  * @param headers Optional headers for the video request
  */
 export function createProxyStreamUrl(url: string, headers?: Record<string, string>): string {
+  if (!url) return '';
+  
   // Register headers with service worker if provided
   if (headers) {
     try {

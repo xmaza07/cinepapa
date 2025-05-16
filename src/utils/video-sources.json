@@ -7,6 +7,12 @@
       "tvUrlPattern": "https://vidlink.pro/tv/{id}/{season}/{episode}?autoplay=true&title=true"
     },
     {
+      "key": "pstream",
+      "name": "PStream",
+      "movieUrlPattern": "https://iframe.pstream.org/embed/tmdb-movie-{id}&logo=false",
+      "tvUrlPattern": "https://iframe.pstream.org/embed/tmdb-tv-{id}/{season}/{episode}&logo=false"
+    },
+    {
       "key": "autoembed",
       "name": "AutoEmbed",
       "movieUrlPattern": "https://player.autoembed.cc/embed/movie/{id}?autoplay=true",
@@ -125,12 +131,6 @@
       "name": "VidBinge",
       "movieUrlPattern": "https://vidbinge.dev/embed/movie/{id}",
       "tvUrlPattern": "https://vidbinge.dev/embed/tv/{id}/{season}/{episode}"
-    },
-    {
-      "key": "pstream",
-      "name": "PStream",
-      "movieUrlPattern": "https://iframe.pstream.org/embed/tmdb-movie-{id}&logo=false",
-      "tvUrlPattern": "https://iframe.pstream.org/embed/tmdb-tv-{id}/{season}/{episode}&logo=false"
     }
   ]
 }

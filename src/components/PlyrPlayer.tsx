@@ -1,7 +1,9 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import Plyr from 'plyr';
 import Hls from 'hls.js';
 import { trackMediaComplete } from '@/lib/analytics';
+import { createProxyStreamUrl } from '@/utils/cors-proxy-api';
 
 interface PlyrPlayerProps {
   src: string;
@@ -92,17 +94,28 @@ const PlyrPlayer: React.FC<PlyrPlayerProps> = ({
       });
     };
 
+    // Create a proxied URL to handle CORS issues
+    const proxiedSrc = src.includes('.m3u8') ? createProxyStreamUrl(src, {
+      'Referer': 'https://www.fancode.com/',
+      'Origin': 'https://www.fancode.com'
+    }) : src;
+    
     // Check if the source is HLS (m3u8)
-    if (src.includes('.m3u8')) {
+    if (proxiedSrc.includes('.m3u8')) {
       if (Hls.isSupported()) {
         hls = new Hls({
           maxBufferLength: 30,
           maxMaxBufferLength: 60,
           fragLoadingTimeOut: 60000,
-          manifestLoadingTimeOut: 60000
+          manifestLoadingTimeOut: 60000,
+          xhrSetup: function(xhr, url) {
+            // Add additional headers for CORS if needed
+            xhr.withCredentials = false;
+          }
         });
         
-        hls.loadSource(src);
+        console.log('Loading HLS stream:', proxiedSrc);
+        hls.loadSource(proxiedSrc);
         hls.attachMedia(videoRef.current);
         
         hls.on(Hls.Events.MANIFEST_PARSED, () => {
@@ -120,7 +133,7 @@ const PlyrPlayer: React.FC<PlyrPlayerProps> = ({
         });
       } else if (videoRef.current.canPlayType('application/vnd.apple.mpegurl')) {
         // Native HLS support (Safari)
-        videoRef.current.src = src;
+        videoRef.current.src = proxiedSrc;
         initPlayer();
       } else {
         console.error('HLS is not supported in this browser.');
@@ -129,7 +142,7 @@ const PlyrPlayer: React.FC<PlyrPlayerProps> = ({
       }
     } else {
       // Regular video source
-      videoRef.current.src = src;
+      videoRef.current.src = proxiedSrc;
       initPlayer();
     }
 

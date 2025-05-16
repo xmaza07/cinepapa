@@ -1,13 +1,17 @@
+
 import { useState, useEffect } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { ArrowLeft, ExternalLink, Share2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { toast } from '@/hooks/use-toast';
-import PlyrPlayer from '@/components/PlyrPlayer';
+import { useEffect as useEffectCleanup } from 'react';
+import VideoPlayer from '@/components/player/VideoPlayer';
 import PageTransition from '@/components/PageTransition';
 import { useLiveStreams } from '@/hooks/use-live-streams';
 import { LiveStream } from '@/pages/LiveStreams';
+import { createProxyStreamUrl } from '@/utils/cors-proxy-api';
+import { initializeProxySystem } from '@/utils/proxy-sw-registration';
 
 const LiveStreamPlayer = () => {
   const { id } = useParams<{ id: string }>();
@@ -20,6 +24,17 @@ const LiveStreamPlayer = () => {
   );
   
   const { data, isLoading, isError } = useLiveStreams();
+  const [isPlayerLoaded, setIsPlayerLoaded] = useState(false);
+  const [playerError, setPlayerError] = useState<string | null>(null);
+  
+  // Initialize proxy system when component mounts
+  useEffect(() => {
+    const init = async () => {
+      await initializeProxySystem();
+    };
+    
+    init();
+  }, []);
   
   // If stream wasn't passed through navigation state, find it in the fetched data
   useEffect(() => {
@@ -55,6 +70,23 @@ const LiveStreamPlayer = () => {
     }
   };
 
+  // Player event handlers
+  const handlePlayerLoad = () => {
+    setIsPlayerLoaded(true);
+    setPlayerError(null);
+  };
+
+  const handlePlayerError = (error: string) => {
+    setPlayerError(error);
+    setIsPlayerLoaded(false);
+    
+    toast({
+      variant: "destructive",
+      title: "Playback error",
+      description: "Failed to load the live stream. Please try again later."
+    });
+  };
+
   return (
     <PageTransition>
       <div className="container mx-auto py-6 px-4">
@@ -85,12 +117,19 @@ const LiveStreamPlayer = () => {
         ) : (
           <>
             <div className="w-full aspect-video mb-6 overflow-hidden rounded-lg shadow-xl">
-              <PlyrPlayer
-                src={stream.stream_link}
+              <VideoPlayer
+                isLoading={!isPlayerLoaded}
+                isCustomSource={true}
+                streamUrl={stream.stream_link}
+                iframeUrl=""
                 title={stream.match_name}
-                poster={stream.banner}
-                mediaType="movie"
-                mediaId={`live-${stream.match_id}`}
+                poster={createProxyStreamUrl(stream.banner)}
+                headers={{
+                  'Referer': 'https://www.fancode.com/',
+                  'Origin': 'https://www.fancode.com'
+                }}
+                onLoaded={handlePlayerLoad}
+                onError={handlePlayerError}
               />
             </div>
             
@@ -134,7 +173,7 @@ const LiveStreamPlayer = () => {
                 <div className="flex items-center gap-4">
                   <div className="flex flex-col items-center">
                     <img 
-                      src={stream.team_1_flag} 
+                      src={createProxyStreamUrl(stream.team_1_flag)} 
                       alt={stream.team_1} 
                       className="w-12 h-12 object-cover rounded-full border-2 border-white/20" 
                     />
@@ -147,7 +186,7 @@ const LiveStreamPlayer = () => {
                   
                   <div className="flex flex-col items-center">
                     <img 
-                      src={stream.team_2_flag} 
+                      src={createProxyStreamUrl(stream.team_2_flag)} 
                       alt={stream.team_2} 
                       className="w-12 h-12 object-cover rounded-full border-2 border-white/20" 
                     />
@@ -161,6 +200,14 @@ const LiveStreamPlayer = () => {
                   </span>
                 </div>
               </div>
+              
+              {playerError && (
+                <div className="mt-4 p-3 bg-red-900/20 border border-red-900/30 rounded-md">
+                  <p className="text-red-200 text-sm">
+                    There was an issue loading this stream. The source may be temporarily unavailable.
+                  </p>
+                </div>
+              )}
             </div>
           </>
         )}

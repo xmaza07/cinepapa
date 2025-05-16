@@ -1,68 +1,39 @@
+// Initialize the service worker
 
-// Service worker registration and update handling
-export async function registerServiceWorker() {
+import { initializeProxySystem } from './proxy-sw-registration';
+
+// Initialize the service worker
+export function initializeSW() {
   if ('serviceWorker' in navigator) {
-    try {
-      // Use window load event to ensure page is fully loaded
-      if (document.readyState === 'complete') {
-        registerSW();
-      } else {
-        window.addEventListener('load', registerSW);
+    window.addEventListener('load', async () => {
+      try {
+        // Register the main service worker
+        const registration = await navigator.serviceWorker.register('/sw.js');
+        console.log('Service Worker registered with scope:', registration.scope);
+        
+        // Also initialize our proxy system for CORS handling
+        await initializeProxySystem();
+        
+        // Listen for updates
+        registration.onupdatefound = () => {
+          const installingWorker = registration.installing;
+          if (!installingWorker) return;
+          
+          installingWorker.onstatechange = () => {
+            if (installingWorker.state === 'installed') {
+              if (navigator.serviceWorker.controller) {
+                console.log('New content is available; please refresh.');
+                // You can dispatch an event here to show a notification to the user
+                window.dispatchEvent(new CustomEvent('swUpdate'));
+              } else {
+                console.log('Content is cached for offline use.');
+              }
+            }
+          };
+        };
+      } catch (error) {
+        console.error('Error during service worker registration:', error);
       }
-      
-      // Listen for SW update events
-      window.addEventListener('sw-update-available', () => {
-        console.log('Service worker update available');
-      });
-      
-      return true;
-    } catch (error) {
-      console.error('Service worker registration failed:', error);
-      return false;
-    }
+    });
   }
-  return false;
-}
-
-function registerSW() {
-  navigator.serviceWorker.register('/sw.js', {
-    scope: '/',
-    type: 'classic',
-    updateViaCache: 'none' // Don't use cache for service worker updates
-  })
-  .then((registration) => {
-    console.log('ServiceWorker registered with scope:', registration.scope);
-    
-    // Check if there's an update immediately
-    registration.update();
-    
-    // Periodically update the service worker
-    setInterval(() => {
-      registration.update();
-      console.log('Service worker update check triggered');
-    }, 60 * 60 * 1000); // Check for updates every hour
-    
-    // Add message event listener to handle skipWaiting
-    navigator.serviceWorker.addEventListener('message', (event) => {
-      if (event.data && event.data.type === 'SKIP_WAITING') {
-        registration.waiting?.postMessage({ type: 'SKIP_WAITING' });
-      }
-    });
-
-    // Handle service worker updates
-    registration.addEventListener('updatefound', () => {
-      const newWorker = registration.installing;
-      if (!newWorker) return;
-
-      newWorker.addEventListener('statechange', () => {
-        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-          // New service worker available, notify the UI if needed
-          window.dispatchEvent(new CustomEvent('sw-update-available'));
-        }
-      });
-    });
-  })
-  .catch((error) => {
-    console.error('ServiceWorker registration failed:', error);
-  });
 }

@@ -238,6 +238,10 @@ export default defineConfig(({ mode }) => ({
             options: {
               cacheName: CACHE_NAMES.tmdbApi,
               networkTimeoutSeconds: 3,
+              expiration: {
+                maxEntries: 100,
+                maxAgeSeconds: 1 * 24 * 60 * 60
+              },
               plugins: [{
                 cacheWillUpdate: async ({ response }: { response: Response }) => {
                   if (response && response.status === 200) {
@@ -255,10 +259,6 @@ export default defineConfig(({ mode }) => ({
                   return null;
                 }
               }],
-              expiration: {
-                maxEntries: 100,
-                maxAgeSeconds: 60 * 60 // 1 hour
-              }
             }
           },
           {

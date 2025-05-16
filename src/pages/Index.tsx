@@ -1,4 +1,3 @@
-
 import { useState, useEffect, Suspense, lazy } from 'react';
 import {
   getTrending,
@@ -103,7 +102,7 @@ const Index = () => {
       ) : (
         <>
           <div className="pt-16"> {/* Add padding-top to account for navbar */}
-            {trendingMedia.length > 0 && <Hero media={trendingMedia.slice(0, 5)} className="hero" />}
+            {trendingMedia.length > 0 && <Hero media={trendingMedia.slice(0, 10)} className="hero" />}
           </div>
 
           <div className={`mt-8 md:mt-12 transition-opacity duration-300 ${contentVisible ? 'opacity-100' : 'opacity-0'}`}>

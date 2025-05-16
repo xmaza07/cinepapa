@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Media } from '@/utils/types';
@@ -21,6 +20,7 @@ interface HeroProps {
 const Hero = ({ media, className = '' }: HeroProps) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [firstLoad, setFirstLoad] = useState(true);
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
   const [isAutoRotating, setIsAutoRotating] = useState(true);
@@ -29,6 +29,8 @@ const Hero = ({ media, className = '' }: HeroProps) => {
   const { preference } = useMediaPreferences();
   const isMobile = useIsMobile();
   const carouselRef = useRef<HTMLDivElement>(null);
+  const [isSwiping, setIsSwiping] = useState(false);
+  const swipeTimeout = useRef<NodeJS.Timeout | null>(null);
 
   // Filter and prioritize media based on user preferences
   const filteredMedia = useMemo(() => {
@@ -45,14 +47,39 @@ const Hero = ({ media, className = '' }: HeroProps) => {
     return withBackdrop;
   }, [media, preference]);
 
-  // Preload next image
+  // Helper to build srcSet for a given backdrop_path
+  const buildSrcSet = (backdrop_path: string) => [
+    `${getImageUrl(backdrop_path, backdropSizes.small)} 300w`,
+    `${getImageUrl(backdrop_path, backdropSizes.medium)} 780w`,
+    `${getImageUrl(backdrop_path, backdropSizes.large)} 1280w`,
+    `${getImageUrl(backdrop_path, backdropSizes.original)} 1920w`,
+  ].join(', ');
+
+  // Helper to preload an image (optionally with srcSet)
+  const preloadImage = (backdrop_path: string) => {
+    if (!backdrop_path) return;
+    const img = new window.Image();
+    img.src = getImageUrl(backdrop_path, backdropSizes.medium);
+    img.srcset = buildSrcSet(backdrop_path);
+  };
+
+  // Preload next and previous images
   const preloadNextImage = useCallback(() => {
     if (filteredMedia.length > 1) {
       const nextIndex = (currentIndex + 1) % filteredMedia.length;
       const nextMedia = filteredMedia[nextIndex];
       if (nextMedia && nextMedia.backdrop_path) {
-        const img = new Image();
-        img.src = getImageUrl(nextMedia.backdrop_path, backdropSizes.original);
+        preloadImage(nextMedia.backdrop_path);
+      }
+    }
+  }, [filteredMedia, currentIndex]);
+
+  const preloadPrevImage = useCallback(() => {
+    if (filteredMedia.length > 1) {
+      const prevIndex = (currentIndex - 1 + filteredMedia.length) % filteredMedia.length;
+      const prevMedia = filteredMedia[prevIndex];
+      if (prevMedia && prevMedia.backdrop_path) {
+        preloadImage(prevMedia.backdrop_path);
       }
     }
   }, [filteredMedia, currentIndex]);
@@ -82,12 +109,10 @@ const Hero = ({ media, className = '' }: HeroProps) => {
 
   // Navigation functions
   const goToNext = useCallback(() => {
-    setIsLoaded(false);
     setCurrentIndex((prev) => (prev + 1) % filteredMedia.length);
   }, [filteredMedia.length]);
 
   const goToPrev = useCallback(() => {
-    setIsLoaded(false);
     setCurrentIndex((prev) => (prev - 1 + filteredMedia.length) % filteredMedia.length);
   }, [filteredMedia.length]);
 
@@ -97,25 +122,23 @@ const Hero = ({ media, className = '' }: HeroProps) => {
   useKeyPress("Space", toggleAutoRotation);
 
   // Touch handling for swipes with improved sensitivity
-  const minSwipeDistance = isMobile ? 30 : 50;
-  const touchSensitivity = isMobile ? 1.5 : 1;
+  const minSwipeDistance = isMobile ? 20 : 50;
+  const touchSensitivity = isMobile ? 1.2 : 1;
 
   const onTouchStart = (e: React.TouchEvent) => {
-    // Only handle single touch events
     if (e.touches.length === 1) {
       setTouchEnd(null);
       setTouchStart(e.touches[0].clientX);
+      setIsSwiping(false);
       pauseAutoRotation();
     }
   };
 
   const onTouchMove = (e: React.TouchEvent) => {
-    // Only handle single touch events
     if (e.touches.length === 1) {
       setTouchEnd(e.touches[0].clientX);
-      
-      // Prevent default behavior (page scroll) when swiping horizontally
       if (touchStart && Math.abs(e.touches[0].clientX - touchStart) > 10) {
+        setIsSwiping(true);
         e.preventDefault();
       }
     }
@@ -123,22 +146,22 @@ const Hero = ({ media, className = '' }: HeroProps) => {
 
   const onTouchEnd = () => {
     if (!touchStart || !touchEnd) return;
-
     const distance = touchStart - touchEnd;
     const isLeftSwipe = distance > minSwipeDistance * touchSensitivity;
     const isRightSwipe = distance < -minSwipeDistance * touchSensitivity;
-
+    if (isLeftSwipe || isRightSwipe) {
+      // Debounce swipe
+      if (swipeTimeout.current) clearTimeout(swipeTimeout.current);
+      swipeTimeout.current = setTimeout(() => setIsSwiping(false), 200);
+    }
     if (isLeftSwipe) {
       goToNext();
     } else if (isRightSwipe) {
       goToPrev();
     }
-
     if (isAutoRotating) {
       restartAutoRotation();
     }
-    
-    // Reset touch states
     setTouchStart(null);
     setTouchEnd(null);
   };
@@ -179,14 +202,27 @@ const Hero = ({ media, className = '' }: HeroProps) => {
     return pauseAutoRotation;
   }, [startAutoRotation, isAutoRotating]);
 
-  // Preload next image when current one loads
+  // Preload next and previous images when current is loaded
   useEffect(() => {
     if (isLoaded) {
       preloadNextImage();
+      preloadPrevImage();
     }
-  }, [isLoaded, preloadNextImage]);
+  }, [isLoaded, preloadNextImage, preloadPrevImage]);
 
-
+  // Preload the first image using <link rel="preload"> for best LCP
+  useEffect(() => {
+    if (currentIndex === 0 && featuredMedia?.backdrop_path) {
+      const link = document.createElement('link');
+      link.rel = 'preload';
+      link.as = 'image';
+      link.href = getImageUrl(featuredMedia.backdrop_path, backdropSizes.large);
+      link.setAttribute('imagesrcset', buildSrcSet(featuredMedia.backdrop_path));
+      link.setAttribute('media', '(min-width: 0px)');
+      document.head.appendChild(link);
+      return () => { document.head.removeChild(link); };
+    }
+  }, [currentIndex, featuredMedia]);
 
   // Always call hooks at the top level
   useEffect(() => {
@@ -256,14 +292,14 @@ const Hero = ({ media, className = '' }: HeroProps) => {
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       onTouchStart={onTouchStart}
-      // REMOVE onTouchMove to avoid passive event error
+      onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
       role="region"
       aria-label="Featured media carousel"
       aria-roledescription="carousel"
     >
       {/* Loading Skeleton */}
-      {!isLoaded && (
+      {firstLoad && !isLoaded && (
         <div className="absolute inset-0 bg-background flex items-center justify-center z-10">
           <div className="w-full h-full">
             <Skeleton className="w-full h-full animate-pulse bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900" />
@@ -281,18 +317,22 @@ const Hero = ({ media, className = '' }: HeroProps) => {
             scale: isLoaded ? 1 : 1.05
           }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.7, ease: "easeInOut" }}
+          transition={{ duration: 0.15, ease: "easeInOut" }}
           className="absolute inset-0"
         >
           {/* Hero Image with priority loading for first image */}
           <img
-            src={getImageUrl(featuredMedia.backdrop_path, backdropSizes.original)}
+            src={getImageUrl(featuredMedia.backdrop_path, backdropSizes.medium)}
+            srcSet={buildSrcSet(featuredMedia.backdrop_path)}
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 100vw, 80vw"
             alt={title}
             className="w-full h-full object-cover"
-            onLoad={() => setIsLoaded(true)}
+            onLoad={() => {
+              setIsLoaded(true);
+              setFirstLoad(false);
+            }}
             loading={currentIndex === 0 ? "eager" : "lazy"}
-            fetchpriority={currentIndex === 0 ? "high" : "auto"}
-            sizes="100vw"
+            fetchPriority={currentIndex === 0 ? "high" : "auto"}
           />
 
           {/* Enhanced gradient overlay for better text contrast */}
@@ -303,71 +343,107 @@ const Hero = ({ media, className = '' }: HeroProps) => {
         </motion.div>
       </AnimatePresence>
 
-      {/* Content Container - Positioned closer to bottom on mobile, more centered on desktop */}
-      <div className="absolute inset-0 flex flex-col justify-end sm:justify-center items-start">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={`content-${currentIndex}`}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: isLoaded ? 1 : 0, y: isLoaded ? 0 : 20 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.5, ease: "easeOut", delay: 0.2 }}
-            className="px-5 pb-12 pt-4 sm:p-8 md:p-12 lg:p-16 lg:pb-20 flex flex-col items-start max-w-3xl"
-          >
-            {/* Metadata badges - More compact on mobile */}
-            <div className="flex flex-wrap items-center gap-2 md:gap-3 mb-2 md:mb-4">
-              <span className="px-2 py-1 md:px-3 md:py-1 rounded-full bg-accent/90 backdrop-blur-sm text-xs font-medium text-white uppercase tracking-wider">
-                {featuredMedia.media_type === 'movie' ? 'Movie' : 'TV Series'}
+      {/* Modern glassmorphic content block, mobile-first */}
+      <div className={
+        `absolute inset-0 flex flex-col items-start justify-end sm:justify-center px-2 sm:px-8 md:px-16 z-10 pointer-events-none`
+      }>
+        <div
+          className={
+            `w-full max-w-3xl rounded-3xl backdrop-blur-2xl p-4 sm:p-8 md:p-12 lg:p-16 lg:pb-20 flex flex-col items-start pointer-events-auto transition-all duration-300 relative overflow-hidden ${isMobile ? 'mb-4' : 'mb-12'}`
+          }
+          style={{
+            background: 'rgba(20,20,30,0.10)',
+            boxShadow: 'none',
+            border: 'none'
+          }}
+        >
+          {/* Radial mask to fade the edges for blending */}
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 rounded-3xl"
+            style={{
+              WebkitMaskImage: 'radial-gradient(ellipse at center, rgba(0,0,0,0.85) 40%, rgba(0,0,0,0.25) 70%, rgba(0,0,0,0.01) 90%, rgba(0,0,0,0) 100%)',
+              maskImage: 'radial-gradient(ellipse at center, rgba(0,0,0,0.85) 40%, rgba(0,0,0,0.25) 70%, rgba(0,0,0,0.01) 90%, rgba(0,0,0,0) 100%)',
+              zIndex: 2,
+            }}
+          />
+
+          {/* Metadata badges - More compact on mobile */}
+          <div className="flex flex-wrap items-center gap-2 md:gap-3 mb-2 md:mb-4">
+            <span className="px-2 py-1 md:px-3 md:py-1 rounded-full bg-accent/90 backdrop-blur-sm text-xs font-medium text-white uppercase tracking-wider">
+              {featuredMedia.media_type === 'movie' ? 'Movie' : 'TV Series'}
+            </span>
+
+            {releaseYear && (
+              <span className="flex items-center px-2 py-1 md:px-3 md:py-1 rounded-full bg-white/10 backdrop-blur-sm text-xs font-medium text-white">
+                <Calendar className="w-3 h-3 mr-1" />
+                {releaseYear}
               </span>
+            )}
 
-              {releaseYear && (
-                <span className="flex items-center px-2 py-1 md:px-3 md:py-1 rounded-full bg-white/10 backdrop-blur-sm text-xs font-medium text-white">
-                  <Calendar className="w-3 h-3 mr-1" />
-                  {releaseYear}
-                </span>
-              )}
+            {featuredMedia.vote_average > 0 && (
+              <span className="flex items-center px-2 py-1 md:px-3 md:py-1 rounded-full bg-white/10 backdrop-blur-sm text-xs font-medium text-white">
+                <Star className="w-3 h-3 mr-1 fill-amber-400 text-amber-400" />
+                {featuredMedia.vote_average.toFixed(1)}
+              </span>
+            )}
+          </div>
 
-              {featuredMedia.vote_average > 0 && (
-                <span className="flex items-center px-2 py-1 md:px-3 md:py-1 rounded-full bg-white/10 backdrop-blur-sm text-xs font-medium text-white">
-                  <Star className="w-3 h-3 mr-1 fill-amber-400 text-amber-400" />
-                  {featuredMedia.vote_average.toFixed(1)}
-                </span>
-              )}
-            </div>
+          {/* Redesigned Title Section */}
+          <div className="mb-2 md:mb-3 w-full flex flex-col items-start">
+            {/* Logo if available */}
+            {'logo_path' in featuredMedia && (featuredMedia as any).logo_path ? (
+              <img
+                src={getImageUrl((featuredMedia as any).logo_path as string, backdropSizes.medium)}
+                alt={title}
+                className="max-h-16 md:max-h-24 mb-2 drop-shadow-lg"
+                style={{ objectFit: 'contain' }}
+              />
+            ) : (
+              <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold bg-gradient-to-r from-accent to-pink-400 bg-clip-text text-transparent drop-shadow-[0_2px_16px_rgba(0,0,0,0.7)] text-balance" style={{textShadow: '0 2px 12px rgba(0,0,0,0.7)'}}>
+                {title}
+              </h1>
+            )}
 
-            {/* Title with shimmer effect */}
-            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-2 md:mb-3 text-balance hero-title-shimmer">
-              {title}
-            </h1>
+            {/* Tagline if available */}
+            {'tagline' in featuredMedia && (featuredMedia as any).tagline && (
+              <p className="text-lg md:text-xl text-white/80 italic mt-1 mb-2 drop-shadow" style={{textShadow: '0 2px 8px rgba(0,0,0,0.6)'}}>
+                {(featuredMedia as any).tagline as string}
+              </p>
+            )}
+          </div>
 
-            {/* Overview - Fewer lines on mobile */}
-            <p className="text-white/90 mb-4 md:mb-8 line-clamp-2 sm:line-clamp-3 text-sm md:text-base max-w-2xl text-shadow-lg">
-              {featuredMedia.overview}
-            </p>
+          {/* Overview - Fewer lines on mobile */}
+          <p className="text-white/90 mb-4 md:mb-8 line-clamp-2 sm:line-clamp-3 text-base md:text-lg max-w-2xl text-shadow-lg" style={{textShadow: '0 2px 8px rgba(0,0,0,0.6)'}}>
+            {featuredMedia.overview}
+          </p>
 
-            {/* Action buttons - Smaller on mobile */}
-            <div className="flex flex-wrap gap-3 md:gap-4">
-              <Button
-                onClick={handlePlay}
-                className="hero-button bg-accent hover:bg-accent/90 text-white flex items-center transition-all hover:scale-105 shadow-lg shadow-accent/20"
-                size={isMobile ? "default" : "lg"}
-              >
-                <Play className="h-4 w-4 mr-2" />
-                Play Now
-              </Button>
+          {/* Action buttons - Smaller on mobile */}
+          <div className="flex flex-wrap gap-3 md:gap-4 mt-2">
+            <Button
+              onClick={handlePlay}
+              className={`hero-button bg-accent hover:bg-accent/90 text-white flex items-center transition-all active:scale-95 hover:scale-105 shadow-lg shadow-accent/20 rounded-full px-6 py-3 ${isMobile ? 'text-base' : 'text-lg'}`}
+              size={isMobile ? "default" : "lg"}
+              style={{ minWidth: isMobile ? 120 : 160, minHeight: isMobile ? 44 : 56 }}
+              aria-label="Play Now"
+            >
+              <Play className="h-5 w-5 mr-2" />
+              Play Now
+            </Button>
 
-              <Button
-                onClick={handleMoreInfo}
-                variant="outline"
-                size={isMobile ? "default" : "lg"}
-                className="hero-button border-white/30 bg-black/40 text-white hover:bg-black/60 hover:border-white/50 flex items-center transition-all hover:scale-105"
-              >
-                <Info className="h-4 w-4 mr-2" />
-                More Info
-              </Button>
-            </div>
-          </motion.div>
-        </AnimatePresence>
+            <Button
+              onClick={handleMoreInfo}
+              variant="outline"
+              size={isMobile ? "default" : "lg"}
+              className={`hero-button border-white/30 bg-black/40 text-white hover:bg-black/60 hover:border-white/50 flex items-center transition-all active:scale-95 hover:scale-105 rounded-full px-6 py-3 ${isMobile ? 'text-base' : 'text-lg'}`}
+              style={{ minWidth: isMobile ? 120 : 160, minHeight: isMobile ? 44 : 56 }}
+              aria-label="More Info"
+            >
+              <Info className="h-5 w-5 mr-2" />
+              More Info
+            </Button>
+          </div>
+        </div>
       </div>
 
       {/* Enhanced pagination indicators with progress animation */}

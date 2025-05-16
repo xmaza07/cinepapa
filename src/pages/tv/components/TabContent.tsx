@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getPopularTVShows, getTopRatedTVShows, getTrendingTVShows } from '@/utils/api';
@@ -31,7 +30,7 @@ const TabContent = ({ type, viewMode, sortBy, genreFilter, platformFilters }: Ta
       case 'top_rated':
         return () => getTopRatedTVShows(page);
       case 'trending':
-        return () => getTrendingTVShows('week'); // Change from number to 'week' string literal
+        return () => getTrendingTVShows('week', page);
       default:
         return () => getPopularTVShows(page);
     }
@@ -77,7 +76,7 @@ const TabContent = ({ type, viewMode, sortBy, genreFilter, platformFilters }: Ta
             case 'top_rated':
               return getTopRatedTVShows(page + 1);
             case 'trending':
-              return getTrendingTVShows('week'); // Change from number to 'week' string literal
+              return getTrendingTVShows('week', page + 1);
             default:
               return getPopularTVShows(page + 1);
           }

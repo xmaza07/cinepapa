@@ -71,6 +71,11 @@ const MobileMenu = ({ isOpen, onClose }: MobileMenuProps) => {
       { name: 'Profile', path: '/profile', icon: User },
       { name: 'Watch History', path: '/watch-history', icon: History }
     );
+  } else {
+    menuItems.push(
+      { name: 'Login', path: '/login', icon: User },
+      { name: 'Sign Up', path: '/signup', icon: User }
+    );
   }
 
   return (

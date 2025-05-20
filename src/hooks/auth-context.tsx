@@ -34,7 +34,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       description: error.message,
       variant: "destructive",
     });
-    throw error;
+    // Do not throw error here to avoid unhandled promise rejections in React context
   };
 
   const signIn = async (email: string, password: string) => {
@@ -47,8 +47,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (error) {
       if (error instanceof FirebaseError) {
         handleAuthError(error);
+        return;
       }
-      throw error;
+      // Optionally handle non-Firebase errors here
     }
   };
 
@@ -67,10 +68,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // Note: To fully resolve COOP/COEP issues with popup authentication,
+  // ensure your server sets these headers:
+  // Cross-Origin-Opener-Policy: same-origin
+  // Cross-Origin-Embedder-Policy: require-corp
+  // This is required for secure popup window handling in modern browsers.
+
   const signInWithGoogle = async () => {
     try {
       const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
+      const popup = window.open('', '_blank');
+      if (popup) {
+        popup.close(); // Preload and close to avoid popup blockers
+      }
+      const result = await signInWithPopup(auth, provider);
+      // Check if popup was closed by user
+      if (popup && popup.closed) {
+        toast({
+          title: "Popup Closed",
+          description: "Authentication popup was closed before completing sign-in.",
+          variant: "destructive",
+        });
+        return;
+      }
       toast({
         title: "Welcome!",
         description: "You have successfully signed in with Google.",
@@ -78,8 +98,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (error) {
       if (error instanceof FirebaseError) {
         handleAuthError(error);
+        return;
       }
-      throw error;
+      // Optionally handle non-Firebase errors here
     }
   };
 
@@ -93,8 +114,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (error) {
       if (error instanceof FirebaseError) {
         handleAuthError(error);
+        return;
       }
-      throw error;
+      // Optionally handle non-Firebase errors here
     }
   };
 

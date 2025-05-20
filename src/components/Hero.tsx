@@ -12,27 +12,19 @@ import { trackMediaPreference } from '@/lib/analytics';
 import useKeyPress from '@/hooks/use-key-press';
 import { useIsMobile } from '@/hooks/use-mobile';
 
+interface ExtendedMedia extends Media {
+  logo_path?: string;
+  tagline?: string;
+}
+
 interface HeroProps {
   media: Media[];
   className?: string;
 }
 
 const Hero = ({ media, className = '' }: HeroProps) => {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [isLoaded, setIsLoaded] = useState(false);
-  const [firstLoad, setFirstLoad] = useState(true);
-  const [touchStart, setTouchStart] = useState<number | null>(null);
-  const [touchEnd, setTouchEnd] = useState<number | null>(null);
-  const [isAutoRotating, setIsAutoRotating] = useState(true);
-  const navigate = useNavigate();
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
-  const { preference } = useMediaPreferences();
-  const isMobile = useIsMobile();
-  const carouselRef = useRef<HTMLDivElement>(null);
-  const [isSwiping, setIsSwiping] = useState(false);
-  const swipeTimeout = useRef<NodeJS.Timeout | null>(null);
-
   // Filter and prioritize media based on user preferences
+  const { preference } = useMediaPreferences();
   const filteredMedia = useMemo(() => {
     // First filter out items without backdrop
     const withBackdrop = media.filter(item => item.backdrop_path);
@@ -46,6 +38,20 @@ const Hero = ({ media, className = '' }: HeroProps) => {
 
     return withBackdrop;
   }, [media, preference]);
+
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [firstLoad, setFirstLoad] = useState(true);
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
+  const [isAutoRotating, setIsAutoRotating] = useState(true);
+  const navigate = useNavigate();
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const isMobile = useIsMobile();
+  const carouselRef = useRef<HTMLDivElement>(null);
+  const [isSwiping, setIsSwiping] = useState(false);
+  const swipeTimeout = useRef<NodeJS.Timeout | null>(null);
+
 
   // Helper to build srcSet for a given backdrop_path
   const buildSrcSet = (backdrop_path: string) => [
@@ -72,7 +78,7 @@ const Hero = ({ media, className = '' }: HeroProps) => {
         preloadImage(nextMedia.backdrop_path);
       }
     }
-  }, [filteredMedia, currentIndex]);
+  }, [filteredMedia, currentIndex, preloadImage]);
 
   const preloadPrevImage = useCallback(() => {
     if (filteredMedia.length > 1) {
@@ -82,7 +88,7 @@ const Hero = ({ media, className = '' }: HeroProps) => {
         preloadImage(prevMedia.backdrop_path);
       }
     }
-  }, [filteredMedia, currentIndex]);
+  }, [filteredMedia, currentIndex, preloadImage]);
 
   // Auto-rotation control
   const toggleAutoRotation = () => {
@@ -94,7 +100,7 @@ const Hero = ({ media, className = '' }: HeroProps) => {
     setIsAutoRotating(!isAutoRotating);
   };
 
-  const featuredMedia = filteredMedia[currentIndex];
+  const featuredMedia = filteredMedia[currentIndex] as ExtendedMedia;
 
   // Handle mouse interactions
   const handleMouseEnter = () => {
@@ -244,8 +250,6 @@ const Hero = ({ media, className = '' }: HeroProps) => {
     };
   }, [touchStart]);
 
-  if (!featuredMedia) return null;
-
   const title = featuredMedia.title || featuredMedia.name || 'Untitled';
   const releaseDate = featuredMedia.release_date || featuredMedia.first_air_date;
   const releaseYear = releaseDate ? new Date(releaseDate).getFullYear() : '';
@@ -285,6 +289,7 @@ const Hero = ({ media, className = '' }: HeroProps) => {
     };
   }, [touchStart]);
 
+  if (!filteredMedia.length) return null;
   return (
     <section
       ref={carouselRef}
@@ -392,23 +397,23 @@ const Hero = ({ media, className = '' }: HeroProps) => {
           {/* Redesigned Title Section */}
           <div className="mb-2 md:mb-3 w-full flex flex-col items-start">
             {/* Logo if available */}
-            {'logo_path' in featuredMedia && (featuredMedia as any).logo_path ? (
+            {featuredMedia.logo_path ? (
               <img
-                src={getImageUrl((featuredMedia as any).logo_path as string, backdropSizes.medium)}
+                src={getImageUrl(featuredMedia.logo_path, backdropSizes.medium)}
                 alt={title}
                 className="max-h-16 md:max-h-24 mb-2 drop-shadow-lg"
                 style={{ objectFit: 'contain' }}
               />
             ) : (
-              <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold bg-gradient-to-r from-accent to-pink-400 bg-clip-text text-transparent drop-shadow-[0_2px_16px_rgba(0,0,0,0.7)] text-balance" style={{textShadow: '0 2px 12px rgba(0,0,0,0.7)'}}>
+              <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-semibold italic tracking-wide text-accent drop-shadow-md text-balance" style={{letterSpacing: '0.03em'}}>
                 {title}
               </h1>
             )}
 
             {/* Tagline if available */}
-            {'tagline' in featuredMedia && (featuredMedia as any).tagline && (
+            {featuredMedia.tagline && (
               <p className="text-lg md:text-xl text-white/80 italic mt-1 mb-2 drop-shadow" style={{textShadow: '0 2px 8px rgba(0,0,0,0.6)'}}>
-                {(featuredMedia as any).tagline as string}
+                {featuredMedia.tagline}
               </p>
             )}
           </div>

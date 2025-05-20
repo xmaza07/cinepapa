@@ -42,7 +42,7 @@ const ContentRow = ({ title, media, featured = false }: ContentRowProps) => {
   
   return (
     <div 
-      className="px-4 md:px-8 mb-8 opacity-0 animate-fade-in"
+      className="px-0 md:px-0 mb-8 opacity-0 animate-fade-in w-full"
       style={{ animationDelay: '0.2s', animationFillMode: 'forwards' }}
     >
       <h2 className="text-xl md:text-2xl font-bold text-white mb-4">{title}</h2>

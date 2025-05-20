@@ -89,39 +89,40 @@ const Index = () => {
   );
 
   return (
-    <main className="min-h-screen bg-background pb-16">
+    <main className="min-h-screen min-h-svh w-full bg-background flex flex-col overflow-x-hidden">
       <Navbar />
       <PWAInstallPrompt />
 
-      {isLoading ? (
-        <div className="flex flex-col gap-8 pt-24 px-6">
-          <Skeleton className="w-full h-[60vh] rounded-lg" /> {/* Hero skeleton */}
-          <RowSkeleton />
-          <RowSkeleton />
-        </div>
-      ) : (
-        <>
-          <div className="pt-16"> {/* Add padding-top to account for navbar */}
-            {trendingMedia.length > 0 && <Hero media={trendingMedia.slice(0, 10)} className="hero" />}
+      <div className="flex-1 flex flex-col justify-start items-stretch w-full">
+        {isLoading ? (
+          <div className="flex flex-col gap-8 pt-24 flex-1 w-full px-0 md:px-0">
+            <Skeleton className="w-full h-[60vh] rounded-none" /> {/* Hero skeleton */}
+            <RowSkeleton />
+            <RowSkeleton />
           </div>
+        ) : (
+          <>
+            <div className="pt-16 flex-shrink-0 w-full"> {/* Add padding-top to account for navbar */}
+              {trendingMedia.length > 0 && <Hero media={trendingMedia.slice(0, 10)} className="hero w-full px-0 md:px-0" />}
+            </div>
 
-          <div className={`mt-8 md:mt-12 transition-opacity duration-300 ${contentVisible ? 'opacity-100' : 'opacity-0'}`}>
-            {user && <ContinueWatching />}
-            <ContentRow title="Trending Now" media={trendingMedia} featured />
-            <ContentRow title="Popular Movies" media={popularMovies} />
-            <ContentRow title="Popular TV Shows" media={popularTVShows} />
-            <ContentRow title="Top Rated Movies" media={topRatedMovies} />
-            <ContentRow title="Top Rated TV Shows" media={topRatedTVShows} />
-            
-            {/* Lazy load secondary content */}
-            {secondaryLoaded && (
-              <Suspense fallback={<div className="py-8"><Spinner size="lg" className="mx-auto" /></div>}>
-                <SecondaryContent />
-              </Suspense>
-            )}
-          </div>
-        </>
-      )}
+            <div className={`flex-1 flex flex-col mt-8 md:mt-12 transition-opacity duration-300 w-full px-0 md:px-0 ${contentVisible ? 'opacity-100' : 'opacity-0'}`}>
+              {user && <ContinueWatching />}
+              <ContentRow title="Trending Now" media={trendingMedia} featured />
+              <ContentRow title="Popular Movies" media={popularMovies} />
+              <ContentRow title="Popular TV Shows" media={popularTVShows} />
+              <ContentRow title="Top Rated Movies" media={topRatedMovies} />
+              <ContentRow title="Top Rated TV Shows" media={topRatedTVShows} />
+              {/* Lazy load secondary content */}
+              {secondaryLoaded && (
+                <Suspense fallback={<div className="py-8"><Spinner size="lg" className="mx-auto" /></div>}>
+                  <SecondaryContent />
+                </Suspense>
+              )}
+            </div>
+          </>
+        )}
+      </div>
 
       <Footer />
     </main>

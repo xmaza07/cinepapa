@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Search, ArrowRight, Film, Tv } from 'lucide-react';
 import { Input } from "@/components/ui/input";
@@ -104,7 +103,7 @@ const SearchBar = ({
     setShowSuggestions(false);
     if (onSearch) onSearch();
     if (onToggleExpand) onToggleExpand();
-    
+
     toast({
       title: "Navigating...",
       description: `Going to ${item.title || item.name}`,
@@ -139,16 +138,16 @@ const SearchBar = ({
           onChange={(e) => setSearchQuery(e.target.value)}
           ref={searchInputRef}
         />
-        
-        <Button 
-          type="submit" 
+
+        <Button
+          type="submit"
           size="icon"
           className="search-button absolute right-2.5 top-1/2 transform -translate-y-1/2" // Adjusted right position
           aria-label="Search"
         >
           <ArrowRight className="h-3.5 w-3.5" />
         </Button>
-        
+
         {showSuggestions && searchSuggestions.length > 0 && (
           <div ref={suggestionsRef} className="search-suggestions">
             {searchSuggestions.map((item) => (
@@ -158,9 +157,9 @@ const SearchBar = ({
                 onClick={() => handleSuggestionClick(item)}
               >
                 <span className="mr-2 flex-shrink-0">
-                  {item.media_type === 'movie' ? 
-                    <Film className="h-4 w-4 text-red-400" /> : 
-                    <Tv className="h-4 w-4 text-blue-400" />
+                  {item.media_type === 'movie' ?
+                    <Film className="h-4 w-4 text-white/70" /> :
+                    <Tv className="h-4 w-4 text-white/70" />
                   }
                 </span>
                 <span className="flex-1 text-left truncate">{item.title || item.name}</span>
@@ -169,7 +168,7 @@ const SearchBar = ({
             ))}
             <button
               onClick={handleSearch}
-              className="suggestion-item font-medium text-accent justify-center"
+              className="suggestion-item font-medium text-white/90 justify-center" // Changed text-accent to text-white/90
             >
               View all results for "{searchQuery}"
             </button>

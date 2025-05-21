@@ -58,9 +58,9 @@ const VideoSourceSelector = ({
           className={cn(
             "relative group p-4 rounded-xl border transition-all duration-300 overflow-hidden",
             "bg-gradient-to-br backdrop-blur-sm shadow-sm transform hover:-translate-y-0.5",
-            "hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50",
+            "hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50",
             selectedSource === source.key
-              ? "from-accent/20 to-accent/10 border-accent/50 shadow-accent/10"
+              ? "from-white/20 to-white/10 border-white/50 shadow-white/10"
               : "from-white/5 to-transparent border-white/10 hover:border-white/30",
             isChanging && selectedSource === source.key && "animate-pulse"
           )}
@@ -73,7 +73,7 @@ const VideoSourceSelector = ({
           {/* Pulsing border for active state */}
           {selectedSource === source.key && (
             <motion.div
-              className="absolute inset-0 rounded-xl border border-accent/30"
+              className="absolute inset-0 rounded-xl border border-white/30"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{
@@ -88,8 +88,8 @@ const VideoSourceSelector = ({
             <div className="flex items-center justify-between">
               <span className={cn(
                 "text-sm font-semibold transition-colors",
-                selectedSource === source.key 
-                  ? "text-accent" 
+                selectedSource === source.key
+                  ? "text-white"
                   : "text-white/90 group-hover:text-white"
               )}>
                 {source.name}
@@ -98,9 +98,9 @@ const VideoSourceSelector = ({
                 <motion.div
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
-                  className="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full bg-accent flex items-center justify-center"
+                  className="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full bg-white flex items-center justify-center"
                 >
-                  <Check className="h-2.5 w-2.5 text-accent-foreground" />
+                  <Check className="h-2.5 w-2.5 text-black" />
                 </motion.div>
               )}
             </div>
@@ -109,7 +109,7 @@ const VideoSourceSelector = ({
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  className="text-xs font-medium text-accent/90 flex items-center gap-1"
+                  className="text-xs font-medium text-white/90 flex items-center gap-1"
                 >
                   <Check className="h-3 w-3" />
                   Currently active

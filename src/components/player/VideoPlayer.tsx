@@ -139,7 +139,7 @@ const VideoPlayer = ({
           exit={{ opacity: 0 }}
           className="absolute inset-0 bg-black/60 flex items-center justify-center"
         >
-          <div className="w-16 h-16 border-4 border-accent/30 border-t-accent rounded-full animate-spin" />
+          <div className="w-16 h-16 border-4 border-white/30 border-t-white rounded-full animate-spin" />
         </motion.div>
       ) : null}
 

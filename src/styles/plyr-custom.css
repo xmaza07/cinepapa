@@ -9,14 +9,14 @@
 
 /* Customize Plyr controls colors to match app theme */
 :root {
-  --plyr-color-main: #8B5CF6;
+  --plyr-color-main: #ffffff; /* Changed to white */
   --plyr-video-control-color: white;
-  --plyr-video-control-color-hover: #D6BCFA;
+  --plyr-video-control-color-hover: #cccccc; /* Changed to light grey */
   --plyr-video-control-background-hover: rgba(26, 31, 44, 0.8);
   --plyr-audio-control-background-hover: rgba(26, 31, 44, 0.8);
   --plyr-video-control-radius: 4px;
-  --plyr-range-thumb-background: #8B5CF6;
-  --plyr-range-fill-background: #8B5CF6;
+  --plyr-range-thumb-background: #ffffff; /* Changed to white */
+  --plyr-range-fill-background: #ffffff; /* Changed to white */
 }
 
 /* Control spacing */
@@ -56,7 +56,7 @@
 
 /* Custom focus styles */
 .plyr__control:focus {
-  outline: 2px solid var(--plyr-color-main);
+  outline: 2px solid var(--plyr-video-control-color-hover); /* Changed to use monochromatic hover color */
   outline-offset: 2px;
 }
 

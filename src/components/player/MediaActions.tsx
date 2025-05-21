@@ -49,7 +49,7 @@ const MediaActions = ({
           size="icon"
           className={cn(
             "rounded-full transition-all duration-300",
-            isFavorite ? "text-red-500 hover:text-red-600" : "text-white/80 hover:text-white"
+            isFavorite ? "text-white hover:text-gray-300" : "text-white/80 hover:text-white"
           )}
           onClick={onToggleFavorite}
         >
@@ -61,7 +61,7 @@ const MediaActions = ({
           size="icon"
           className={cn(
             "rounded-full transition-all duration-300",
-            isInWatchlist ? "text-accent hover:text-accent/90" : "text-white/80 hover:text-white"
+            isInWatchlist ? "text-white hover:text-gray-300" : "text-white/80 hover:text-white"
           )}
           onClick={onToggleWatchlist}
         >

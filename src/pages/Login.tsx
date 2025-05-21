@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { FcGoogle } from 'react-icons/fc';
+// import { FcGoogle } from 'react-icons/fc'; // Removed colorful icon
 
 export default function Login() {
 
@@ -109,7 +109,7 @@ export default function Login() {
               {isLoading ? 'Signing in...' : 'Sign in'}
             </Button>
             {errorMessage && (
-              <div className="mt-2 text-sm text-red-500 text-center" role="alert">
+              <div className="mt-2 text-sm text-white/70 text-center" role="alert"> {/* Changed text-red-500 to text-white/70 */}
                 {errorMessage}
               </div>
             )}
@@ -133,14 +133,14 @@ export default function Login() {
             onClick={handleGoogleSignIn}
             disabled={isLoading}
           >
-            <FcGoogle className="mr-2 h-4 w-4" />
-            Google
+            {/* <FcGoogle className="mr-2 h-4 w-4" /> */} {/* Removed colorful icon */}
+            Google {/* Replaced icon with text */}
           </Button>
         </CardContent>
         <CardFooter className="flex flex-wrap items-center justify-between gap-2">
           <div className="text-sm text-muted-foreground">
             Don't have an account?{' '}
-            <Link to="/signup" className="text-primary hover:underline">
+            <Link to="/signup" className="text-white hover:underline"> {/* Changed text-primary to text-white */}
               Sign up
             </Link>
           </div>

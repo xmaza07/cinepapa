@@ -79,7 +79,7 @@
   @apply w-full min-h-screen overflow-x-hidden;
   margin: 0 auto;
   text-align: center;
-  padding: 1.5rem;
+  padding: 1rem;
 }
 
 .page-transition-enter {

@@ -105,10 +105,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = async () => {
+    console.log("logout function called");
     try {
       await signOut(auth);
       toast({
-        title: "Signed out",
+      title: "Signed out",
         description: "You have been signed out successfully.",
       });
     } catch (error) {
@@ -133,3 +134,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     </AuthContext.Provider>
   );
 }
+
+// Function to refresh the Firebase Auth token
+const refreshToken = async () => {
+  try {
+    const user = auth.currentUser;
+    if (user) {
+      await user.getIdToken(true); // Force refresh
+      console.log("Token refreshed successfully");
+    }
+  } catch (error) {
+    console.error("Error refreshing token:", error);
+  }
+};
+
+// Set interval to refresh token every 30 minutes
+setInterval(refreshToken, 30 * 60 * 1000);

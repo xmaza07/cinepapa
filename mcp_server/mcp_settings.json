@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "webresearch": {
+      "command": "node",
+      "args": ["mcp_server/mcp_server/webresearch/dist/index.js"]
+    }
+  }
+}

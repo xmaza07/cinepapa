@@ -25,3 +25,7 @@ dist-ssr
 
 # Environment variables
 .env
+# Local Netlify folder
+.netlify
+# mcp server
+mcp_server

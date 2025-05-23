@@ -1,5 +1,7 @@
 
 import { Media } from '@/utils/types';
+import { TMDBEpisodeInfo } from './tmdb-search';
+import { ChatbotMedia } from './types/chatbot-types';
 
 interface ParsedMediaItem {
   title: string;
@@ -9,6 +11,7 @@ interface ParsedMediaItem {
   rating?: string;
   tmdbId?: number;
   type?: 'movie' | 'tv';
+  episode?: TMDBEpisodeInfo;
 }
 
 /**
@@ -16,7 +19,18 @@ interface ParsedMediaItem {
  * @param text The AI response text
  * @returns Array of extracted media items
  */
-export const extractMediaItems = (text: string): ParsedMediaItem[] => {
+/**
+ * Extracts media items from AI response text and creates ChatbotMedia objects
+ */
+export const extractMediaFromResponse = (text: string): ChatbotMedia[] => {
+  const parsedItems = extractMediaItems(text);
+  return createMediaObjects(parsedItems);
+};
+
+/**
+ * Extract raw media items from text (internal helper)
+ */
+const extractMediaItems = (text: string): ParsedMediaItem[] => {
   const mediaItems: ParsedMediaItem[] = [];
   
   // First attempt: Try to find numbered items (1., 2., etc.)
@@ -56,8 +70,8 @@ export const extractMediaItems = (text: string): ParsedMediaItem[] => {
       // Remove any prefix dash or colon
       descriptionText = descriptionText.replace(/^[-:]\s*/, '');
       
-      // Extract until the first metadata label (Genre, Type, etc.)
-      const metadataStart = descriptionText.search(/\b(Genre|Type|Rating|TMDB_ID)s?:/i);
+      // Extract until the first metadata label
+      const metadataStart = descriptionText.search(/\b(Genre|Type|Rating|TMDB_ID|Season|Episode)s?:/i);
       if (metadataStart > 0) {
         mediaItem.description = descriptionText.substring(0, metadataStart).trim();
       } else {
@@ -75,7 +89,7 @@ export const extractMediaItems = (text: string): ParsedMediaItem[] => {
       }
       
       // Extract rating
-      const ratingMatch = item.match(/(?:IMDb|Rotten Tomatoes|Rating):\s*([\d.]+)(?:\/10|\%)/i);
+      const ratingMatch = item.match(/(?:IMDb|Rotten Tomatoes|Rating):\s*([\d.]+)(?:\/10|%)/i);
       if (ratingMatch) {
         mediaItem.rating = ratingMatch[0].trim();
       }
@@ -86,18 +100,45 @@ export const extractMediaItems = (text: string): ParsedMediaItem[] => {
         mediaItem.tmdbId = parseInt(tmdbIdMatch[1]);
       }
       
-      // Extract media type (movie/tv)
+      // Extract media type and episode info
       const typeMatch = item.match(/Type:\s*(movie|tv|series|show)/i);
       if (typeMatch) {
         const typeText = typeMatch[1].toLowerCase();
         mediaItem.type = typeText === 'series' || typeText === 'show' ? 'tv' : typeText as 'movie' | 'tv';
-      } else if (item.toLowerCase().includes('tv series') || 
-                item.toLowerCase().includes('tv show') || 
+        
+        // If it's a TV show, look for season and episode numbers
+        if (mediaItem.type === 'tv') {
+          const seasonMatch = item.match(/Season:\s*(\d+)/i);
+          const episodeMatch = item.match(/Episode:\s*(\d+)/i);
+          
+          if (seasonMatch || episodeMatch) {
+            mediaItem.episode = {
+              seasonNumber: seasonMatch ? parseInt(seasonMatch[1]) : 1,
+              episodeNumber: episodeMatch ? parseInt(episodeMatch[1]) : 1
+            };
+          }
+        }
+      } else if (item.toLowerCase().includes('tv series') ||
+                item.toLowerCase().includes('tv show') ||
                 mediaItem.title.includes('Season')) {
         mediaItem.type = 'tv';
+        // Default to season 1, episode 1 if not specified
+        mediaItem.episode = { seasonNumber: 1, episodeNumber: 1 };
       } else {
-        // Default to movie if type is not specified
         mediaItem.type = 'movie';
+      }
+
+      // Look for episode information in description
+      if (mediaItem.type === 'tv' && !mediaItem.episode && mediaItem.description) {
+        const seasonEpisodeMatch = mediaItem.description.match(
+          /(?:start|begin|watch).*?(?:season|s)[.\s]*(\d+).*?(?:episode|ep?)[.\s]*(\d+)/i
+        );
+        if (seasonEpisodeMatch) {
+          mediaItem.episode = {
+            seasonNumber: parseInt(seasonEpisodeMatch[1]),
+            episodeNumber: parseInt(seasonEpisodeMatch[2])
+          };
+        }
       }
       
       // If no TMDB ID was found, generate a temporary one based on title
@@ -123,22 +164,25 @@ export const extractMediaItems = (text: string): ParsedMediaItem[] => {
  * Create temporary Media objects from parsed items
  * Used for displaying in the chatbot UI
  */
-export const createMediaObjects = (parsedItems: ParsedMediaItem[]): Media[] => {
+export const createMediaObjects = (parsedItems: ParsedMediaItem[]): ChatbotMedia[] => {
   return parsedItems.map(item => {
-    const media: Media = {
+    const media: ChatbotMedia = {
       id: item.tmdbId || 0,
       media_id: item.tmdbId || 0,
       title: item.title,
       name: item.title,
       overview: item.description || '',
-      poster_path: '', // We don't have this from the AI response
-      backdrop_path: '', // Adding the missing property with an empty string default
-      vote_average: 0, // We don't have a numerical rating from the AI
+      poster_path: '',
+      backdrop_path: '',
+      vote_average: 0,
       media_type: item.type || 'movie',
-      genre_ids: [], // Adding the missing property with an empty array default
+      genre_ids: [],
+      // Include episode information if available
+      season_number: item.episode?.seasonNumber || undefined,
+      episode_number: item.episode?.episodeNumber || undefined
     };
     
-    // Add year as release_date or first_air_date depending on type
+    // Add year and air dates
     if (item.year) {
       // Handle ranges like "2022-Present" by just using the start year
       const yearStart = item.year.split('-')[0].trim();

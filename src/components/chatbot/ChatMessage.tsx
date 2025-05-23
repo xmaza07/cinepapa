@@ -4,7 +4,9 @@ import { ChatMessage as ChatMessageType } from '@/contexts/chatbot-context';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 import { useChatbot } from '@/contexts/chatbot-context';
-import { extractMediaItems, createMediaObjects } from '@/utils/chatbot-utils';
+import { useUserProfile } from '@/contexts/user-profile-context';
+import { extractMediaFromResponse } from '@/utils/chatbot-utils';
+import { ChatbotMedia } from '@/utils/types/chatbot-types';
 import RecommendationCard from './RecommendationCard';
 
 interface ChatMessageProps {
@@ -13,12 +15,12 @@ interface ChatMessageProps {
 
 const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
   const { rateRecommendation } = useChatbot();
+  const { getPersonalizedScore } = useUserProfile();
   const [showRating, setShowRating] = useState(false);
   const [hasReacted, setHasReacted] = useState(false);
   
-  // Extract media items from the message
-  const parsedItems = !message.isUser ? extractMediaItems(message.text) : [];
-  const mediaItems = createMediaObjects(parsedItems);
+  // Extract media items from the message if not a user message
+  const mediaItems: ChatbotMedia[] = !message.isUser ? extractMediaFromResponse(message.text) : [];
   
   // Extract initial greeting or explanation text
   const getIntroText = (text: string): string => {
@@ -38,7 +40,6 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
     setHasReacted(true);
   };
 
-  // Pass the expected TMDB ID (from parsedItems) to RecommendationCard for validation
   if (!message.isUser && mediaItems.length > 0) {
     const introText = getIntroText(message.text);
     return (
@@ -64,9 +65,8 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
             >
               <RecommendationCard 
                 media={media}
-                genres={parsedItems[index]?.genres}
-                rating={parsedItems[index]?.rating}
-                expectedTmdbId={parsedItems[index]?.tmdbId}
+                onRate={(rating) => handleRate(rating)}
+                personalizedScore={getPersonalizedScore(media)}
               />
             </motion.div>
           ))}

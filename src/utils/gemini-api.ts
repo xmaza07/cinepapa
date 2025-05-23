@@ -1,5 +1,7 @@
 import { GoogleGenerativeAI, GenerateContentResult } from '@google/generative-ai';
 import { RateLimiter } from './rate-limiter';
+import env from '@/config/env';
+import { TV_SHOW_EXAMPLE, formatTVShowRequirements } from './tv-show-prompt';
 
 // Types
 interface GeminiConfig {
@@ -34,7 +36,7 @@ class GeminiAPIError extends Error {
 
 // Configuration with fallback to empty string to prevent runtime errors
 const DEFAULT_CONFIG: GeminiConfig = {
-  apiKey: import.meta.env.VITE_GEMINI_API_KEY || '',
+  apiKey: env.GEMINI_API_KEY,
   maxRetries: 3,
   retryDelay: 1000,
   rateLimit: {
@@ -125,8 +127,9 @@ Key Guidelines:
 
 Be Specific, Not Generic: Avoid predictable suggestions unless they perfectly fit the user's request. Dig a little deeper.
 Quality over Quantity: Focus on making 2-3 excellent, well-reasoned suggestions rather than a longer, less tailored list.
-Enthusiastic & Conversational Tone: Use friendly language, express genuine enthusiasm for the suggestions, and make the interaction feel like chatting with a movie-loving friend.
-Stay Up-to-Date: When possible, factor in recent releases if relevant to the user's request, but timeless classics are always fair game.
+Enthusiastic & Conversational Tone: Use friendly language, express genuine enthusiasm for the suggestions.
+Stay Up-to-Date: When possible, factor in recent releases if relevant to the user's request, but timeless classics are fair game.
+TV Show Episode Info: When recommending TV shows, specify season and episode if relevant (e.g., "Start with Season 1, Episode 1" or "The story picks up in Season 2, Episode 5").
 Don't include long descriptions or spoilers. Keep it concise and engaging.
 Don't use overly technical jargon or industry terms. Keep it relatable and fun.
 don't ask for the user's name or any personal information. Just focus on their preferences and interests.
@@ -143,6 +146,10 @@ Example user output:
    IMDb: 8.8/10
    TMDB_ID: 27205
    Type: movie
+
+${TV_SHOW_EXAMPLE}
+
+${formatTVShowRequirements}
 `;
 
 /**
@@ -259,8 +266,10 @@ export const searchMedia = async (query: string): Promise<GeminiResponse> => {
     const result = await withRetry<GenerateContentResult>(() => 
       model.generateContent(`Please search for movies or TV shows that match: "${query}".
         Provide up to 3 results with title, year, brief description, genre, and TMDB ID.
-        For each result, specify whether it's a movie or TV show by adding "Type: movie" or "Type: tv".
-        Include the TMDB ID as "TMDB_ID: [id]" for each result.
+        For each result:
+        - For movies: Include Type: movie and TMDB_ID
+        - For TV shows: Include Type: tv, TMDB_ID, Season, and Episode numbers
+        - For any TV show result, indicate which episode to start with
         Format each result in a clear, structured way that can be easily parsed.`)
     );
     

@@ -1,17 +1,30 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { Send, Search, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { useChatbot } from '@/contexts/chatbot-context';
+import { useUserProfile } from '@/contexts/user-profile-context';
+import { nlpService } from '@/utils/services/nlp-service';
+import { streamingPlatformService, type StreamingAvailability } from '@/utils/services/streaming-platform';
+import { Media } from '@/utils/types';
 import ChatMessage from './ChatMessage';
+import RecommendationCard from './RecommendationCard';
 import Spinner from '@/components/ui/spinner';
 import { cn } from '@/lib/utils';
 
+interface MediaWithAvailability extends Media {
+  availability?: StreamingAvailability[];
+}
+
 const ChatbotWindow: React.FC = () => {
   const { isOpen, messages, isLoading, sendMessage, searchForMedia, closeChatbot } = useChatbot();
-  const [input, setInput] = React.useState('');
-  const [isSearchMode, setIsSearchMode] = React.useState(false);
+  const { profile, getRecommendations, analyzeUserFeedback, getPersonalizedScore } = useUserProfile();
+  const [input, setInput] = useState('');
+  const [isSearchMode, setIsSearchMode] = useState(false);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [recommendations, setRecommendations] = useState<MediaWithAvailability[]>([]);
+  const [loadingAvailability, setLoadingAvailability] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -27,17 +40,82 @@ const ChatbotWindow: React.FC = () => {
     }
   }, [isOpen]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (input.trim()) {
+    const trimmedInput = input.trim();
+    if (!trimmedInput) return;
+
+    setIsAnalyzing(true);
+    try {
+      // Analyze user input for better understanding
+      const analysis = await nlpService.analyzeInput(trimmedInput);
+      
       if (isSearchMode) {
-        searchForMedia(input);
+        // Enhanced search with NLP analysis
+        const searchResults = await searchForMedia(trimmedInput);
+        
+        // Filter results based on streaming availability
+        if (profile) {
+          const availableResults = await streamingPlatformService.filterAvailableContent(
+            searchResults,
+            profile.streamingServices
+          );
+          setRecommendations(availableResults);
+        }
       } else {
-        sendMessage(input);
+        // Get personalized recommendations based on the query
+        const userRecommendations = await getRecommendations(5);
+        setRecommendations(userRecommendations);
+        
+        // Send message with enhanced context
+        await sendMessage(trimmedInput, {
+          nlpAnalysis: analysis,
+          recommendations: userRecommendations
+        });
       }
+      
       setInput('');
+    } catch (error) {
+      console.error('Error processing input:', error);
+    } finally {
+      setIsAnalyzing(false);
     }
+  };
+
+  // Load streaming availability for recommendations
+  useEffect(() => {
+    const loadAvailability = async () => {
+      if (!recommendations.length || !profile) return;
+      
+      setLoadingAvailability(true);
+      try {
+        const updatedRecommendations = await Promise.all(
+          recommendations.map(async (media) => {
+            const availability = await streamingPlatformService.getStreamingAvailability(media.id);
+            return { ...media, availability };
+          })
+        );
+        setRecommendations(updatedRecommendations);
+      } catch (error) {
+        console.error('Error loading streaming availability:', error);
+      } finally {
+        setLoadingAvailability(false);
+      }
+    };
+
+    loadAvailability();
+  }, [recommendations.map(r => r.id).join(','), profile]);
+
+  // Handle rating a recommendation
+  const handleRate = async (media: Media, rating: number) => {
+    if (!profile) return;
+    
+    await analyzeUserFeedback(
+      `Rating ${rating > 0 ? 'positive' : 'negative'} for ${media.title || media.name}`,
+      media.id,
+      rating > 0 ? 5 : 1
+    );
   };
 
   const toggleSearchMode = () => {
@@ -117,7 +195,25 @@ const ChatbotWindow: React.FC = () => {
         ) : (
           <div className="space-y-4">
             {messages.map((message) => (
-              <ChatMessage key={message.id} message={message} />
+              <div key={message.id} className="space-y-4">
+                <ChatMessage message={message} />
+                {message.mediaItems && (
+                  <div className="grid gap-4">
+                    {message.mediaItems.map((media) => {
+                      const recommendation = recommendations.find(r => r.id === media.id);
+                      return (
+                        <RecommendationCard
+                          key={media.id}
+                          media={media}
+                          availability={recommendation?.availability}
+                          onRate={(rating) => handleRate(media, rating)}
+                          personalizedScore={getPersonalizedScore(media)}
+                        />
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             ))}
             <div ref={messagesEndRef} />
           </div>
@@ -150,19 +246,22 @@ const ChatbotWindow: React.FC = () => {
               "focus:ring-1 focus:ring-primary/30 focus:border-primary/30",
               "placeholder:text-muted-foreground/50"
             )}
-            disabled={isLoading}
+            disabled={isLoading || isAnalyzing}
           />
           
           <Button 
             type="submit" 
             size="icon"
-            disabled={isLoading || !input.trim()}
+            disabled={isLoading || isAnalyzing || !input.trim()}
             className={cn(
               "bg-primary/90 hover:bg-primary transition-colors",
               "disabled:bg-muted disabled:cursor-not-allowed"
             )}
           >
-            {isLoading ? <Spinner size="sm" /> : <Send className="h-4 w-4" />}
+            {isLoading || isAnalyzing || loadingAvailability ?
+              <Spinner size="sm" /> :
+              <Send className="h-4 w-4" />
+            }
           </Button>
         </form>
       </CardFooter>

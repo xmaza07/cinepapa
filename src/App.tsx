@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from './contexts/theme';
 import { UserPreferencesProvider } from './contexts/user-preferences';
 import { WatchHistoryProvider } from './contexts/watch-history';
+import { UserProfileProvider } from './contexts/user-profile-context';
 import { NotificationProvider } from './contexts/notification-context';
 import { ServiceWorkerErrorBoundary } from './components/ServiceWorkerErrorBoundary';
 import { ServiceWorkerUpdateNotification } from './components/ServiceWorkerUpdateNotification';
@@ -106,7 +107,8 @@ function App() {
               <AuthProvider>
                 <UserPreferencesProvider>
                   <WatchHistoryProvider>
-                    <ChatbotProvider>
+                    <UserProfileProvider>
+                      <ChatbotProvider>
                       <AnalyticsWrapper>
                         <FeatureNotificationsListener />
                         {swUpdateAvailable && (
@@ -119,8 +121,9 @@ function App() {
                         <AppRoutes />
                         <ChatbotButton />
                         <ChatbotWindow />
-                      </AnalyticsWrapper>
-                    </ChatbotProvider>
+                        </AnalyticsWrapper>
+                      </ChatbotProvider>
+                    </UserProfileProvider>
                   </WatchHistoryProvider>
                 </UserPreferencesProvider>
               </AuthProvider>

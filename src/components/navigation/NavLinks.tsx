@@ -13,7 +13,7 @@ const NavLinks = () => {
     { name: 'Movies', path: '/movie' },
     { name: 'TV Shows', path: '/tv' },
     { name: 'Sports', path: '/sports' },
-    { name: 'Live', path: '/live' },
+    // { name: 'Live', path: '/live' },
     { name: 'Trending', path: '/trending' },
   ];
 

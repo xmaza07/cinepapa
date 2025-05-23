@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 interface LogoProps {
   className?: string;
@@ -10,9 +11,10 @@ interface LogoProps {
  */
 export const Logo: React.FC<LogoProps> = ({ className = '' }) => {
   const [isHovered, setIsHovered] = useState(false);
+  const navigate = useNavigate();
 
   return (
-    <span 
+    <span
       className={`lets-stream-logo ${className}`}
       style={{
         color: 'inherit',
@@ -34,6 +36,7 @@ export const Logo: React.FC<LogoProps> = ({ className = '' }) => {
       title="Let's Stream"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
+      onClick={() => navigate('/')}
     >
       <span style={{
         position: 'relative',

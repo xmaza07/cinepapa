@@ -61,7 +61,7 @@ const MobileMenu = ({ isOpen, onClose }: MobileMenuProps) => {
     { name: 'Movies', path: '/movie', icon: Film },
     { name: 'TV Shows', path: '/tv', icon: Tv2 },
     { name: 'Sports', path: '/sports', icon: Trophy },
-    { name: 'Live', path: '/live', icon: Flame },
+    // { name: 'Live', path: '/live', icon: Flame },
     { name: 'Trending', path: '/trending', icon: Flame },
     { name: 'Search', path: '/search', icon: Search },
   ];

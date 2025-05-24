@@ -534,14 +534,14 @@ const Hero = ({ media, className = '' }: HeroProps) => {
       {filteredMedia.length > 1 && (
         <>
           <button
-            className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/30 backdrop-blur-sm border border-white/10 text-white p-2 flex items-center justify-center opacity-0 group-hover:opacity-100 hover:opacity-100 transition-all hover:bg-white/10"
+            className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/30 backdrop-blur-sm border border-white/10 text-white p-2 flex items-center justify-center opacity-0 group-hover:opacity-100 hover:opacity-100 transition-all hover:bg-white/10 z-20"
             onClick={goToPrev}
             aria-label="Previous slide"
           >
             <ChevronLeft className="w-5 h-5" />
           </button>
           <button
-            className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/30 backdrop-blur-sm border border-white/10 text-white p-2 flex items-center justify-center opacity-0 group-hover:opacity-100 hover:opacity-100 transition-all hover:bg-white/10"
+            className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/30 backdrop-blur-sm border border-white/10 text-white p-2 flex items-center justify-center opacity-0 group-hover:opacity-100 hover:opacity-100 transition-all hover:bg-white/10 z-20"
             onClick={goToNext}
             aria-label="Next slide"
           >
@@ -552,11 +552,38 @@ const Hero = ({ media, className = '' }: HeroProps) => {
 
       {/* Auto-rotation control - Monochromatic styling */}
       <button
-        className="absolute top-4 right-4 w-8 h-8 rounded-full bg-black/30 backdrop-blur-sm border border-white/10 text-white p-1.5 flex items-center justify-center opacity-0 group-hover:opacity-100 focus:opacity-100 transition-all hover:bg-white/10"
+        className="absolute top-4 right-4 w-8 h-8 rounded-full bg-black/30 backdrop-blur-sm border border-white/10 text-white p-1.5 flex items-center justify-center z-20 focus:opacity-100 transition-all hover:bg-white/10"
         onClick={toggleAutoRotation}
         aria-label={isAutoRotating ? "Pause auto-rotation" : "Resume auto-rotation"}
       >
-        {isAutoRotating ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
+        <span className="relative block w-5 h-5">
+          {/* AnimatePresence for icon switch */}
+          <AnimatePresence initial={false} mode="wait">
+            {isAutoRotating ? (
+              <motion.span
+                key="pause"
+                initial={{ opacity: 0, scale: 0.7, rotate: -90 }}
+                animate={{ opacity: 1, scale: 1, rotate: 0 }}
+                exit={{ opacity: 0, scale: 0.7, rotate: 90 }}
+                transition={{ duration: 0.25, ease: "easeInOut" }}
+                className="absolute inset-0 flex items-center justify-center"
+              >
+                <Pause className="w-5 h-5" />
+              </motion.span>
+            ) : (
+              <motion.span
+                key="play"
+                initial={{ opacity: 0, scale: 0.7, rotate: 90 }}
+                animate={{ opacity: 1, scale: 1, rotate: 0 }}
+                exit={{ opacity: 0, scale: 0.7, rotate: -90 }}
+                transition={{ duration: 0.25, ease: "easeInOut" }}
+                className="absolute inset-0 flex items-center justify-center"
+              >
+                <Play className="w-5 h-5" />
+              </motion.span>
+            )}
+          </AnimatePresence>
+        </span>
       </button>
     </section>
   );

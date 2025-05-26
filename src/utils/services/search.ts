@@ -1,4 +1,5 @@
 import { tmdb } from './tmdb';
+import { trackEvent } from '@/lib/analytics';
 import { Media } from '../types';
 import { TMDBMovieResult, TMDBTVResult } from '../types/tmdb';
 import { formatMediaResult } from './media';
@@ -42,6 +43,14 @@ export const searchMedia = async (query: string, page: number = 1): Promise<Medi
       .map(formatMediaResult);
   } catch (error) {
     console.error('Error searching media:', error);
+    // Log API error to analytics
+    await trackEvent({
+      name: 'api_error',
+      params: {
+        api: 'tmdb/search/multi',
+        error: error instanceof Error ? error.message : String(error),
+      },
+    });
     return [];
   }
 };

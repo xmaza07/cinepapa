@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, ReactNode } from 'react';
+import { trackEvent } from '@/lib/analytics';
 import { useAuth } from '@/hooks';
 import { useUserPreferences } from '@/hooks/user-preferences';
 import { getApp } from 'firebase/app';
@@ -351,6 +352,7 @@ export function WatchHistoryProvider({ children }: { children: ReactNode }) {
     };
 
     fetchAllData();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, initialFetchDone]); // Remove function dependencies to prevent infinite loop
 
   useEffect(() => {
@@ -682,6 +684,9 @@ export function WatchHistoryProvider({ children }: { children: ReactNode }) {
     }
   };
 
+
+  // Import at top: import { trackEvent } from '@/lib/analytics';
+
   const addToFavorites = async (item: MediaBaseItem) => {
     if (!user) {
       console.log('Cannot add to favorites: User not authenticated');
@@ -724,7 +729,17 @@ export function WatchHistoryProvider({ children }: { children: ReactNode }) {
       console.log('Favorite saved successfully');
       const updatedFavorites = [newItem, ...favorites];
       setFavorites(updatedFavorites);
-      
+
+      // Analytics event
+      trackEvent({
+        name: 'favorites_add',
+        params: {
+          media_type: item.media_type,
+          media_id: String(item.media_id),
+          title: item.title,
+        },
+      });
+
       toast({
         title: "Added to favorites",
         description: `${item.title} has been added to your favorites.`
@@ -756,6 +771,14 @@ export function WatchHistoryProvider({ children }: { children: ReactNode }) {
         );
         setFavorites(updatedFavorites);
       }
+      // Analytics event
+      trackEvent({
+        name: 'favorites_remove',
+        params: {
+          media_type: mediaType,
+          media_id: String(mediaId),
+        },
+      });
     } catch (error) {
       console.error('Error removing from favorites:', error);
       toast({
@@ -882,7 +905,17 @@ export function WatchHistoryProvider({ children }: { children: ReactNode }) {
       console.log('Watchlist item saved successfully');
       const updatedWatchlist = [newItem, ...watchlist];
       setWatchlist(updatedWatchlist);
-      
+
+      // Analytics event
+      trackEvent({
+        name: 'watchlist_add',
+        params: {
+          media_type: item.media_type,
+          media_id: String(item.media_id),
+          title: item.title,
+        },
+      });
+
       toast({
         title: "Added to watchlist",
         description: `${item.title} has been added to your watchlist.`
@@ -914,6 +947,14 @@ export function WatchHistoryProvider({ children }: { children: ReactNode }) {
         );
         setWatchlist(updatedWatchlist);
       }
+      // Analytics event
+      trackEvent({
+        name: 'watchlist_remove',
+        params: {
+          media_type: mediaType,
+          media_id: String(mediaId),
+        },
+      });
     } catch (error) {
       console.error('Error removing from watchlist:', error);
       toast({

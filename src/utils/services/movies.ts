@@ -1,4 +1,5 @@
 import { tmdb } from './tmdb';
+import { trackEvent } from '@/lib/analytics';
 import { Media, MovieImagesResponse } from '../types';
 import { MovieDetails } from '../types/movie';
 import { TMDBMovieResult, TMDBMovieDetailsResult } from '../types/tmdb';
@@ -38,6 +39,15 @@ export async function getMovieRecommendations(id: number): Promise<Media[]> {
     return response.data.results.map(item => formatMediaResult({...item, media_type: 'movie'}));
   } catch (error) {
     console.error('Error fetching movie recommendations:', error);
+    // Log API error to analytics
+    await trackEvent({
+      name: 'api_error',
+      params: {
+        api: 'tmdb/movie/recommendations',
+        error: error instanceof Error ? error.message : String(error),
+        movieId: id,
+      },
+    });
     return [];
   }
 }
@@ -90,6 +100,15 @@ export async function getMovieDetails(id: number): Promise<MovieDetails | null> 
     };
   } catch (error) {
     console.error(`Error fetching movie details for id ${id}:`, error);
+    // Log API error to analytics
+    await trackEvent({
+      name: 'api_error',
+      params: {
+        api: 'tmdb/movie/details',
+        error: error instanceof Error ? error.message : String(error),
+        movieId: id,
+      },
+    });
     return null;
   }
 }
@@ -100,6 +119,15 @@ export async function validateMovieId(tmdbId: number): Promise<boolean> {
     const response = await tmdb.get(`/movie/${tmdbId}`);
     return response.data && response.data.id === tmdbId;
   } catch (error) {
+    // Log API error to analytics
+    await trackEvent({
+      name: 'api_error',
+      params: {
+        api: 'tmdb/movie/validate',
+        error: error instanceof Error ? error.message : String(error),
+        movieId: tmdbId,
+      },
+    });
     return false;
   }
 }

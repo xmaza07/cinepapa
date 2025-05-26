@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { trackEvent } from '@/lib/analytics';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { searchMedia } from '@/utils/api';
 import { Media } from '@/utils/types';
@@ -195,15 +196,12 @@ const Search = () => {
     });
   }, []);
 
-  const handleSearch = (e?: React.FormEvent) => {
+  const handleSearch = async (e?: React.FormEvent) => {
     if (e) {
       e.preventDefault();
     }
-    
     if (!query.trim()) return;
-    
     let searchUrl = `/search?q=${encodeURIComponent(query.trim())}`;
-    
     if (advancedSearch) {
       if (mediaType !== 'all') {
         searchUrl += `&type=${mediaType}`;
@@ -212,8 +210,17 @@ const Search = () => {
         searchUrl += `&sort=${sortBy}`;
       }
     }
-    
     updateSearchHistory(query.trim());
+    // Analytics: log search event
+    await trackEvent({
+      name: 'search',
+      params: {
+        query: query.trim(),
+        mediaType,
+        sortBy,
+        advanced: advancedSearch,
+      },
+    });
     navigate(searchUrl);
     setShowSuggestions(false);
   };
@@ -235,20 +242,36 @@ const Search = () => {
     }
   };
 
-  const handleSuggestionClick = (suggestion: string | Media) => {
+  const handleSuggestionClick = async (suggestion: string | Media) => {
     if (typeof suggestion === 'string') {
       setQuery(suggestion);
       updateSearchHistory(suggestion);
+      // Analytics: log search suggestion click
+      await trackEvent({
+        name: 'search_suggestion_click',
+        params: {
+          suggestion,
+          query,
+        },
+      });
       navigate(`/search?q=${encodeURIComponent(suggestion)}`);
     } else {
+      // Analytics: log search result click
+      await trackEvent({
+        name: 'search_result_click',
+        params: {
+          mediaId: suggestion.id,
+          mediaType: suggestion.media_type,
+          title: suggestion.title || suggestion.name,
+          query,
+        },
+      });
       navigate(`/${suggestion.media_type}/${suggestion.id}`);
-      
       toast({
         title: "Navigating...",
         description: `Going to ${suggestion.title || suggestion.name}`,
         duration: 2000,
       });
-      
       const term = suggestion.title || suggestion.name || '';
       if (term) {
         updateSearchHistory(term);

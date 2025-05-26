@@ -1,5 +1,6 @@
 
 import React, { Component, ErrorInfo, ReactNode } from 'react';
+import { trackEvent } from '@/lib/analytics';
 import { Alert, AlertTitle, AlertDescription } from './ui/alert';
 import { Button } from './ui/button';
 
@@ -25,9 +26,19 @@ export class ServiceWorkerErrorBoundary extends Component<Props, State> {
     return { hasError: true, error, errorInfo: null };
   }
 
-  public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+  public async componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('Service Worker error:', error, errorInfo);
     this.setState({ errorInfo });
+    // Log error to analytics
+    await trackEvent({
+      name: 'client_error',
+      params: {
+        error: error.message,
+        stack: error.stack,
+        componentStack: errorInfo.componentStack,
+        boundary: 'ServiceWorkerErrorBoundary',
+      },
+    });
   }
 
   private handleRetry = () => {

@@ -286,6 +286,43 @@ const Profile = () => {
                     aria-label="Toggle feature notifications"
                   />
                 </div>
+
+                {/* Display Override */}
+                <div className="space-y-2">
+                  <h3 className="text-lg font-medium text-white">Display Override</h3>
+                  <p className="text-sm text-white/70">
+                    Select the display mode for the app
+                  </p>
+                  <Select
+                    value={userPreferences?.display_override || ''}
+                    onValueChange={async (value) => {
+                      await updatePreferences({ display_override: value });
+                      await trackEvent({
+                        name: 'user_profile_update',
+                        params: {
+                          field: 'display_override',
+                          value,
+                          user: user?.email || user?.uid || 'unknown',
+                        },
+                      });
+                    }}
+                  >
+                    <SelectTrigger className="w-full sm:w-[200px] bg-white/10 border-white/20 text-white">
+                      <SelectValue placeholder="Select mode" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-background border-white/10">
+                      {['fullscreen', 'minimal-ui', 'browser', 'standalone'].map(mode => (
+                        <SelectItem
+                          key={mode}
+                          value={mode}
+                          className="text-white focus:text-white focus:bg-white/10"
+                        >
+                          {mode}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </div>
           </TabsContent>

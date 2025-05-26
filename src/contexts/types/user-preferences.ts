@@ -11,6 +11,7 @@ export interface UserPreferences {
   isWatchHistoryEnabled: boolean;
   accentColor?: string;
   isNotificationsEnabled: boolean; // Control feature notifications
+  display_override?: string;
 }
 
 export interface UserPreferencesContextType {

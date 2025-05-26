@@ -115,7 +115,7 @@ export default defineConfig(({ mode }) => ({
         description: "Watch movies and TV shows online",
         theme_color: '#3b82f6',
         background_color: '#0f0f0f',
-        display: 'standalone',
+        display: 'fullscreen',
         display_override: ['fullscreen', 'minimal-ui', 'browser', 'standalone'],
         scope: '/',
         start_url: '/',

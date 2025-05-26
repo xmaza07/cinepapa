@@ -2,12 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useToast } from "@/components/ui/use-toast"
 import { Button } from "@/components/ui/button"
 
-declare global {
-  interface WindowEventMap {
-    beforeinstallprompt: BeforeInstallPromptEvent;
-  }
-}
 
+// Consider moving this type to a shared types file if reused elsewhere
 interface BeforeInstallPromptEvent extends Event {
   readonly platforms: string[];
   readonly userChoice: Promise<{
@@ -17,91 +13,100 @@ interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
 }
 
-const PWAInstallPrompt = () => {
-  const { toast } = useToast()
+
+const PWAInstallPrompt = ({
+  promptTitle = "Install App?",
+  promptDescription = "Install this app for offline access and a better experience.",
+  installButtonLabel = "Install",
+  installedMessage = "The app has been installed successfully!",
+  installStartedMessage = "The app installation has started.",
+  installCancelledMessage = "You can install the app later from the menu.",
+  installFailedMessage = "There was an error installing the app. Please try again.",
+}: {
+  promptTitle?: string;
+  promptDescription?: string;
+  installButtonLabel?: string;
+  installedMessage?: string;
+  installStartedMessage?: string;
+  installCancelledMessage?: string;
+  installFailedMessage?: string;
+}) => {
+  const { toast } = useToast();
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
-  const [isAppInstalled, setIsAppInstalled] = useState(localStorage.getItem('app-installed') === 'true');
+  const [isAppInstalled, setIsAppInstalled] = useState(() => {
+    // Improve detection: check localStorage and display-mode
+    return (
+      localStorage.getItem('app-installed') === 'true' ||
+      window.matchMedia('(display-mode: standalone)').matches
+    );
+  });
+  const [promptVisible, setPromptVisible] = useState(false);
+  const [cardDismissed, setCardDismissed] = useState(false);
 
+
+
+
+  // Prevent multiple toasts
+  // Prevent multiple toasts
   const handleInstallClick = useCallback(async () => {
-    console.log('Install button clicked, deferredPrompt:', deferredPrompt);
-    if (!deferredPrompt) {
-      console.log('No deferred prompt available');
-      return;
-    }
-
+    if (!deferredPrompt) return;
     try {
       await deferredPrompt.prompt();
       const choiceResult = await deferredPrompt.userChoice;
-      console.log('User choice:', choiceResult);
-      
       if (choiceResult.outcome === 'accepted') {
-        console.log('User accepted the install prompt');
         setIsAppInstalled(true);
         localStorage.setItem('app-installed', 'true');
         toast({
           title: "Installation Started",
-          description: "The app installation has started.",
+          description: installStartedMessage,
         });
       } else {
-        console.log('User dismissed the install prompt');
         toast({
           title: "Installation Cancelled",
-          description: "You can install the app later from the menu.",
+          description: installCancelledMessage,
         });
       }
       setDeferredPrompt(null);
+      setPromptVisible(false);
     } catch (error) {
-      console.error('Error during installation:', error);
       toast({
         title: "Installation Failed",
-        description: "There was an error installing the app. Please try again.",
+        description: installFailedMessage,
         variant: "destructive"
       });
+      setPromptVisible(false);
     }
-  }, [deferredPrompt, toast]);
+  }, [deferredPrompt, toast, installStartedMessage, installCancelledMessage, installFailedMessage]);
 
-  const showInstallPrompt = useCallback(() => {
-    console.log('Showing install prompt, deferredPrompt:', deferredPrompt);
-    if (deferredPrompt && !isAppInstalled) {
-      toast({
-        title: "Install App?",
-        description: "Install this app for offline access and a better experience.",
-        action: (
-          <Button variant="outline" size="sm" onClick={handleInstallClick}>
-            Install
-          </Button>
-        ),
-      });
-    }
-  }, [deferredPrompt, isAppInstalled, toast, handleInstallClick]);
+  // Show the card only if not dismissed
+  const showInstallCard = useCallback(() => {
+    if (promptVisible || cardDismissed) return;
+    setPromptVisible(true);
+  }, [promptVisible, cardDismissed]);
+
+
 
   useEffect(() => {
-    console.log('PWAInstallPrompt mounted, isAppInstalled:', isAppInstalled);
-    
+    // Handler for beforeinstallprompt
     const handleBeforeInstallPrompt = (e: BeforeInstallPromptEvent) => {
-      console.log('beforeinstallprompt event captured:', e);
       e.preventDefault();
       setDeferredPrompt(e);
       if (!isAppInstalled) {
-        showInstallPrompt();
+        showInstallCard();
       }
     };
 
+    // Handler for appinstalled
     const handleAppInstalled = (e: Event) => {
-      console.log('appinstalled event fired', e);
       setIsAppInstalled(true);
       setDeferredPrompt(null);
       localStorage.setItem('app-installed', 'true');
       toast({
         title: "Successfully Installed",
-        description: "The app has been installed successfully!",
+        description: installedMessage,
       });
+      setPromptVisible(false);
     };
-
-    if (window.matchMedia('(display-mode: standalone)').matches) {
-      console.log('App is already installed and running in standalone mode');
-      setIsAppInstalled(true);
-    }
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     window.addEventListener('appinstalled', handleAppInstalled);
@@ -110,20 +115,40 @@ const PWAInstallPrompt = () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
       window.removeEventListener('appinstalled', handleAppInstalled);
     };
-  }, [toast, isAppInstalled, showInstallPrompt]);
+  }, [toast, isAppInstalled, showInstallCard, installedMessage]);
 
-  return deferredPrompt && !isAppInstalled ? (
-    <div className="fixed bottom-4 right-4 z-50">
-      <Button 
-        variant="default"
-        size="lg"
-        onClick={handleInstallClick}
-        className="shadow-lg bg-primary text-primary-foreground hover:bg-primary/90"
-      >
-        Install App
-      </Button>
+  // Accessibility: aria-live for prompt
+  // Card-style popup UI
+  if (!deferredPrompt || isAppInstalled || !promptVisible || cardDismissed) return null;
+
+  return (
+    <div className="fixed bottom-6 right-6 z-50 max-w-xs w-full" aria-live="polite">
+      <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl shadow-xl p-5 flex flex-col gap-3 animate-fade-in">
+        <div className="flex items-center justify-between gap-2">
+          <span className="font-semibold text-base text-neutral-900 dark:text-white">{promptTitle}</span>
+          <button
+            onClick={() => { setCardDismissed(true); setPromptVisible(false); }}
+            className="ml-2 p-1 rounded hover:bg-neutral-100 dark:hover:bg-neutral-800 focus:outline-none"
+            aria-label="Dismiss install prompt"
+          >
+            <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+              <path d="M6 6l8 8M6 14L14 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+            </svg>
+          </button>
+        </div>
+        <div className="text-sm text-neutral-700 dark:text-neutral-300 mb-2">{promptDescription}</div>
+        <Button
+          variant="default"
+          size="lg"
+          onClick={handleInstallClick}
+          className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
+          aria-label={installButtonLabel}
+        >
+          {installButtonLabel}
+        </Button>
+      </div>
     </div>
-  ) : null;
+  );
 };
 
 export default PWAInstallPrompt;

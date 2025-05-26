@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { trackEvent } from '@/lib/analytics';
 import { useAuth } from '@/hooks';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,6 +17,7 @@ export default function Signup() {
   const { signUp, signInWithGoogle } = useAuth();
   const navigate = useNavigate();
 
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (password !== confirmPassword) {
@@ -25,6 +27,13 @@ export default function Signup() {
     setIsLoading(true);
     try {
       await signUp(email, password);
+      await trackEvent({
+        name: 'user_signup',
+        params: {
+          method: 'email',
+          email,
+        },
+      });
       navigate('/');
     } catch (error) {
       // Error is handled in auth context
@@ -37,6 +46,12 @@ export default function Signup() {
     setIsLoading(true);
     try {
       await signInWithGoogle();
+      await trackEvent({
+        name: 'user_signup',
+        params: {
+          method: 'google',
+        },
+      });
       navigate('/');
     } catch (error) {
       // Error is handled in auth context

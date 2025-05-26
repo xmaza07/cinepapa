@@ -1,1 +1,0 @@
-Analyze current project to test functionality for Custom API video source. Docs for Custom API video Source is in #file:CUSTOM-API.md

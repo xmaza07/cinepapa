@@ -16,6 +16,7 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import AccentColorPicker from '@/components/AccentColorPicker';
 import { videoSources } from '@/utils/video-sources';
+import { trackEvent } from '@/lib/analytics';
 
 const Profile = () => {
   const { user, logout } = useAuth();
@@ -71,9 +72,16 @@ const Profile = () => {
     });
   };
 
+
   const handleSignOut = async () => {
     try {
       await logout();
+      await trackEvent({
+        name: 'user_logout',
+        params: {
+          user: user?.email || user?.uid || 'unknown',
+        },
+      });
       navigate('/login');
     } catch (error) {
       // Error is handled in auth context
@@ -230,7 +238,17 @@ const Profile = () => {
                   </p>
                   <Select 
                     value={userPreferences?.preferred_source || ''} 
-                    onValueChange={(value) => updatePreferences({ preferred_source: value })}
+                    onValueChange={async (value) => {
+                      await updatePreferences({ preferred_source: value });
+                      await trackEvent({
+                        name: 'user_profile_update',
+                        params: {
+                          field: 'preferred_source',
+                          value,
+                          user: user?.email || user?.uid || 'unknown',
+                        },
+                      });
+                    }}
                   >
                     <SelectTrigger className="w-full sm:w-[200px] bg-white/10 border-white/20 text-white">
                       <SelectValue placeholder="Select source" />

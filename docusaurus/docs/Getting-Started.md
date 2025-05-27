@@ -1,3 +1,4 @@
+
 # Getting Started
 
 This guide will help you set up Let's Stream V2.0 for development.
@@ -32,21 +33,21 @@ npm install
 
 1. Copy `.example.env` to `.env`:
 
-```bash
-cp .example.env .env
-```
+   ```bash
+   cp .example.env .env
+   ```
 
 2. Fill in the environment variables:
 
-```env
-VITE_FIREBASE_API_KEY=
-VITE_FIREBASE_AUTH_DOMAIN=
-VITE_FIREBASE_PROJECT_ID=
-VITE_FIREBASE_STORAGE_BUCKET=
-VITE_FIREBASE_MESSAGING_SENDER_ID=
-VITE_FIREBASE_APP_ID=
-VITE_FIREBASE_MEASUREMENT_ID=
-```
+   ```env
+   VITE_FIREBASE_API_KEY=
+   VITE_FIREBASE_AUTH_DOMAIN=
+   VITE_FIREBASE_PROJECT_ID=
+   VITE_FIREBASE_STORAGE_BUCKET=
+   VITE_FIREBASE_MESSAGING_SENDER_ID=
+   VITE_FIREBASE_APP_ID=
+   VITE_FIREBASE_MEASUREMENT_ID=
+   ```
 
 ### 4. Development Server
 
@@ -120,27 +121,27 @@ The project uses:
 
 1. **File Structure**
 
-```typescript
-// ComponentName.tsx
-import { useState, useEffect } from 'react';
-import { useAuth } from '@/hooks';
+   ```typescript
+   // ComponentName.tsx
+   import { useState, useEffect } from 'react';
+   import { useAuth } from '@/hooks';
 
-interface Props {
-  // Props definition
-}
+   interface Props {
+     // Props definition
+   }
 
-const ComponentName: React.FC<Props> = ({ prop1, prop2 }) => {
-  // Component logic
-};
+   const ComponentName: React.FC<Props> = ({ prop1, prop2 }) => {
+     // Component logic
+   };
 
-export default ComponentName;
-```
+   export default ComponentName;
+   ```
 
 2. **Styling**
 
-- TailwindCSS for styling
-- CSS modules for component-specific styles
-- shadcn/ui components for UI elements
+   - TailwindCSS for styling
+   - CSS modules for component-specific styles
+   - shadcn/ui components for UI elements
 
 ## Firebase Setup
 

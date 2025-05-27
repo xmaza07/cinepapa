@@ -1,3 +1,4 @@
+
 # Backend Setup Guide
 
 This guide covers how to set up the backend infrastructure for Let's Stream V2.0.
@@ -77,7 +78,7 @@ service cloud.firestore {
 
 1. Go to Project Settings > General
 2. Scroll to "Your apps" section
-3. Click web platform (\u003c/\u003e)
+3. Click web platform (</>)
 4. Register app and get configuration
 5. Copy configuration values to your `.env` file:
 

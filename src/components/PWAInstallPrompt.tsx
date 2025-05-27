@@ -40,7 +40,14 @@ const PWAInstallPrompt = ({
       window.matchMedia('(display-mode: standalone)').matches
     );
   });
-  const [promptVisible, setPromptVisible] = useState(false);
+  // In development, show the card by default if not installed/dismissed
+  const isDev = typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'development' || window.location.hostname === 'localhost';
+  const [promptVisible, setPromptVisible] = useState(() => {
+    if (isDev && !localStorage.getItem('app-installed')) {
+      return true;
+    }
+    return false;
+  });
   const [cardDismissed, setCardDismissed] = useState(false);
 
 
@@ -49,10 +56,22 @@ const PWAInstallPrompt = ({
   // Prevent multiple toasts
   // Prevent multiple toasts
   const handleInstallClick = useCallback(async () => {
-    if (!deferredPrompt) return;
+    console.log('[PWAInstallPrompt] Install button clicked', { deferredPrompt });
+    if (!deferredPrompt) {
+      console.warn('[PWAInstallPrompt] No deferredPrompt available. Install prompt cannot be shown.');
+      // Fallback for dev mode: show a message if install prompt is unavailable
+      toast({
+        title: "Install Unavailable",
+        description: "The install prompt is not available in this environment. In production, this button will trigger the PWA install dialog when eligible.",
+        variant: "destructive"
+      });
+      return;
+    }
     try {
+      console.log('[PWAInstallPrompt] Calling deferredPrompt.prompt()');
       await deferredPrompt.prompt();
       const choiceResult = await deferredPrompt.userChoice;
+      console.log('[PWAInstallPrompt] User choice result:', choiceResult);
       if (choiceResult.outcome === 'accepted') {
         setIsAppInstalled(true);
         localStorage.setItem('app-installed', 'true');
@@ -69,6 +88,7 @@ const PWAInstallPrompt = ({
       setDeferredPrompt(null);
       setPromptVisible(false);
     } catch (error) {
+      console.error('[PWAInstallPrompt] Error during install:', error);
       toast({
         title: "Installation Failed",
         description: installFailedMessage,
@@ -111,15 +131,23 @@ const PWAInstallPrompt = ({
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     window.addEventListener('appinstalled', handleAppInstalled);
 
+    // In development, if no deferredPrompt and not installed/dismissed, show the card after a short delay
+    if (isDev && !deferredPrompt && !isAppInstalled && !cardDismissed) {
+      const timeout = setTimeout(() => {
+        setPromptVisible(true);
+      }, 1000);
+      return () => clearTimeout(timeout);
+    }
+
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
       window.removeEventListener('appinstalled', handleAppInstalled);
     };
-  }, [toast, isAppInstalled, showInstallCard, installedMessage]);
+  }, [toast, isAppInstalled, showInstallCard, installedMessage, isDev, deferredPrompt, cardDismissed]);
 
   // Accessibility: aria-live for prompt
   // Card-style popup UI
-  if (!deferredPrompt || isAppInstalled || !promptVisible || cardDismissed) return null;
+  if (isAppInstalled || cardDismissed || !promptVisible) return null;
 
   return (
     <div className="fixed bottom-6 right-6 z-50 max-w-xs w-full" aria-live="polite">

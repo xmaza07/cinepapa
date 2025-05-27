@@ -14,7 +14,6 @@ import ContentRow from '@/components/ContentRow';
 import ContinueWatching from '@/components/ContinueWatching';
 import Footer from '@/components/Footer';
 import Spinner from '@/components/ui/spinner';
-import PWAInstallPrompt from '@/components/PWAInstallPrompt';
 import { Skeleton } from '@/components/ui/skeleton';
 
 // Lazy-loaded secondary content
@@ -91,7 +90,6 @@ const Index = () => {
   return (
     <main className="min-h-screen min-h-svh w-full bg-background flex flex-col overflow-x-hidden">
       <Navbar />
-      <PWAInstallPrompt />
 
       <div className="flex-1 flex flex-col justify-start items-stretch w-full">
         {isLoading ? (

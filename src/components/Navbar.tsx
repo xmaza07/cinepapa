@@ -1,5 +1,5 @@
-
 import React, { useState, useEffect } from 'react';
+import PWAInstallPrompt from './PWAInstallPrompt';
 import { Menu } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { useAuth } from '@/hooks';
@@ -15,8 +15,16 @@ const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
+  const [showInstallPrompt, setShowInstallPrompt] = useState(false);
   const { user } = useAuth();
   const isMobile = useIsMobile();
+
+  useEffect(() => {
+    // Show install prompt after a delay
+    setTimeout(() => {
+      setShowInstallPrompt(true);
+    }, 5000); // 5 seconds delay
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -105,9 +113,15 @@ const Navbar = () => {
             {!isSearchExpanded && (
               <>
                 {user ? (
-                  <UserMenu />
+                  <>
+                    {showInstallPrompt && <PWAInstallPrompt />}
+                    <UserMenu />
+                  </>
                 ) : (
-                  <AuthButtons />
+                  <>
+                    {showInstallPrompt && <PWAInstallPrompt />}
+                    <AuthButtons />
+                  </>
                 )}
                 
                 {/* Mobile menu button - only visible on mobile */}

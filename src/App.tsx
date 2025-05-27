@@ -14,7 +14,7 @@ import { ChatbotProvider } from './contexts/chatbot-context';
 import ChatbotButton from './components/chatbot/ChatbotButton';
 import ChatbotWindow from './components/chatbot/ChatbotWindow';
 import AppRoutes from './routes.tsx';
-import { initializeProxySystem } from './utils/proxy-sw-registration';
+// import { initializeProxySystem } from './utils/proxy-sw-registration';
 import { trackPageView } from './lib/analytics';
 import './App.css';
 import './styles/notifications.css';
@@ -47,16 +47,16 @@ function App() {
   const isDevelopment = import.meta.env.DEV;
   const [swUpdateAvailable, setSwUpdateAvailable] = React.useState(false);
 
-  React.useEffect(() => {
-    // Initialize the proxy system with error handling
-    initializeProxySystem()
-      .then(registered => {
-        console.log(`Proxy system ${registered ? 'registered successfully' : 'not registered or using fallback'}`);
-      })
-      .catch(error => {
-        console.error('Error initializing proxy system:', error);
-      });
-  }, []);
+  // React.useEffect(() => {
+  //   // Initialize the proxy system with error handling
+  //   initializeProxySystem()
+  //     .then(registered => {
+  //       console.log(`Proxy system ${registered ? 'registered successfully' : 'not registered or using fallback'}`);
+  //     })
+  //     .catch(error => {
+  //       console.error('Error initializing proxy system:', error);
+  //     });
+  // }, []);
 
 
   /**
@@ -89,7 +89,7 @@ function App() {
     }
   };
 /**
- * App component for the Flicker Dreams Factory PWA.
+ * App component for the Let's Stream PWA.
  *
  * Handles service worker update notifications, error boundaries, and context providers.
  *

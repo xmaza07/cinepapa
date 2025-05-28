@@ -1,12 +1,10 @@
-
 import React, { useState, useEffect } from 'react';
 import PWAInstallPrompt from './PWAInstallPrompt';
 import { Menu } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { useAuth } from '@/hooks';
 import { useIsMobile } from '@/hooks/use-mobile';
-import AnimatedLogo from './navigation/AnimatedLogo';
-import TechVideoBackground from './navigation/TechVideoBackground';
+import Logo from './navigation/Logo';
 import SearchBar from './navigation/SearchBar';
 import NavLinks from './navigation/NavLinks';
 import MobileMenu from './navigation/MobileMenu';
@@ -25,7 +23,7 @@ const Navbar = () => {
     // Show install prompt after a delay
     setTimeout(() => {
       setShowInstallPrompt(true);
-    }, 5000);
+    }, 5000); // 5 seconds delay
   }, []);
 
   useEffect(() => {
@@ -42,6 +40,7 @@ const Navbar = () => {
   }, []);
 
   useEffect(() => {
+    // Prevent scrolling when mobile menu is open
     if (isMobileMenuOpen) {
       document.body.style.overflow = 'hidden';
     } else {
@@ -61,14 +60,11 @@ const Navbar = () => {
     <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
       isScrolled ? 'nav-scrolled' : 'nav-transparent'
     }`}>
-      {/* Tech Video Background - Only on desktop */}
-      {!isMobile && <TechVideoBackground />}
-      
-      <div className="container mx-auto px-4 py-3 relative z-10">
+      <div className="container mx-auto px-4 py-3">
         <div className="flex items-center justify-between">
           {/* Logo area - always visible */}
           <div className="flex items-center">
-            <AnimatedLogo isMobile={isMobile} />
+            <Logo />
           </div>
           
           {/* Desktop nav links - hidden on mobile */}

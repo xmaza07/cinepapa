@@ -1,5 +1,5 @@
 # Streamed API Documentation
-Deprecated: This documentation is for the old API.
+
 This is the documentation for the API of Streamed. It is a REST API that returns JSON data. You can use this API to get information about matches, streams, and more. The API is open to anyone and is free to use.
 
 Currently, there are no rate limits on the API, but we may add them in the future if needed (due to poor coding by developers harming website performance, etc).

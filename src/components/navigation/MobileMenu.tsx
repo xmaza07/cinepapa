@@ -7,6 +7,8 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks';
+import AnimatedLogo from './AnimatedLogo';
+import TechVideoBackground from './TechVideoBackground';
 
 interface MobileMenuProps {
   isOpen: boolean;
@@ -61,7 +63,6 @@ const MobileMenu = ({ isOpen, onClose }: MobileMenuProps) => {
     { name: 'Movies', path: '/movie', icon: Film },
     { name: 'TV Shows', path: '/tv', icon: Tv2 },
     { name: 'Sports', path: '/sports', icon: Trophy },
-    // { name: 'Live', path: '/live', icon: Flame },
     { name: 'Trending', path: '/trending', icon: Flame },
     { name: 'Search', path: '/search', icon: Search },
   ];
@@ -98,31 +99,42 @@ const MobileMenu = ({ isOpen, onClose }: MobileMenuProps) => {
         initial="closed"
         animate={isOpen ? 'open' : 'closed'}
       >
-        <div className="flex justify-end p-4">
+        {/* Tech Video Background for Mobile */}
+        <TechVideoBackground className="opacity-30" />
+        
+        {/* Header with Logo and Close Button */}
+        <div className="flex items-center justify-between p-4 border-b border-white/10">
+          <AnimatedLogo isMobile={true} />
           <button 
             onClick={onClose}
-            className="p-2 text-white/80 hover:text-white transition-colors"
+            className="p-2 text-white/80 hover:text-white transition-colors rounded-md hover:bg-white/10"
             aria-label="Close menu"
           >
             <X size={24} />
           </button>
         </div>
         
-        <nav className="px-4 pb-6">
-          <ul className="space-y-1">
+        <nav className="px-4 pb-6 relative z-10">
+          <ul className="space-y-1 mt-4">
             {menuItems.map((item) => (
               <motion.li key={item.path} variants={menuItemVariants}>
                 <Link
                   to={item.path}
                   onClick={onClose}
                   className={cn(
-                    "flex items-center py-3 px-4 rounded-md transition-colors",
+                    "flex items-center py-3 px-4 rounded-md transition-all duration-200",
+                    "hover:bg-white/10 hover:translate-x-1",
                     isActive(item.path)
-                      ? "bg-accent/20 text-white"
-                      : "hover:bg-white/10 text-white/70 hover:text-white"
+                      ? "bg-gradient-to-r from-blue-600/20 to-purple-600/20 text-white border-l-2 border-blue-400"
+                      : "text-white/70 hover:text-white"
                   )}
                 >
-                  <item.icon size={18} className="mr-3" />
+                  <motion.div
+                    whileHover={{ rotate: 5 }}
+                    className="mr-3"
+                  >
+                    <item.icon size={18} />
+                  </motion.div>
                   {item.name}
                 </Link>
               </motion.li>

@@ -68,14 +68,15 @@
       "short_name": "Let's Stream",
       "description": "Watch movies and TV shows online",
       "url": "/",
-      "icons": [{ "src": "manifest-icon-192.maskable.png", "sizes": "192x192" }]
+      "icons": [{ "src": "icons/icon-192x192.png", "sizes": "192x192" }]
     }
   ],
   "screenshots": [
     {
       "src": "/screenshots/1.png",
       "sizes": "1280x720",
-      "type": "image/png"
+      "type": "image/png",
+      "form_factor": "wide"
     }
   ],
   "categories": ["entertainment", "movies", "tv shows", "streaming"],

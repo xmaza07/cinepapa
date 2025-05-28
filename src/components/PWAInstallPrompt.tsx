@@ -1,3 +1,9 @@
+// Add type for window property
+declare global {
+  interface Window {
+    __deferredPWAInstallPrompt?: BeforeInstallPromptEvent;
+  }
+}
 import React, { useState, useEffect, useCallback } from 'react';
 import { useToast } from "@/components/ui/use-toast"
 import { Button } from "@/components/ui/button"
@@ -49,6 +55,13 @@ const PWAInstallPrompt = ({
     return false;
   });
   const [cardDismissed, setCardDismissed] = useState(false);
+
+  // Pick up the global deferred prompt if available (fixes timing issues)
+  useEffect(() => {
+    if (!deferredPrompt && window.__deferredPWAInstallPrompt) {
+      setDeferredPrompt(window.__deferredPWAInstallPrompt);
+    }
+  }, [deferredPrompt]);
 
 
 

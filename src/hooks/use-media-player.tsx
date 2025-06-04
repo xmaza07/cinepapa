@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getMovieDetails, getTVDetails, getSeasonDetails } from '@/utils/api';
@@ -63,8 +64,14 @@ export const useMediaPlayer = (
   }, [userPreferences?.preferred_source]);
 
   useEffect(() => {
-    setIsCustomSource(selectedSource === 'custom-api' || selectedSource === 'primewire-custom');
-    if (!['custom-api', 'primewire-custom'].includes(selectedSource)) {
+    if (type === 'movie' || type === 'tv') {
+      setMediaType(type);
+    }
+  }, [type]);
+
+  useEffect(() => {
+    setIsCustomSource(selectedSource === 'custom-api');
+    if (selectedSource !== 'custom-api') {
       setStreamUrl(null);
     }
   }, [selectedSource]);
@@ -76,28 +83,21 @@ export const useMediaPlayer = (
         setIsLoading(true);
         const mediaId = parseInt(id, 10);
         let streamObj = null;
-        
-        if (selectedSource === 'primewire-custom') {
-          // Handle Primewire Custom source
-          const source = videoSources.find(src => src.key === 'primewire-custom');
-          if (source) {
-            if (mediaType === 'movie') {
-              streamObj = await source.getMovieUrl(mediaId);
-            } else if (mediaType === 'tv' && season && episode) {
-              streamObj = await source.getTVUrl(mediaId, parseInt(season, 10), parseInt(episode, 10));
-            }
-          }
-        } else if (selectedSource === 'custom-api') {
-          // Handle existing custom API source
-          if (mediaType === 'movie') {
-            streamObj = await getMovieStream(mediaId);
-          } else if (mediaType === 'tv' && season && episode) {
-            streamObj = await getTVStream(mediaId, parseInt(season, 10), parseInt(episode, 10));
-          }
+        if (mediaType === 'movie') {
+          streamObj = await getMovieStream(mediaId);
+        } else if (mediaType === 'tv' && season && episode) {
+          streamObj = await getTVStream(mediaId, parseInt(season, 10), parseInt(episode, 10));
         }
-
-        if (streamObj && streamObj.url) {
-          setStreamUrl(streamObj.url);
+        const getProxiedUrl = (url: string, headers?: Record<string, string> | null) => {
+          let proxyUrl = `https://plain-sound-6910.chintanr21.workers.dev/?url=${encodeURIComponent(url)}`;
+          if (headers && Object.keys(headers).length > 0) {
+            proxyUrl += `&headers=${encodeURIComponent(JSON.stringify(headers))}`;
+          }
+          return proxyUrl;
+        };
+        const url = streamObj?.url ? getProxiedUrl(streamObj.url, streamObj.headers) : null;
+        if (url) {
+          setStreamUrl(url);
           setIsPlayerLoaded(true);
         } else {
           setIsPlayerLoaded(false);
@@ -120,7 +120,7 @@ export const useMediaPlayer = (
       }
     };
     fetchStream();
-  }, [isCustomSource, id, mediaType, season, episode, selectedSource, toast]);
+  }, [isCustomSource, id, mediaType, season, episode, toast]);
 
   const updateIframeUrl = useCallback((mediaId: number, seasonNum?: number, episodeNum?: number) => {
     if (isCustomSource) return;

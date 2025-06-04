@@ -1,6 +1,6 @@
 
 import { motion } from 'framer-motion';
-import ReactPlayerComponent from './ReactPlayerComponent';
+import PlyrPlayer from '@/components/PlyrPlayer';
 import { useEffect, useRef, useState } from 'react';
 import { registerIframeOrigin, setProxyHeaders, resetServiceWorkerData } from '@/utils/iframe-proxy-sw';
 import { createProxyStreamUrl, proxyAndRewriteM3u8 } from '@/utils/cors-proxy-api';
@@ -31,11 +31,11 @@ const VideoPlayer = ({
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [processedStreamUrl, setProcessedStreamUrl] = useState<string | null>(null);
   const [iframeAttempts, setIframeAttempts] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(false);
   
   // Reset service worker data when component unmounts
   useEffect(() => {
     return () => {
+      // Clean up when component unmounts to prevent issues with future player instances
       resetServiceWorkerData();
     };
   }, []);
@@ -44,13 +44,16 @@ const VideoPlayer = ({
   useEffect(() => {
     if (!isCustomSource && iframeUrl) {
       registerIframeOrigin(iframeUrl);
+      
+      // Reset iframe attempts counter when URL changes
       setIframeAttempts(0);
     }
   }, [isCustomSource, iframeUrl]);
 
-  // Process stream URLs for custom sources
+  // Process M3U8 stream URLs to handle CORS issues
   useEffect(() => {
     if (isCustomSource && streamUrl) {
+      // If we have custom headers, register them with the service worker
       if (headers && Object.keys(headers).length > 0) {
         try {
           const domain = new URL(streamUrl).hostname;
@@ -62,21 +65,27 @@ const VideoPlayer = ({
 
       // Process based on URL type
       if (streamUrl.endsWith('.m3u8')) {
+        // For M3U8 streams, we might need to rewrite URLs inside the playlist
         if (headers && Object.keys(headers).length > 0) {
+          // If we have headers and it's an m3u8, we may need to rewrite the file
           proxyAndRewriteM3u8(streamUrl, headers)
             .then(processedM3u8 => {
+              // Create a blob URL for the processed M3U8
               const blob = new Blob([processedM3u8], { type: 'application/vnd.apple.mpegurl' });
               const blobUrl = URL.createObjectURL(blob);
               setProcessedStreamUrl(blobUrl);
             })
             .catch(err => {
               console.error('Failed to process M3U8:', err);
+              // Fallback to simple proxy
               setProcessedStreamUrl(createProxyStreamUrl(streamUrl, headers));
             });
         } else {
+          // No headers, just proxy the stream
           setProcessedStreamUrl(createProxyStreamUrl(streamUrl));
         }
       } else {
+        // For other types of streams, just proxy them
         setProcessedStreamUrl(createProxyStreamUrl(streamUrl, headers));
       }
     } else {
@@ -84,29 +93,25 @@ const VideoPlayer = ({
     }
   }, [isCustomSource, streamUrl, headers]);
 
-  const handlePlayerReady = () => {
-    console.log('Player ready');
-    onLoaded();
-  };
-
-  const handlePlayerError = (error: any) => {
-    console.error('Player error:', error);
-    onError(`Failed to load video: ${error.message || 'Unknown error'}`);
-  };
-
+  // Handle iframe load error
   const handleIframeError = () => {
     console.error('Iframe failed to load:', iframeUrl);
+    
+    // Increment attempts counter
     setIframeAttempts(prev => prev + 1);
     
+    // After 3 attempts, report the error
     if (iframeAttempts >= 2) {
       onError('Failed to load iframe content after multiple attempts');
     }
   };
   
+  // Handle iframe load success
   const handleIframeLoad = () => {
     console.log('Iframe loaded successfully');
     onLoaded();
     
+    // Apply CSS to the iframe to prevent pointer events on overlays (helps block some popups)
     if (iframeRef.current && iframeRef.current.contentWindow) {
       try {
         const style = document.createElement('style');
@@ -119,20 +124,11 @@ const VideoPlayer = ({
         `;
         iframeRef.current.contentDocument?.head.appendChild(style);
       } catch (e) {
+        // This will likely fail due to CORS, but it's worth trying
         console.log('Could not inject CSS into iframe (expected due to CORS)');
       }
     }
   };
-
-  // Determine the video URL to use
-  const getVideoUrl = () => {
-    if (isCustomSource && (processedStreamUrl || streamUrl)) {
-      return processedStreamUrl || streamUrl;
-    }
-    return iframeUrl;
-  };
-
-  const videoUrl = getVideoUrl();
 
   return (
     <div className="relative aspect-video rounded-lg overflow-hidden shadow-2xl">
@@ -153,35 +149,16 @@ const VideoPlayer = ({
         transition={{ duration: 0.5 }}
         className="w-full h-full"
       >
-        {isCustomSource ? (
-          <ReactPlayerComponent
-            url={videoUrl || ''}
+        {isCustomSource && (processedStreamUrl || streamUrl) ? (
+          <PlyrPlayer            src={processedStreamUrl || streamUrl}
+            title={title}
             poster={poster}
-            controls={true}
-            playing={isPlaying}
-            width="100%"
-            height="100%"
-            config={{
-              file: {
-                attributes: {
-                  crossOrigin: 'anonymous',
-                },
-                hlsOptions: {
-                  maxBufferLength: 30,
-                  maxMaxBufferLength: 60,
-                  fragLoadingTimeOut: 60000,
-                  manifestLoadingTimeOut: 60000,
-                }
-              }
-            }}
-            onReady={handlePlayerReady}
-            onError={handlePlayerError}
-            onPlay={() => setIsPlaying(true)}
-            onPause={() => setIsPlaying(false)}
-            className="rounded-lg overflow-hidden"
+            mediaType="movie"
+            mediaId="custom"
+            onLoaded={onLoaded}
+            onError={onError}
           />
-        ) : (
-          <iframe
+        ) : (          <iframe
             ref={iframeRef}
             src={iframeUrl}
             className="w-full h-full"            
@@ -192,6 +169,8 @@ const VideoPlayer = ({
             onLoad={handleIframeLoad}
             onError={handleIframeError}
             key={`iframe-${iframeUrl}-${iframeAttempts}`}
+            // Don't use sandbox as it's not supported by the video sources
+            // Instead, we're using our service worker to block pop-ups
           />
         )}
       </motion.div>

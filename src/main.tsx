@@ -1,3 +1,4 @@
+
 // Type for the beforeinstallprompt event
 interface BeforeInstallPromptEvent extends Event {
   readonly platforms: string[];
@@ -7,8 +8,7 @@ interface BeforeInstallPromptEvent extends Event {
   }>;
   prompt(): Promise<void>;
 }
-// Re-enable iframe proxy service worker registration (does not affect main SW)
-import { registerIframeProxySW } from './utils/iframe-proxy-sw';
+
 // Store the event on the window so React components can access it
 window.addEventListener('beforeinstallprompt', (e) => {
   window.__deferredPWAInstallPrompt = e as BeforeInstallPromptEvent;
@@ -16,7 +16,8 @@ window.addEventListener('beforeinstallprompt', (e) => {
 
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import App from './App';
+import { RouterProvider } from 'react-router-dom';
+import router from './routes';
 import './index.css';
 
 // Initialize the app after DOM is fully loaded
@@ -28,15 +29,12 @@ const initApp = () => {
     return;
   }
   
-  // Create a root and render the app
+  // Create a root and render the app with router
   createRoot(rootElement).render(
     <React.StrictMode>
-      <App />
+      <RouterProvider router={router} />
     </React.StrictMode>
   );
-
-  // Register the iframe proxy service worker (does not affect main SW)
-  registerIframeProxySW();
 };
 
 // If the DOM is already loaded, run immediately, otherwise wait for the load event

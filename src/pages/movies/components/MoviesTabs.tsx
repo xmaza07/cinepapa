@@ -1,16 +1,11 @@
 
-import { useState, useEffect } from 'react';
-import { useQuery, useQueryClient, keepPreviousData } from '@tanstack/react-query';
-import { getPopularMovies, getTopRatedMovies, getTrendingMovies } from '@/utils/api';
-import { Media, ensureExtendedMediaArray } from '@/utils/types';
-import MediaGrid from '@/components/MediaGrid';
-import { MediaGridSkeleton } from '@/components/MediaSkeleton';
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Button } from '@/components/ui/button';
-import { ChevronDown } from 'lucide-react';
+import MediaGrid from '@/components/MediaGrid';
+import MediaSkeleton from '@/components/MediaSkeleton';
+import { getPopularMovies, getTopRatedMovies, getTrendingMovies } from '@/utils/services/movies';
 import { useFilteredMovies } from '../hooks/useFilteredMovies';
-
-const ITEMS_PER_PAGE = 20;
 
 interface MoviesTabsProps {
   activeTab: 'popular' | 'top_rated' | 'trending';
@@ -27,207 +22,75 @@ const MoviesTabs = ({
   sortBy,
   genreFilter
 }: MoviesTabsProps) => {
-  const queryClient = useQueryClient();
-  const [popularPage, setPopularPage] = useState(1);
-  const [topRatedPage, setTopRatedPage] = useState(1);
-  const [trendingPage, setTrendingPage] = useState(1);
-  const [allPopularMovies, setAllPopularMovies] = useState<Media[]>([]);
-  const [allTopRatedMovies, setAllTopRatedMovies] = useState<Media[]>([]);
-  const [allTrendingMovies, setAllTrendingMovies] = useState<Media[]>([]);
+  const [page] = useState(1);
 
-  const popularMoviesQuery = useQuery({
-    queryKey: ['popularMovies', popularPage],
-    queryFn: () => getPopularMovies(popularPage),
-    placeholderData: keepPreviousData,
-  });
-  
-  const topRatedMoviesQuery = useQuery({
-    queryKey: ['topRatedMovies', topRatedPage],
-    queryFn: () => getTopRatedMovies(topRatedPage),
-    placeholderData: keepPreviousData,
+  // Fetch data for each tab
+  const { data: popularMovies, isLoading: isLoadingPopular } = useQuery({
+    queryKey: ['movies', 'popular', page],
+    queryFn: () => getPopularMovies(page),
   });
 
-  const trendingMoviesQuery = useQuery({
-    queryKey: ['trendingMovies', trendingPage],
-    queryFn: () => getTrendingMovies('week', trendingPage),
-    placeholderData: keepPreviousData,
+  const { data: topRatedMovies, isLoading: isLoadingTopRated } = useQuery({
+    queryKey: ['movies', 'top_rated', page],
+    queryFn: () => getTopRatedMovies(page),
   });
 
-  // Update movie collections when queries return
-  useEffect(() => {
-    if (popularMoviesQuery.data) {
-      setAllPopularMovies(prev => {
-        const newMovies = popularMoviesQuery.data
-          .filter(movie => !prev.some(p => p.id === (movie.id || movie.media_id)))
-          .map(movie => ({
-            ...movie,
-            id: movie.id || movie.media_id || 0,
-            media_id: movie.id || movie.media_id || 0,
-            media_type: 'movie' as const,
-          }));
-        return [...prev, ...newMovies];
-      });
-    }
-  }, [popularMoviesQuery.data]);
+  const { data: trendingMovies, isLoading: isLoadingTrending } = useQuery({
+    queryKey: ['movies', 'trending', page],
+    queryFn: () => getTrendingMovies(page),
+  });
 
-  useEffect(() => {
-    if (topRatedMoviesQuery.data) {
-      setAllTopRatedMovies(prev => {
-        const newMovies = topRatedMoviesQuery.data
-          .filter(movie => !prev.some(p => p.id === (movie.id || movie.media_id)))
-          .map(movie => ({
-            ...movie,
-            id: movie.id || movie.media_id || 0,
-            media_id: movie.id || movie.media_id || 0,
-            media_type: 'movie' as const,
-          }));
-        return [...prev, ...newMovies];
-      });
-    }
-  }, [topRatedMoviesQuery.data]);
+  // Filter movies based on current tab
+  const currentMovies = activeTab === 'popular' ? popularMovies?.results || [] :
+                       activeTab === 'top_rated' ? topRatedMovies?.results || [] :
+                       trendingMovies?.results || [];
 
-  useEffect(() => {
-    if (trendingMoviesQuery.data) {
-      setAllTrendingMovies(prev => {
-        const newMovies = trendingMoviesQuery.data
-          .filter(movie => !prev.some(p => p.id === (movie.id || movie.media_id)))
-          .map(movie => ({
-            ...movie,
-            id: movie.id || movie.media_id || 0,
-            media_id: movie.id || movie.media_id || 0,
-            media_type: 'movie' as const,
-          }));
-        return [...prev, ...newMovies];
-      });
-    }
-  }, [trendingMoviesQuery.data]);
+  const filteredMovies = useFilteredMovies(currentMovies, sortBy, genreFilter);
 
-  // Prefetch next pages
-  useEffect(() => {
-    if (popularMoviesQuery.data?.length === ITEMS_PER_PAGE) {
-      queryClient.prefetchQuery({
-        queryKey: ['popularMovies', popularPage + 1],
-        queryFn: () => getPopularMovies(popularPage + 1),
-      });
-    }
-  }, [popularPage, queryClient, popularMoviesQuery.data]);
+  const isLoading = activeTab === 'popular' ? isLoadingPopular :
+                   activeTab === 'top_rated' ? isLoadingTopRated :
+                   isLoadingTrending;
 
-  useEffect(() => {
-    if (topRatedMoviesQuery.data?.length === ITEMS_PER_PAGE) {
-      queryClient.prefetchQuery({
-        queryKey: ['topRatedMovies', topRatedPage + 1],
-        queryFn: () => getTopRatedMovies(topRatedPage + 1),
-      });
-    }
-  }, [topRatedPage, queryClient, topRatedMoviesQuery.data]);
-
-  useEffect(() => {
-    if (trendingMoviesQuery.data?.length === ITEMS_PER_PAGE) {
-      queryClient.prefetchQuery({
-        queryKey: ['trendingMovies', trendingPage + 1],
-        queryFn: () => getTrendingMovies('week', trendingPage + 1),
-      });
-    }
-  }, [trendingPage, queryClient, trendingMoviesQuery.data]);
-
-  const filteredPopularMovies = useFilteredMovies(allPopularMovies, sortBy, genreFilter);
-  const filteredTopRatedMovies = useFilteredMovies(allTopRatedMovies, sortBy, genreFilter);
-  const filteredTrendingMovies = useFilteredMovies(allTrendingMovies, sortBy, genreFilter);
-
-  const hasMorePopular = popularMoviesQuery.data?.length === ITEMS_PER_PAGE;
-  const hasMoreTopRated = topRatedMoviesQuery.data?.length === ITEMS_PER_PAGE;
-  const hasMoreTrending = trendingMoviesQuery.data?.length === ITEMS_PER_PAGE;
+  if (isLoading) {
+    return (
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+        {Array.from({ length: 12 }, (_, index) => (
+          <MediaSkeleton key={index} />
+        ))}
+      </div>
+    );
+  }
 
   return (
-    <Tabs value={activeTab} onValueChange={onTabChange}>
-      <TabsList className="mb-6">
-        <TabsTrigger value="popular" className="data-[state=active]:bg-accent/20">Popular</TabsTrigger>
-        <TabsTrigger value="top_rated" className="data-[state=active]:bg-accent/20">Top Rated</TabsTrigger>
-        <TabsTrigger value="trending" className="data-[state=active]:bg-accent/20">Trending</TabsTrigger>
+    <Tabs value={activeTab} onValueChange={onTabChange} className="w-full">
+      <TabsList className="grid w-full grid-cols-3 mb-6">
+        <TabsTrigger value="popular">Popular</TabsTrigger>
+        <TabsTrigger value="top_rated">Top Rated</TabsTrigger>
+        <TabsTrigger value="trending">Trending</TabsTrigger>
       </TabsList>
       
-      <TabsContent value="popular" className="focus-visible:outline-none animate-fade-in">
-        {popularMoviesQuery.isLoading ? (
-          <MediaGridSkeleton listView={viewMode === 'list'} />
-        ) : popularMoviesQuery.isError ? (
-          <div className="py-12 text-center text-white">Error loading movies. Please try again.</div>
-        ) : (
-          <>
-            <MediaGrid media={ensureExtendedMediaArray(filteredPopularMovies)} title="Popular Movies" listView={viewMode === 'list'} />
-            
-            {hasMorePopular && (
-              <div className="flex justify-center my-8">
-                <Button 
-                  onClick={() => setPopularPage(prev => prev + 1)}
-                  variant="outline"
-                  className="border-white/10 text-white hover:bg-accent/20 hover:border-accent/50 hover:text-white transition-all duration-300"
-                >
-                  {popularMoviesQuery.isFetching ? (
-                    <>Loading...</>
-                  ) : (
-                    <>Show More <ChevronDown className="ml-2 h-4 w-4 animate-bounce" /></>
-                  )}
-                </Button>
-              </div>
-            )}
-          </>
-        )}
+      <TabsContent value="popular" className="mt-0">
+        <MediaGrid 
+          media={filteredMovies} 
+          viewMode={viewMode}
+          mediaType="movie"
+        />
       </TabsContent>
       
-      <TabsContent value="top_rated" className="focus-visible:outline-none animate-fade-in">
-        {topRatedMoviesQuery.isLoading ? (
-          <MediaGridSkeleton listView={viewMode === 'list'} />
-        ) : topRatedMoviesQuery.isError ? (
-          <div className="py-12 text-center text-white">Error loading movies. Please try again.</div>
-        ) : (
-          <>
-            <MediaGrid media={ensureExtendedMediaArray(filteredTopRatedMovies)} title="Top Rated Movies" listView={viewMode === 'list'} />
-            
-            {hasMoreTopRated && (
-              <div className="flex justify-center my-8">
-                <Button 
-                  onClick={() => setTopRatedPage(prev => prev + 1)}
-                  variant="outline"
-                  className="border-white/10 text-white hover:bg-accent/20 hover:border-accent/50 hover:text-white transition-all duration-300"
-                >
-                  {topRatedMoviesQuery.isFetching ? (
-                    <>Loading...</>
-                  ) : (
-                    <>Show More <ChevronDown className="ml-2 h-4 w-4 animate-bounce" /></>
-                  )}
-                </Button>
-              </div>
-            )}
-          </>
-        )}
+      <TabsContent value="top_rated" className="mt-0">
+        <MediaGrid 
+          media={filteredMovies} 
+          viewMode={viewMode}
+          mediaType="movie"
+        />
       </TabsContent>
-
-      <TabsContent value="trending" className="focus-visible:outline-none animate-fade-in">
-        {trendingMoviesQuery.isLoading ? (
-          <MediaGridSkeleton listView={viewMode === 'list'} />
-        ) : trendingMoviesQuery.isError ? (
-          <div className="py-12 text-center text-white">Error loading movies. Please try again.</div>
-        ) : (
-          <>
-            <MediaGrid media={ensureExtendedMediaArray(filteredTrendingMovies)} title="Trending Movies" listView={viewMode === 'list'} />
-            
-            {hasMoreTrending && (
-              <div className="flex justify-center my-8">
-                <Button 
-                  onClick={() => setTrendingPage(prev => prev + 1)}
-                  variant="outline"
-                  className="border-white/10 text-white hover:bg-accent/20 hover:border-accent/50 hover:text-white transition-all duration-300"
-                >
-                  {trendingMoviesQuery.isFetching ? (
-                    <>Loading...</>
-                  ) : (
-                    <>Show More <ChevronDown className="ml-2 h-4 w-4 animate-bounce" /></>
-                  )}
-                </Button>
-              </div>
-            )}
-          </>
-        )}
+      
+      <TabsContent value="trending" className="mt-0">
+        <MediaGrid 
+          media={filteredMovies} 
+          viewMode={viewMode}
+          mediaType="movie"
+        />
       </TabsContent>
     </Tabs>
   );

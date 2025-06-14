@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -40,22 +41,9 @@ function AnalyticsWrapper({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-
 function App() {
   const isDevelopment = import.meta.env.DEV;
   const [swUpdateAvailable, setSwUpdateAvailable] = React.useState(false);
-
-  // React.useEffect(() => {
-  //   // Initialize the proxy system with error handling
-  //   initializeProxySystem()
-  //     .then(registered => {
-  //       console.log(`Proxy system ${registered ? 'registered successfully' : 'not registered or using fallback'}`);
-  //     })
-  //     .catch(error => {
-  //       console.error('Error initializing proxy system:', error);
-  //     });
-  // }, []);
-
 
   /**
    * Handles acceptance of a service worker update.
@@ -86,15 +74,6 @@ function App() {
       }
     }
   };
-/**
- * App component for the Let's Stream PWA.
- *
- * Handles service worker update notifications, error boundaries, and context providers.
- *
- * - Shows a notification when a new service worker is available.
- * - Handles update acceptance and reloads the app when the new service worker takes control.
- * - Provides enhanced error handling and user notifications for critical failures.
- */
 
   return (
     <QueryClientProvider client={queryClient}>

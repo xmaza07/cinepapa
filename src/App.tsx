@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { BrowserRouter, useLocation } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from './contexts/theme';
 import { UserPreferencesProvider } from './contexts/user-preferences';
@@ -13,8 +13,6 @@ import { AuthProvider } from './hooks/auth-context';
 import { ChatbotProvider } from './contexts/chatbot-context';
 import ChatbotButton from './components/chatbot/ChatbotButton';
 import ChatbotWindow from './components/chatbot/ChatbotWindow';
-import AppRoutes from './routes.tsx';
-// import { initializeProxySystem } from './utils/proxy-sw-registration';
 import { trackPageView } from './lib/analytics';
 import './App.css';
 import './styles/notifications.css';
@@ -100,7 +98,6 @@ function App() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
         <ServiceWorkerErrorBoundary>
           <ThemeProvider>
             <NotificationProvider>
@@ -118,7 +115,7 @@ function App() {
                           />
                         )}
                         {isDevelopment && <ServiceWorkerDebugPanel />}
-                        <AppRoutes />
+                        <Outlet />
                         <ChatbotButton />
                         <ChatbotWindow />
                         </AnalyticsWrapper>
@@ -130,7 +127,6 @@ function App() {
             </NotificationProvider>
           </ThemeProvider>
         </ServiceWorkerErrorBoundary>
-      </BrowserRouter>
     </QueryClientProvider>
   );
 }

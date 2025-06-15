@@ -3,9 +3,10 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import MediaGrid from '@/components/MediaGrid';
-import MediaSkeleton from '@/components/MediaSkeleton';
+import { MediaSkeleton } from '@/components/MediaSkeleton';
 import { getPopularMovies, getTopRatedMovies, getTrendingMovies } from '@/utils/services/movies';
 import { useFilteredMovies } from '../hooks/useFilteredMovies';
+import { ensureExtendedMediaArray } from '@/utils/types';
 
 interface MoviesTabsProps {
   activeTab: 'popular' | 'top_rated' | 'trending';
@@ -37,15 +38,16 @@ const MoviesTabs = ({
 
   const { data: trendingMovies, isLoading: isLoadingTrending } = useQuery({
     queryKey: ['movies', 'trending', page],
-    queryFn: () => getTrendingMovies(page),
+    queryFn: () => getTrendingMovies('week', page),
   });
 
   // Filter movies based on current tab
-  const currentMovies = activeTab === 'popular' ? popularMovies?.results || [] :
-                       activeTab === 'top_rated' ? topRatedMovies?.results || [] :
-                       trendingMovies?.results || [];
+  const currentMovies = activeTab === 'popular' ? popularMovies || [] :
+                       activeTab === 'top_rated' ? topRatedMovies || [] :
+                       trendingMovies || [];
 
   const filteredMovies = useFilteredMovies(currentMovies, sortBy, genreFilter);
+  const extendedFilteredMovies = ensureExtendedMediaArray(filteredMovies);
 
   const isLoading = activeTab === 'popular' ? isLoadingPopular :
                    activeTab === 'top_rated' ? isLoadingTopRated :
@@ -71,25 +73,22 @@ const MoviesTabs = ({
       
       <TabsContent value="popular" className="mt-0">
         <MediaGrid 
-          media={filteredMovies} 
-          viewMode={viewMode}
-          mediaType="movie"
+          media={extendedFilteredMovies} 
+          listView={viewMode === 'list'}
         />
       </TabsContent>
       
       <TabsContent value="top_rated" className="mt-0">
         <MediaGrid 
-          media={filteredMovies} 
-          viewMode={viewMode}
-          mediaType="movie"
+          media={extendedFilteredMovies} 
+          listView={viewMode === 'list'}
         />
       </TabsContent>
       
       <TabsContent value="trending" className="mt-0">
         <MediaGrid 
-          media={filteredMovies} 
-          viewMode={viewMode}
-          mediaType="movie"
+          media={extendedFilteredMovies} 
+          listView={viewMode === 'list'}
         />
       </TabsContent>
     </Tabs>

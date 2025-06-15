@@ -1,6 +1,5 @@
-
 import React, { useEffect } from 'react';
-import { Outlet, useLocation } from 'react-router-dom';
+import { BrowserRouter, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from './contexts/theme';
 import { UserPreferencesProvider } from './contexts/user-preferences';
@@ -14,6 +13,8 @@ import { AuthProvider } from './hooks/auth-context';
 import { ChatbotProvider } from './contexts/chatbot-context';
 import ChatbotButton from './components/chatbot/ChatbotButton';
 import ChatbotWindow from './components/chatbot/ChatbotWindow';
+import AppRoutes from './routes.tsx';
+// import { initializeProxySystem } from './utils/proxy-sw-registration';
 import { trackPageView } from './lib/analytics';
 import './App.css';
 import './styles/notifications.css';
@@ -41,9 +42,22 @@ function AnalyticsWrapper({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+
 function App() {
   const isDevelopment = import.meta.env.DEV;
   const [swUpdateAvailable, setSwUpdateAvailable] = React.useState(false);
+
+  // React.useEffect(() => {
+  //   // Initialize the proxy system with error handling
+  //   initializeProxySystem()
+  //     .then(registered => {
+  //       console.log(`Proxy system ${registered ? 'registered successfully' : 'not registered or using fallback'}`);
+  //     })
+  //     .catch(error => {
+  //       console.error('Error initializing proxy system:', error);
+  //     });
+  // }, []);
+
 
   /**
    * Handles acceptance of a service worker update.
@@ -74,9 +88,19 @@ function App() {
       }
     }
   };
+/**
+ * App component for the Let's Stream PWA.
+ *
+ * Handles service worker update notifications, error boundaries, and context providers.
+ *
+ * - Shows a notification when a new service worker is available.
+ * - Handles update acceptance and reloads the app when the new service worker takes control.
+ * - Provides enhanced error handling and user notifications for critical failures.
+ */
 
   return (
     <QueryClientProvider client={queryClient}>
+      <BrowserRouter>
         <ServiceWorkerErrorBoundary>
           <ThemeProvider>
             <NotificationProvider>
@@ -94,7 +118,7 @@ function App() {
                           />
                         )}
                         {isDevelopment && <ServiceWorkerDebugPanel />}
-                        <Outlet />
+                        <AppRoutes />
                         <ChatbotButton />
                         <ChatbotWindow />
                         </AnalyticsWrapper>
@@ -106,6 +130,7 @@ function App() {
             </NotificationProvider>
           </ThemeProvider>
         </ServiceWorkerErrorBoundary>
+      </BrowserRouter>
     </QueryClientProvider>
   );
 }

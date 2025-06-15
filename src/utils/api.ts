@@ -17,5 +17,3 @@ export * from './config/constants';
 export * from './types/tmdb';
 export * from './types/movie';
 export * from './types/tv';
-
-export { getTrendingMovies } from './services/movies';

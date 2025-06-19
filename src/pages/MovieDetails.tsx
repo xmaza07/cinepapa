@@ -10,6 +10,10 @@ import ReviewSection from '@/components/ReviewSection';
 import { Play, Clock, Calendar, Star, ArrowLeft, Shield, Heart, Bookmark } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useWatchHistory } from '@/hooks/watch-history';
+import { DownloadSection } from '@/components/DownloadSection';
+import { useAuth } from '@/hooks';
+
+type TabType = 'about' | 'cast' | 'reviews' | 'downloads';
 
 const MovieDetailsPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -18,7 +22,7 @@ const MovieDetailsPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [backdropLoaded, setBackdropLoaded] = useState(false);
   const [logoLoaded, setLogoLoaded] = useState(false);
-  const [activeTab, setActiveTab] = useState<'about' | 'reviews' | 'cast'>('about');
+  const [activeTab, setActiveTab] = useState<TabType>('about');
   const [recommendations, setRecommendations] = useState<Media[]>([]);
   const [trailerKey, setTrailerKey] = useState<string | null>(null);
   const [cast, setCast] = useState<CastMember[]>([]);
@@ -34,6 +38,7 @@ const MovieDetailsPage = () => {
   const [isInMyWatchlist, setIsInMyWatchlist] = useState(false);
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const { user } = useAuth();
   
   useEffect(() => {
     const fetchMovieData = async () => {
@@ -375,6 +380,17 @@ const MovieDetailsPage = () => {
           >
             Reviews
           </button>
+          <button
+            className={`py-2 px-4 font-medium whitespace-nowrap ${
+              activeTab === 'downloads' 
+                ? 'text-white border-b-2 border-accent' 
+                : 'text-white/60 hover:text-white'
+            }`}
+            onClick={() => setActiveTab('downloads')}
+            style={{ display: user ? undefined : 'none' }}
+          >
+            Downloads
+          </button>
         </div>
         
         {activeTab === 'about' ? (
@@ -458,6 +474,11 @@ const MovieDetailsPage = () => {
             ) : (
               <div className="text-white/70">No cast information available.</div>
             )}
+          </div>
+        ) : activeTab === 'downloads' ? (
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold text-white mb-6">Download Movie</h2>
+            {movie && <DownloadSection mediaName={movie.title} />}
           </div>
         ) : (
           /* Reviews section */

@@ -1,6 +1,6 @@
-
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import ContentRow from '@/components/ContentRow';
 import Navbar from '@/components/Navbar';
@@ -11,11 +11,18 @@ import TVShowAbout from '@/components/tv/TVShowAbout';
 import TVShowCast from '@/components/tv/TVShowCast';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useTVDetails } from '@/hooks/use-tv-details';
+import { DownloadSection } from '@/components/DownloadSection';
+import { TVDownloadSection } from '@/components/tv/TVDownloadSection';
+import { useAuth } from '@/hooks';
+
+type TabType = 'episodes' | 'about' | 'cast' | 'reviews' | 'downloads';
 
 const TVDetailsPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const [activeTab, setActiveTab] = useState<TabType>('episodes');
+  const { user } = useAuth();
   
   const { 
     tvShow, 
@@ -24,8 +31,6 @@ const TVDetailsPage = () => {
     setSelectedSeason, 
     isLoading, 
     error, 
-    activeTab,
-    setActiveTab, 
     recommendations, 
     cast, 
     trailerKey,
@@ -36,7 +41,7 @@ const TVDetailsPage = () => {
     handleToggleWatchlist, 
     getLastWatchedEpisode
   } = useTVDetails(id);
-  
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
@@ -144,6 +149,17 @@ const TVDetailsPage = () => {
           >
             Reviews
           </button>
+          <button
+            className={`py-2 px-4 font-medium whitespace-nowrap ${
+              activeTab === 'downloads' 
+                ? 'text-white border-b-2 border-accent' 
+                : 'text-white/60 hover:text-white'
+            }`}
+            onClick={() => setActiveTab('downloads')}
+            style={{ display: user ? undefined : 'none' }}
+          >
+            Downloads
+          </button>
         </div>
         
         {activeTab === 'episodes' && (
@@ -168,6 +184,22 @@ const TVDetailsPage = () => {
           <div className="mb-8">
             <h2 className="text-2xl font-bold text-white mb-6">User Reviews</h2>
             <ReviewSection mediaId={parseInt(id!, 10)} mediaType="tv" />
+          </div>
+        )}
+
+        {activeTab === 'downloads' && (
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold text-white mb-6">Download Episodes</h2>
+            <TVDownloadSection
+              tvShowName={tvShow.name}
+              seasons={tvShow.seasons}
+              episodesBySeason={Object.fromEntries(
+                tvShow.seasons.map(season => [
+                  season.season_number,
+                  (episodes || []).filter(ep => ep.season_number === season.season_number)
+                ])
+              )}
+            />
           </div>
         )}
       </div>

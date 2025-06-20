@@ -1,4 +1,3 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -143,6 +142,29 @@
   
   .text-shadow-sm {
     text-shadow: 0 1px 5px rgba(0, 0, 0, 0.4);
+  }
+
+  /* Immersive Hero Utilities */
+  .hero-immersive {
+    min-height: 80vh;
+  }
+
+  .hero-immersive .hero-title {
+    font-size: clamp(3rem, 10vw, 6rem);
+    font-weight: 900;
+    line-height: 1.1;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .hero-immersive .hero-overlay {
+    background: linear-gradient(90deg, rgba(10,10,12,0.9) 30%, rgba(10,10,12,0.2) 100%);
+  }
+
+  .hero-immersive .surface-blur {
+    background-color: rgba(30, 30, 35, 0.5);
+    backdrop-filter: blur(10px);
+    border-color: rgba(255, 255, 255, 0.1);
   }
 }
 

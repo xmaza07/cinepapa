@@ -8,9 +8,12 @@ interface ContentRowProps {
   title: string;
   media: Media[];
   featured?: boolean;
+  onLoadMore?: () => void;
+  isLoadingMore?: boolean;
+  loadMoreRef?: React.RefObject<HTMLDivElement>;
 }
 
-const ContentRow = ({ title, media, featured = false }: ContentRowProps) => {
+const ContentRow = ({ title, media, featured = false, onLoadMore, isLoadingMore, loadMoreRef }: ContentRowProps) => {
   const rowRef = useRef<HTMLDivElement>(null);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [showRightArrow, setShowRightArrow] = useState(true);
@@ -46,7 +49,6 @@ const ContentRow = ({ title, media, featured = false }: ContentRowProps) => {
       style={{ animationDelay: '0.2s', animationFillMode: 'forwards' }}
     >
       <h2 className="text-xl md:text-2xl font-bold text-white mb-4">{title}</h2>
-      
       <div 
         className="relative group"
         onMouseEnter={() => setIsHovering(true)}
@@ -64,7 +66,6 @@ const ContentRow = ({ title, media, featured = false }: ContentRowProps) => {
             <ChevronLeft className="h-6 w-6" />
           </button>
         )}
-        
         {/* Content row */}
         <div 
           ref={rowRef}
@@ -85,7 +86,10 @@ const ContentRow = ({ title, media, featured = false }: ContentRowProps) => {
             </div>
           ))}
         </div>
-        
+        {/* Infinite Scroll Trigger Only (no button) */}
+        {loadMoreRef && (
+          <div ref={loadMoreRef} className="h-4 w-full" />
+        )}
         {/* Right scroll button */}
         {showRightArrow && (
           <button

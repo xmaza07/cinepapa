@@ -34,14 +34,12 @@ const extractMediaItems = (text: string): ParsedMediaItem[] => {
   const mediaItems: ParsedMediaItem[] = [];
   
   // First attempt: Try to find numbered items (1., 2., etc.)
-  let items = text.split(/\d+\.\s+/).filter(item => item.trim().length > 0);
-  
-  // If no numbered items were found, try to look for titles in the text
+  let items = text.match(/(\d+\.\s+[^\d]+(?=\d+\.\s+|$))/gs) || [];
+
   if (items.length === 0 || (items.length === 1 && !items[0].includes('(') && !items[0].includes('**'))) {
-    // Try to find titles with year pattern "Title (YEAR)"
     const titleYearPattern = /(?:\*\*)?([^*\n(]+)(?:\*\*)?\s*\((\d{4}(?:-\d{4}|\s*-\s*Present)?)\)/g;
     const matches = [...text.matchAll(titleYearPattern)];
-    
+
     if (matches.length > 0) {
       items = matches.map(match => {
         const startIdx = match.index || 0;
@@ -51,7 +49,7 @@ const extractMediaItems = (text: string): ParsedMediaItem[] => {
       });
     }
   }
-  
+
   items.forEach(item => {
     // Look for title patterns: bold text or text with year in parentheses
     // Support both Markdown bold (**Title**) and plain text with year

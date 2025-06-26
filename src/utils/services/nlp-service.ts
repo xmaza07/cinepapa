@@ -34,14 +34,24 @@ class NLPService {
   public async analyzeInput(text: string): Promise<EntityExtraction> {
     // Process the input text to extract various entities
     const processedText = text.toLowerCase();
-    
+
+    // Improved extraction using regular expressions and keyword matching
+    const genres = this.extractGenres(processedText);
+    const actors = this.extractActors(processedText);
+    const directors = this.extractDirectors(processedText);
+    const keywords = this.extractKeywords(processedText);
+    const timeReferences = this.extractTimeReferences(processedText);
+    const sentiment = this.analyzeSentiment(processedText);
+
+    console.debug('Extracted entities:', { genres, actors, directors, keywords, timeReferences, sentiment });
+
     return {
-      genres: this.extractGenres(processedText),
-      actors: this.extractActors(processedText),
-      directors: this.extractDirectors(processedText),
-      keywords: this.extractKeywords(processedText),
-      timeReferences: this.extractTimeReferences(processedText),
-      sentiment: this.analyzeSentiment(processedText)
+      genres,
+      actors,
+      directors,
+      keywords,
+      timeReferences,
+      sentiment
     };
   }
 

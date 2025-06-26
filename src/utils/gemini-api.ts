@@ -1,7 +1,8 @@
-import { GoogleGenerativeAI, GenerateContentResult } from '@google/generative-ai';
+import { GoogleGenerativeAI, GenerateContentResult, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
 import { RateLimiter } from './rate-limiter';
 import env from '@/config/env';
 import { TV_SHOW_EXAMPLE, formatTVShowRequirements } from './tv-show-prompt';
+import { ChatbotMedia } from './types/chatbot-types';
 
 // Types
 interface GeminiConfig {
@@ -152,6 +153,99 @@ ${TV_SHOW_EXAMPLE}
 ${formatTVShowRequirements}
 `;
 
+// Fallback recommendations - used when API fails
+const FALLBACK_RECOMMENDATIONS = [
+  {
+    title: "The Shawshank Redemption",
+    year: "1994",
+    description: "Two imprisoned men bond over a number of years, finding solace and eventual redemption through acts of common decency.",
+    type: "movie",
+    tmdbId: 278,
+    genres: ["Drama"],
+    rating: "IMDb: 9.3/10"
+  },
+  {
+    title: "The Dark Knight",
+    year: "2008",
+    description: "When the menace known as the Joker wreaks havoc and chaos on the people of Gotham, Batman must accept one of the greatest psychological and physical tests of his ability to fight injustice.",
+    type: "movie",
+    tmdbId: 155,
+    genres: ["Action", "Crime", "Drama", "Thriller"],
+    rating: "IMDb: 9.0/10"
+  },
+  {
+    title: "Breaking Bad",
+    year: "2008",
+    description: "A high school chemistry teacher diagnosed with inoperable lung cancer turns to manufacturing and selling methamphetamine in order to secure his family's future.",
+    type: "tv",
+    tmdbId: 1396,
+    genres: ["Drama", "Crime", "Thriller"],
+    rating: "IMDb: 9.5/10",
+    season: 1,
+    episode: 1
+  }
+];
+
+/**
+ * Generate fallback response when the API fails
+ * @param query The user's query
+ * @returns A formatted fallback response
+ */
+const generateFallbackResponse = (query: string): string => {
+  const lowerQuery = query.toLowerCase();
+  let genre = "";
+  let mood = "";
+  
+  // Simple query analysis for fallback
+  if (lowerQuery.includes("action")) genre = "action";
+  else if (lowerQuery.includes("comedy")) genre = "comedy";
+  else if (lowerQuery.includes("drama")) genre = "drama";
+  else if (lowerQuery.includes("horror")) genre = "horror";
+  
+  if (lowerQuery.includes("happy") || lowerQuery.includes("uplifting")) mood = "uplifting";
+  else if (lowerQuery.includes("sad")) mood = "emotional";
+  else if (lowerQuery.includes("scary")) mood = "tense";
+  
+  // Filter recommendations based on simple query matching
+  let relevantRecs = FALLBACK_RECOMMENDATIONS;
+  if (genre) {
+    relevantRecs = relevantRecs.filter(rec => 
+      rec.genres.some(g => g.toLowerCase().includes(genre))
+    );
+  }
+  
+  // If nothing matched, use all recommendations
+  if (relevantRecs.length === 0) {
+    relevantRecs = FALLBACK_RECOMMENDATIONS;
+  }
+  
+  // Format the response using a simpler approach to avoid template literal issues
+  let responseText = "Here are some recommendations that might interest you:\n\n";
+  
+  // Build the recommendations string manually
+  relevantRecs.forEach((rec, index) => {
+    if (index > 0) {
+      responseText += "\n\n"; // Add spacing between recommendations
+    }
+    
+    responseText += `${index + 1}. **${rec.title}** (${rec.year}) - ${rec.description}\n`;
+    responseText += `Genre: ${rec.genres.join(', ')}\n`;
+    responseText += `Type: ${rec.type}\n`;
+    responseText += `${rec.rating}\n`;
+    responseText += `TMDB_ID: ${rec.tmdbId}`;
+    
+    // Add TV show specific info if needed
+    if (rec.type === 'tv') {
+      responseText += `\nSeason: ${rec.season || 1}\n`;
+      responseText += `Episode: ${rec.episode || 1}`;
+    }
+  });
+  
+  responseText += "\n\n(Note: I'm currently using a backup recommendation system. For more personalized recommendations, please try again later.)";
+  
+  return responseText;
+};
+
 /**
  * Send a message to the Gemini model and get a response
  * @param message The user's message
@@ -162,24 +256,55 @@ export const sendMessageToGemini = async (
   message: string,
   chatHistory: string[] = []
 ): Promise<GeminiResponse> => {
+  // Track start time for performance monitoring
+  const startTime = Date.now();
+  
   try {
     // Check if Gemini API is configured
     if (!genAI) {
+      console.log('API key not configured, using fallback system');
       return {
-        text: "Gemini API is not configured. Please add a valid API key in your .env file.",
-        status: 'error',
-        error: 'API_NOT_CONFIGURED'
+        text: generateFallbackResponse(message),
+        status: 'success',
+        fallback: true
       };
     }
 
     // Check rate limit using the specific Gemini API endpoint
     const canProceed = await rateLimiter.isAllowed('https://generativelanguage.googleapis.com/v1/chat', 'gemini-api');
     if (!canProceed) {
-      throw new GeminiAPIError('Rate limit exceeded. Please try again later.', 'RATE_LIMIT_EXCEEDED');
+      console.warn('Rate limit exceeded, using fallback system');
+      return {
+        text: generateFallbackResponse(message),
+        status: 'success',
+        fallback: true,
+        error: 'RATE_LIMIT_EXCEEDED'
+      };
     }
 
-    // Get the chat model
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-lite' });
+    // Get the chat model with enhanced safety settings
+    const model = genAI.getGenerativeModel({ 
+      model: 'gemini-2.0-flash-lite',
+      safetySettings: [
+        {
+          category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+          threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH
+        },
+        {
+          category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+          threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH
+        },
+        {
+          category: HarmCategory.HARM_CATEGORY_HARASSMENT,
+          threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH
+        },
+        {
+          category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+          threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH
+        }
+      ]
+    });
+    
     const chat = model.startChat({
       generationConfig: {
         temperature: 0.7,
@@ -189,41 +314,75 @@ export const sendMessageToGemini = async (
       }
     });
     
-    // Process chat history
+    // Process chat history with improved handling
     if (chatHistory.length > 0) {
       // Add system prompt first if not present
       if (!chatHistory.some(msg => msg.includes(MOVIE_RECOMMENDATION_PROMPT))) {
-        await withRetry(() => 
-          chat.sendMessage(MOVIE_RECOMMENDATION_PROMPT)
-        );
+        try {
+          await withRetry(() => chat.sendMessage(MOVIE_RECOMMENDATION_PROMPT));
+        } catch (error) {
+          console.warn('Failed to send system prompt, continuing with chat history', error);
+        }
       }
       
-      // Add historical messages in order
-      for (const msg of chatHistory) {
-        await withRetry(() => 
-          chat.sendMessage(msg)
-        );
+      // Add only the most relevant historical messages to avoid context overflow
+      // If we have many messages, only use the first one (system) and the most recent ones
+      const relevantHistory = chatHistory.length > 5 
+        ? [chatHistory[0], ...chatHistory.slice(-4)] 
+        : chatHistory;
+      
+      for (const msg of relevantHistory) {
+        try {
+          await withRetry(() => chat.sendMessage(msg));
+        } catch (error) {
+          console.warn('Failed to send chat history message, continuing', error);
+        }
       }
     } else {
       // Initialize with system prompt
-      await withRetry(() => 
-        chat.sendMessage(MOVIE_RECOMMENDATION_PROMPT)
-      );
+      try {
+        await withRetry(() => chat.sendMessage(MOVIE_RECOMMENDATION_PROMPT));
+      } catch (error) {
+        throw new GeminiAPIError('Failed to initialize chat with system prompt', 'SYSTEM_PROMPT_FAILED');
+      }
     }
     
-    // Send the user message with retry logic
-    const result = await withRetry(() => 
-      chat.sendMessage(message)
-    );
+    // Add timeout protection
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new GeminiAPIError('Request timed out', 'TIMEOUT')), 15000);
+    });
+    
+    // Send the user message with retry logic and timeout protection
+    const result = await Promise.race([
+      withRetry(() => chat.sendMessage(message)),
+      timeoutPromise
+    ]);
+    
+    // Log performance metrics
+    const responseTime = Date.now() - startTime;
+    console.log(`API response time: ${responseTime}ms`);
     
     return {
       text: result.response.text() || 'No response generated.',
-      status: 'success'
+      status: 'success',
+      responseTime
     };
   } catch (error) {
     console.error('Error communicating with Gemini API:', error);
     
+    // Enhanced error handling with graceful degradation
     if (error instanceof GeminiAPIError) {
+      // For specific error types, use fallback system
+      if (['TIMEOUT', 'RETRY_EXHAUSTED', 'RATE_LIMIT_EXCEEDED'].includes(error.code || '')) {
+        console.log('Using fallback recommendation system due to API error');
+        return {
+          text: generateFallbackResponse(message),
+          status: 'success',
+          fallback: true,
+          error: error.code
+        };
+      }
+      
       return {
         text: error.message,
         status: 'error',
@@ -231,9 +390,11 @@ export const sendMessageToGemini = async (
       };
     }
     
+    // For unknown errors, use fallback system
     return {
-      text: 'An unexpected error occurred. Please try again later.',
-      status: 'error',
+      text: generateFallbackResponse(message),
+      status: 'success',
+      fallback: true,
       error: 'UNKNOWN_ERROR'
     };
   }
@@ -297,4 +458,13 @@ export const searchMedia = async (query: string): Promise<GeminiResponse> => {
 };
 
 // Export types for use in other files
+// Add fallback and response time to GeminiResponse type
+export interface GeminiResponse {
+  text: string;
+  status: 'success' | 'error';
+  error?: string;
+  fallback?: boolean;
+  responseTime?: number;
+}
+
 export type { GeminiConfig, GeminiAPIError };

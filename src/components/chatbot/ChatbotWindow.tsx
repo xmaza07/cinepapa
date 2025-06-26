@@ -28,6 +28,9 @@ const ChatbotWindow: React.FC = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Enhanced message history management
+  const enhancedMessages = messages.map((msg, index) => ({ ...msg, contextIndex: index }));
+
   // Scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });

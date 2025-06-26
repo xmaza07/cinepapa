@@ -13,6 +13,7 @@ import { AuthProvider } from './hooks/auth-context';
 import { ChatbotProvider } from './contexts/chatbot-context';
 import ChatbotButton from './components/chatbot/ChatbotButton';
 import ChatbotWindow from './components/chatbot/ChatbotWindow';
+import ProactiveSuggestions from './components/chatbot/ProactiveSuggestions';
 import AppRoutes from './routes.tsx';
 // import { initializeProxySystem } from './utils/proxy-sw-registration';
 import { trackPageView } from './lib/analytics';
@@ -121,6 +122,7 @@ function App() {
                         <AppRoutes />
                         <ChatbotButton />
                         <ChatbotWindow />
+                        <ProactiveSuggestions />
                         </AnalyticsWrapper>
                       </ChatbotProvider>
                     </UserProfileProvider>

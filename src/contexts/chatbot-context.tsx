@@ -11,11 +11,19 @@ export interface ChatMessage {
   timestamp: Date;
   mediaItems?: ChatbotMedia[];
   nlpAnalysis?: EntityExtraction;
+  feedback?: {
+    helpful: boolean;
+    reason?: string;
+  };
+  personalityScore?: number; // How well it matches user's personality/preferences (0-1)
 }
 
 interface MessageContext {
   nlpAnalysis?: EntityExtraction;
   recommendations?: ChatbotMedia[];
+  recentInteractions?: string[];
+  preferredGenres?: string[];
+  timeOfDay?: string;
 }
 
 interface ChatbotContextType {
@@ -69,8 +77,13 @@ export const ChatbotProvider: React.FC<ChatbotProviderProps> = ({ children }) =>
   const sendMessage = async (message: string, context?: MessageContext) => {
     if (!message.trim()) return;
 
-    // Rephrase single words/short phrases as recommendation requests
+    // Enhanced context tracking and NLP processing
     let userMessage = message.trim();
+    const currentTime = new Date();
+    const timeOfDay = getTimeOfDay(currentTime);
+    const dayOfWeek = currentTime.toLocaleDateString('en-US', { weekday: 'long' });
+    
+    // Rephrase single words/short phrases as recommendation requests
     if (/^([\w\s-]+)$/.test(userMessage) && 
         userMessage.length < 40 && 
         !userMessage.toLowerCase().includes('recommend') && 
@@ -79,12 +92,27 @@ export const ChatbotProvider: React.FC<ChatbotProviderProps> = ({ children }) =>
       userMessage = `Recommend some ${userMessage} movies or TV shows.`;
     }
 
+    // Track recent interactions for context building
+    const recentMessages = messages.slice(-7);
+    const interactionSummary = summarizeInteractions(recentMessages);
+    
+    // Add user message to chat
     addMessage(message, true);
     setIsLoading(true);
+    
     try {
-      const chatHistory = messages.slice(-5).map(msg => msg.text);
+      // Get chat history with increased context window (last 10 messages instead of 5)
+      const chatHistory = messages.slice(-10).map(msg => msg.text);
+      
+      // Enhanced message formatting with more context
       const formattedMessage = `
         ${userMessage}
+        
+        Current context:
+        - Time of day: ${timeOfDay}
+        - Day of week: ${dayOfWeek}
+        ${context?.preferredGenres ? `- Preferred genres: ${context.preferredGenres.join(', ')}` : ''}
+        ${interactionSummary ? `- Recent interaction context: ${interactionSummary}` : ''}
 
         When responding with movie or TV show recommendations, please format them as follows:
         1. **Title** (Year) - Brief description about the content.
@@ -100,22 +128,18 @@ export const ChatbotProvider: React.FC<ChatbotProviderProps> = ({ children }) =>
       const response = await sendMessageToGemini(formattedMessage, chatHistory);
       const mediaItems = extractMediaFromResponse(response.text);
       console.log('Extracted media items:', mediaItems);
-      addMessage(response.text, false, mediaItems);
+      
+      // Enhanced message with metadata
+      const personalityScore = calculatePersonalityMatch(mediaItems, context);
+      const botMessage = addMessage(response.text, false, mediaItems);
+      
+      // Update message with personality score
+      setMessages(prev => prev.map(msg => 
+        msg.id === botMessage ? {...msg, personalityScore} : msg
+      ));
 
-      if (context?.nlpAnalysis || context?.recommendations) {
-        const enhancedPrompt = `
-          Based on the user's message analysis:
-          - Sentiment: ${context.nlpAnalysis?.sentiment || 'neutral'}
-          - Extracted genres: ${context.nlpAnalysis?.genres.join(', ') || 'none'}
-          - Keywords: ${context.nlpAnalysis?.keywords.join(', ') || 'none'}
-          
-          And considering these recommended items:
-          ${context.recommendations?.map(item => `- ${item.title} (${item.media_type})`).join('\n') || 'No specific recommendations'}
-          
-          Please provide more targeted recommendations that align with these preferences.
-        `;
-        await sendMessageToGemini(enhancedPrompt, [response.text]);
-      }
+      // REMOVED: The second call to sendMessageToGemini that was causing duplicate responses
+      // We're now only keeping the first response with the extracted media items
     } catch (error) {
       console.error('Error sending message:', error);
       addMessage('Sorry, I encountered an error. Please try again.', false);
@@ -166,20 +190,137 @@ export const ChatbotProvider: React.FC<ChatbotProviderProps> = ({ children }) =>
     setRatings({});
   };
 
-  const rateRecommendation = (messageId: string, rating: number) => {
+  const rateRecommendation = (messageId: string, rating: number, feedbackText?: string) => {
     setRatings(prev => ({ ...prev, [messageId]: rating }));
     
+    // Find the message being rated
     const ratedMessage = messages.find(msg => msg.id === messageId);
     if (ratedMessage) {
-      const ratingMessage = `I rated the recommendation "${ratedMessage.text.substring(0, 50)}..." as ${rating}/5. Please remember this for future recommendations.`;
-      console.log(ratingMessage);
+      // Update message with feedback
+      setMessages(prev => prev.map(msg => {
+        if (msg.id === messageId) {
+          return {
+            ...msg,
+            feedback: {
+              helpful: rating > 3,
+              reason: feedbackText
+            }
+          };
+        }
+        return msg;
+      }));
       
+      // Create detailed feedback message for the AI
+      const ratingMessage = `
+        I rated the recommendation "${ratedMessage.text.substring(0, 50)}..." as ${rating}/5.
+        ${feedbackText ? `Feedback: ${feedbackText}` : ''}
+        ${rating > 3 ? 'I liked this recommendation because it matched my preferences.' : 'This recommendation wasn\'t quite what I was looking for.'}
+        Please remember this for future recommendations.
+      `;
+      
+      console.log('Sending rating feedback:', rating, feedbackText);
+      
+      // Send feedback to AI with full conversation context
       const messageTexts = messages.map(msg => msg.text);
       
       sendMessageToGemini(ratingMessage, messageTexts).catch(error => {
         console.error('Error sending rating to Gemini:', error);
       });
+      
+      // Analyze this feedback for user profile updates
+      if (ratedMessage.mediaItems?.length) {
+        // Update user preferences based on feedback
+        updatePreferencesFromFeedback(ratedMessage.mediaItems[0], rating, feedbackText);
+      }
     }
+  };
+  
+  // Helper function to determine time of day
+  const getTimeOfDay = (date: Date): string => {
+    const hour = date.getHours();
+    if (hour < 5) return 'night';
+    if (hour < 12) return 'morning';
+    if (hour < 17) return 'afternoon';
+    if (hour < 21) return 'evening';
+    return 'night';
+  };
+  
+  // Generate a summary of recent interactions for context
+  const summarizeInteractions = (recentMessages: ChatMessage[]): string => {
+    if (recentMessages.length < 2) return '';
+    
+    const topics = new Set<string>();
+    const genres = new Set<string>();
+    let hasPositiveFeedback = false;
+    let hasNegativeFeedback = false;
+    
+    recentMessages.forEach(msg => {
+      // Extract topics from user messages
+      if (msg.isUser) {
+        const text = msg.text.toLowerCase();
+        if (text.includes('action')) topics.add('action');
+        if (text.includes('comedy')) topics.add('comedy');
+        if (text.includes('drama')) topics.add('drama');
+        if (text.includes('horror')) topics.add('horror');
+        if (text.includes('sci-fi') || text.includes('science fiction')) topics.add('sci-fi');
+      }
+      
+      // Check for feedback
+      if (msg.feedback) {
+        if (msg.feedback.helpful) hasPositiveFeedback = true;
+        else hasNegativeFeedback = true;
+      }
+      
+      // Extract genres from NLP analysis
+      if (msg.nlpAnalysis?.genres) {
+        msg.nlpAnalysis.genres.forEach(genre => genres.add(genre));
+      }
+    });
+    
+    // Build context summary
+    let summary = '';
+    if (topics.size > 0) summary += `User has been discussing: ${[...topics].join(', ')}. `;
+    if (genres.size > 0) summary += `Genres of interest: ${[...genres].join(', ')}. `;
+    if (hasPositiveFeedback) summary += 'User has positively rated previous recommendations. ';
+    if (hasNegativeFeedback) summary += 'User has negatively rated some recommendations. ';
+    
+    return summary;
+  };
+  
+  // Calculate how well recommendations match user personality/preferences
+  const calculatePersonalityMatch = (mediaItems: ChatbotMedia[], context?: MessageContext): number => {
+    if (!mediaItems.length || !context) return 0.5; // Default middle score
+    
+    let matchScore = 0.5;
+    
+    // Adjust score based on preferred genres
+    if (context.preferredGenres && mediaItems.some(item => {
+      return item.genre_ids?.some(id => {
+        // This is simplified - you'd need to map genre IDs to names
+        return context.preferredGenres?.includes(id.toString());
+      });
+    })) {
+      matchScore += 0.2;
+    }
+    
+    // Adjust for time of day appropriate content
+    if (context.timeOfDay === 'night' && 
+        mediaItems.some(item => {
+          const overview = item.overview?.toLowerCase() || '';
+          return overview.includes('horror') || overview.includes('thriller');
+        })) {
+      matchScore += 0.1;
+    }
+    
+    return Math.min(1, matchScore); // Cap at 1.0
+  };
+  
+  // Update user preferences based on feedback
+  const updatePreferencesFromFeedback = (media: ChatbotMedia, rating: number, feedback?: string) => {
+    // This would typically update a user profile or preferences store
+    console.log('Updating preferences from feedback:', media.title, rating, feedback);
+    
+    // Example implementation would store this in user profile context
   };
 
   const value: ChatbotContextType = {

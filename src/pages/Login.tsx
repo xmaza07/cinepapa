@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { triggerHapticFeedback, triggerSuccessHaptic } from '@/utils/haptic-feedback';
 import { useNavigate, Link } from 'react-router-dom';
 import { trackEvent } from '@/lib/analytics';
 import { useAuth } from '@/hooks';
@@ -47,10 +48,12 @@ export default function Login() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    triggerHapticFeedback(20);
     setIsLoading(true);
     setErrorMessage(null);
     try {
       await signIn(email, password);
+      triggerSuccessHaptic();
       await trackEvent({
         name: 'user_login',
         params: {
@@ -68,6 +71,7 @@ export default function Login() {
   };
 
   const handleGoogleSignIn = async () => {
+    triggerHapticFeedback(20);
     setIsLoading(true);
     setErrorMessage(null);
     try {

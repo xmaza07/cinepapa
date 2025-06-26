@@ -1,4 +1,5 @@
 import React from 'react';
+import { triggerHapticFeedback, triggerSuccessHaptic } from '@/utils/haptic-feedback';
 import { Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -30,9 +31,13 @@ export const DownloadSection: React.FC<DownloadSectionProps> = ({
   const fetchLinks = React.useCallback(async () => {
     setIsLoading(true);
     setError(null);
+    triggerHapticFeedback(20);
     try {
       const links = await fetchDownloadLinks(mediaName, season, episode);
       setDownloadLinks(links);
+      if (links.length > 0) {
+        triggerSuccessHaptic();
+      }
     } catch (err) {
       setError('Failed to fetch download links');
       console.error(err);
@@ -98,7 +103,10 @@ export const DownloadSection: React.FC<DownloadSectionProps> = ({
                     {link.size}
                   </span>
                   <Button
-                    onClick={() => window.open(link.download_url, '_blank')}
+                  onClick={() => {
+                    triggerHapticFeedback(25);
+                    window.open(link.download_url, '_blank');
+                  }}
                     variant="outline"
                     size="sm"
                     className="w-full sm:w-auto bg-gradient-to-r from-accent to-accent/80 text-white border-none shadow-lg hover:from-accent/80 hover:to-accent"

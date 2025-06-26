@@ -1,5 +1,6 @@
 
 import React, { useEffect, useRef, useState } from 'react';
+import { triggerHapticFeedback, triggerSuccessHaptic } from '@/utils/haptic-feedback';
 import Plyr from 'plyr';
 import Hls from 'hls.js';
 import { trackMediaComplete } from '@/lib/analytics';
@@ -60,9 +61,41 @@ const PlyrPlayer: React.FC<PlyrPlayerProps> = ({
           'fullscreen',
         ],
         seekTime: 5,
+        clickToPlay: true,
+        keyboard: { focused: true, global: true },
       };
 
       playerRef.current = new Plyr(videoRef.current, plyrOptions);
+      
+      // Add haptic feedback to player interactions
+      // Play/pause
+      playerRef.current.on('play', () => {
+        triggerHapticFeedback(15);
+        startTimeRef.current = Date.now();
+      });
+      
+      playerRef.current.on('pause', () => {
+        triggerHapticFeedback(15);
+      });
+      
+      // Volume changes
+      playerRef.current.on('volumechange', () => {
+        triggerHapticFeedback(10);
+      });
+      
+      // Seeking
+      playerRef.current.on('seeking', () => {
+        triggerHapticFeedback(20);
+      });
+      
+      // Fullscreen toggle
+      playerRef.current.on('enterfullscreen', () => {
+        triggerSuccessHaptic();
+      });
+      
+      playerRef.current.on('exitfullscreen', () => {
+        triggerHapticFeedback(20);
+      });
 
       // Track video completion
       playerRef.current.on('ended', () => {
@@ -75,9 +108,16 @@ const PlyrPlayer: React.FC<PlyrPlayerProps> = ({
         });
       });
 
-      // Reset start time when video starts playing
-      playerRef.current.on('play', () => {
-        startTimeRef.current = Date.now();
+      // Track video completion event
+      playerRef.current.on('ended', () => {
+        triggerHapticFeedback(30); // Strong feedback when video ends
+        const watchTime = (Date.now() - startTimeRef.current) / 1000; // Convert to seconds
+        void trackMediaComplete({
+          mediaType,
+          mediaId,
+          title,
+          watchTime
+        });
       });
 
       // Setup event listeners

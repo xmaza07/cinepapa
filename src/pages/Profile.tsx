@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { triggerHapticFeedback, triggerSuccessHaptic } from '@/utils/haptic-feedback';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/hooks';
@@ -65,6 +66,7 @@ const Profile = () => {
   }, [hasMore, isLoadingMore, activeTab, handleLoadMore]);
 
   const handleClearHistory = () => {
+    triggerHapticFeedback(25);
     clearWatchHistory();
     toast({
       title: "Watch history cleared",
@@ -74,6 +76,7 @@ const Profile = () => {
 
 
   const handleSignOut = async () => {
+    triggerHapticFeedback(25);
     try {
       await logout();
       await trackEvent({
@@ -152,7 +155,10 @@ const Profile = () => {
           </div>
         </div>
         
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-6">
+        <Tabs value={activeTab} onValueChange={(value) => {
+          triggerHapticFeedback(15);
+          setActiveTab(value);
+        }} className="mt-6">
           <TabsList className="bg-background border border-white/10">
             <TabsTrigger value="history" className="data-[state=active]:bg-accent">
               <History className="h-4 w-4 mr-2" />
@@ -222,7 +228,10 @@ const Profile = () => {
                   </div>
                   <Switch
                     checked={userPreferences?.isWatchHistoryEnabled}
-                    onCheckedChange={toggleWatchHistory}
+                    onCheckedChange={(checked) => {
+                      triggerHapticFeedback(20);
+                      toggleWatchHistory(checked);
+                    }}
                     aria-label="Toggle watch history"
                   />
                 </div>
@@ -239,6 +248,7 @@ const Profile = () => {
                   <Select 
                     value={userPreferences?.preferred_source || ''} 
                     onValueChange={async (value) => {
+                      triggerSuccessHaptic();
                       await updatePreferences({ preferred_source: value });
                       await trackEvent({
                         name: 'user_profile_update',
@@ -282,7 +292,10 @@ const Profile = () => {
                   </div>
                   <Switch
                     checked={userPreferences?.isNotificationsEnabled}
-                    onCheckedChange={toggleNotifications}
+                    onCheckedChange={(checked) => {
+                      triggerHapticFeedback(20);
+                      toggleNotifications(checked);
+                    }}
                     aria-label="Toggle feature notifications"
                   />
                 </div>
@@ -296,6 +309,7 @@ const Profile = () => {
                   <Select
                     value={userPreferences?.display_override || ''}
                     onValueChange={async (value) => {
+                      triggerSuccessHaptic();
                       await updatePreferences({ display_override: value });
                       await trackEvent({
                         name: 'user_profile_update',

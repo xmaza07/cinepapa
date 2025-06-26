@@ -16,25 +16,23 @@ window.addEventListener('beforeinstallprompt', (e) => {
 
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import App from './App';
+import HapticApp from './HapticApp';
 import './index.css';
+
+
 
 // Initialize the app after DOM is fully loaded
 const initApp = () => {
   const rootElement = document.getElementById('root');
-  
   if (!rootElement) {
     console.error('Root element not found!');
     return;
   }
-  
-  // Create a root and render the app
   createRoot(rootElement).render(
     <React.StrictMode>
-      <App />
+      <HapticApp />
     </React.StrictMode>
   );
-
   // Register the iframe proxy service worker (does not affect main SW)
   registerIframeProxySW();
 };

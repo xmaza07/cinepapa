@@ -1,4 +1,5 @@
 import { Check } from 'lucide-react';
+import { triggerHapticFeedback, triggerSuccessHaptic } from '@/utils/haptic-feedback';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { VideoSource } from '@/utils/types';
@@ -26,6 +27,9 @@ const VideoSourceSelector = ({
   const [isChanging, setIsChanging] = useState(false);
 
   const handleSourceChange = async (sourceKey: string) => {
+    // Provide haptic feedback when changing source
+    triggerSuccessHaptic();
+    
     setIsChanging(true);
     onSourceChange(sourceKey);
     

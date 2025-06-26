@@ -1,9 +1,10 @@
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Media } from '@/utils/types';
 import MediaCard from './MediaCard';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import styles from './ContentRow.module.css';
+import { triggerHapticFeedback } from '@/utils/haptic-feedback';
 
 interface ContentRowProps {
   title: string;
@@ -19,11 +20,49 @@ const ContentRow = ({ title, media, featured = false, onLoadMore, isLoadingMore,
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [showRightArrow, setShowRightArrow] = useState(true);
   
+  // Previous scroll position to detect direction and boundaries
+  const lastScrollPosition = useRef(0);
+  const scrollEndTimeout = useRef<NodeJS.Timeout | null>(null);
+  const hasScrolledRecently = useRef(false);
+  
   // Handle scroll position to show/hide arrows
   const handleScroll = () => {
     if (!rowRef.current) return;
     
     const { scrollLeft, scrollWidth, clientWidth } = rowRef.current;
+    const wasAtLeft = lastScrollPosition.current === 0;
+    const wasAtRight = lastScrollPosition.current >= scrollWidth - clientWidth - 1;
+    
+    // Check if we're at edges
+    const isAtLeft = scrollLeft === 0;
+    const isAtRight = scrollLeft >= scrollWidth - clientWidth - 1;
+    
+    // Detect edge arrivals for haptic feedback
+    if (!wasAtLeft && isAtLeft && !hasScrolledRecently.current) {
+      // We just reached the left edge
+      triggerHapticFeedback(15);
+      hasScrolledRecently.current = true;
+      setTimeout(() => { hasScrolledRecently.current = false; }, 500);
+    } else if (!wasAtRight && isAtRight && !hasScrolledRecently.current) {
+      // We just reached the right edge
+      triggerHapticFeedback(15);
+      hasScrolledRecently.current = true;
+      setTimeout(() => { hasScrolledRecently.current = false; }, 500);
+    }
+    
+    // Update last position
+    lastScrollPosition.current = scrollLeft;
+    
+    // Handle scroll end detection
+    if (scrollEndTimeout.current) {
+      clearTimeout(scrollEndTimeout.current);
+    }
+    
+    scrollEndTimeout.current = setTimeout(() => {
+      // We can add additional haptic feedback for scroll stop if needed
+    }, 150);
+    
+    // Update arrow visibility
     setShowLeftArrow(scrollLeft > 0);
     setShowRightArrow(scrollLeft < scrollWidth - clientWidth - 10); // 10px buffer
   };
@@ -31,12 +70,14 @@ const ContentRow = ({ title, media, featured = false, onLoadMore, isLoadingMore,
   // Scroll functions
   const scrollLeft = () => {
     if (!rowRef.current) return;
+    triggerHapticFeedback(10); // Light haptic feedback when pressing button
     const scrollAmount = rowRef.current.clientWidth * 0.75;
     rowRef.current.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
   };
   
   const scrollRight = () => {
     if (!rowRef.current) return;
+    triggerHapticFeedback(10); // Light haptic feedback when pressing button
     const scrollAmount = rowRef.current.clientWidth * 0.75;
     rowRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
   };
@@ -62,6 +103,12 @@ const ContentRow = ({ title, media, featured = false, onLoadMore, isLoadingMore,
           ref={rowRef}
           className={styles.contentRow}
           onScroll={handleScroll}
+          onTouchStart={() => {
+            // Reset scroll position on touch start for edge detection
+            if (rowRef.current) {
+              lastScrollPosition.current = rowRef.current.scrollLeft;
+            }
+          }}
         >
           {media.map((item, index) => (
             <div 

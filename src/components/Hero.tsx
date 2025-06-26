@@ -1,5 +1,6 @@
 
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { triggerHapticFeedback } from '@/utils/haptic-feedback';
 import { useNavigate } from 'react-router-dom';
 import { Media } from '@/utils/types';
 import { backdropSizes } from '@/utils/api';
@@ -94,6 +95,7 @@ const Hero = ({ media, className = '' }: HeroProps) => {
 
   // Auto-rotation control
   const toggleAutoRotation = () => {
+    triggerHapticFeedback(20);
     if (isAutoRotating) {
       pauseAutoRotation();
     } else {
@@ -117,11 +119,13 @@ const Hero = ({ media, className = '' }: HeroProps) => {
 
   // Navigation functions
   const goToNext = useCallback(() => {
+    triggerHapticFeedback(15);
     setIsLoaded(false);
     setCurrentIndex((prev) => (prev + 1) % filteredMedia.length);
   }, [filteredMedia.length]);
 
   const goToPrev = useCallback(() => {
+    triggerHapticFeedback(15);
     setIsLoaded(false);
     setCurrentIndex((prev) => (prev - 1 + filteredMedia.length) % filteredMedia.length);
   }, [filteredMedia.length]);
@@ -179,6 +183,9 @@ const Hero = ({ media, className = '' }: HeroProps) => {
     setVisualSwipeFeedback(0);
     
     if (isLeftSwipe || isRightSwipe) {
+      // Provide haptic feedback for successful swipe
+      triggerHapticFeedback(15);
+      
       // Debounce swipe
       if (swipeTimeout.current) clearTimeout(swipeTimeout.current);
       swipeTimeout.current = setTimeout(() => setIsSwiping(false), 200);
@@ -282,6 +289,7 @@ const Hero = ({ media, className = '' }: HeroProps) => {
   const releaseYear = releaseDate ? new Date(releaseDate).getFullYear() : '';
 
   const handlePlay = () => {
+    triggerHapticFeedback(25); // Stronger feedback for main action
     const mediaType = featuredMedia?.media_type;
     const id = featuredMedia?.id;
 
@@ -293,6 +301,7 @@ const Hero = ({ media, className = '' }: HeroProps) => {
   };
 
   const handleMoreInfo = () => {
+    triggerHapticFeedback(20);
     navigate(`/${featuredMedia?.media_type}/${featuredMedia?.id}`);
   };
 
@@ -464,7 +473,10 @@ const Hero = ({ media, className = '' }: HeroProps) => {
         className={`flex-1 transition-all ${
           index === currentIndex ? 'bg-primary' : 'bg-white/20'
         }`}
-        onClick={() => setCurrentIndex(index)}
+        onClick={() => {
+          triggerHapticFeedback(10);
+          setCurrentIndex(index);
+        }}
         role="button"
         tabIndex={0}
         aria-label={`Go to slide ${index + 1}`}

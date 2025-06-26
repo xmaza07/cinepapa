@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { triggerHapticFeedback } from '@/utils/haptic-feedback';
 import PWAInstallPrompt from './PWAInstallPrompt';
 import { Menu } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -53,6 +54,7 @@ const Navbar = () => {
   }, [isMobileMenuOpen]);
 
   const toggleSearch = () => {
+    triggerHapticFeedback(15);
     setIsSearchExpanded(!isSearchExpanded);
   };
 
@@ -94,7 +96,10 @@ const Navbar = () => {
                 <Button 
                   variant="ghost" 
                   size="icon" 
-                  onClick={toggleSearch}
+                  onClick={() => {
+                    triggerHapticFeedback(15);
+                    toggleSearch();
+                  }}
                   className="mr-2 text-white hover:bg-white/10"
                 >
                   <Menu className="h-6 w-6" />
@@ -129,7 +134,10 @@ const Navbar = () => {
                   variant="ghost"
                   size="icon"
                   className="md:hidden text-white hover:bg-white/10"
-                  onClick={() => setIsMobileMenuOpen(true)}
+                  onClick={() => {
+                    triggerHapticFeedback(20);
+                    setIsMobileMenuOpen(true);
+                  }}
                   aria-label="Open menu"
                 >
                   <Menu className="h-6 w-6" />
@@ -143,7 +151,10 @@ const Navbar = () => {
       {/* Mobile menu overlay */}
       <MobileMenu 
         isOpen={isMobileMenuOpen} 
-        onClose={() => setIsMobileMenuOpen(false)}
+        onClose={() => {
+          triggerHapticFeedback(20);
+          setIsMobileMenuOpen(false);
+        }}
       />
     </header>
   );

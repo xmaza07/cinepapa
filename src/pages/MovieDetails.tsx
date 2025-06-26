@@ -351,7 +351,8 @@ const MovieDetailsPage = () => {
       <div className="max-w-6xl mx-auto px-4 py-8">
         <div className="flex border-b border-white/10 mb-6">
           <button
-            className={`py-2 px-4 font-medium whitespace-nowrap ${
+onClick={() => { triggerHapticFeedback(15); setActiveTab('about'); }}
+className={`py-2 px-4 font-medium whitespace-nowrap ${
               activeTab === 'about' 
                 ? 'text-white border-b-2 border-accent' 
                 : 'text-white/60 hover:text-white'
@@ -366,7 +367,7 @@ const MovieDetailsPage = () => {
                 ? 'text-white border-b-2 border-accent' 
                 : 'text-white/60 hover:text-white'
             }`}
-            onClick={() => setActiveTab('cast')}
+onClick={() => { triggerHapticFeedback(15); setActiveTab('cast'); }} 
           >
             Cast
           </button>
@@ -376,7 +377,7 @@ const MovieDetailsPage = () => {
                 ? 'text-white border-b-2 border-accent' 
                 : 'text-white/60 hover:text-white'
             }`}
-            onClick={() => setActiveTab('reviews')}
+onClick={() => { triggerHapticFeedback(15); setActiveTab('reviews'); }} 
           >
             Reviews
           </button>
@@ -386,7 +387,7 @@ const MovieDetailsPage = () => {
                 ? 'text-white border-b-2 border-accent' 
                 : 'text-white/60 hover:text-white'
             }`}
-            onClick={() => setActiveTab('downloads')}
+onClick={() => { triggerHapticFeedback(15); setActiveTab('downloads'); }}
             style={{ display: user ? undefined : 'none' }}
           >
             Downloads

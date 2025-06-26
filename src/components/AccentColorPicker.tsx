@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { triggerHapticFeedback, triggerSuccessHaptic } from '@/utils/haptic-feedback';
 import { CircleDot, Circle } from 'lucide-react';
 import { useUserPreferences } from '@/hooks/user-preferences';
 import { Button } from './ui/button';
@@ -27,6 +28,9 @@ export default function AccentColorPicker() {
 
   // Apply the selected accent color
   const applyAccentColor = (color: AccentColorOption) => {
+    // Provide haptic feedback when changing accent color
+    triggerSuccessHaptic();
+    
     // Update CSS variable
     document.documentElement.style.setProperty('--accent', color.hsl);
     

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
+import { triggerHapticFeedback } from '@/utils/haptic-feedback';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/hooks';
@@ -78,12 +79,14 @@ const ContinueWatching = ({ maxItems = 20 }: ContinueWatchingProps) => {
 
   const scrollLeft = () => {
     if (!rowRef.current) return;
+    triggerHapticFeedback(15);
     const scrollAmount = rowRef.current.clientWidth * 0.75;
     rowRef.current.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
   };
 
   const scrollRight = () => {
     if (!rowRef.current) return;
+    triggerHapticFeedback(15);
     const scrollAmount = rowRef.current.clientWidth * 0.75;
     rowRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
   };
@@ -120,6 +123,7 @@ const ContinueWatching = ({ maxItems = 20 }: ContinueWatchingProps) => {
   }
   
   const handleContinueWatching = (item: WatchHistoryItem) => {
+    // Haptic feedback for continue watching is handled in the ContinueWatchingCard component
     if (item.media_type === 'movie') {
       navigate(`/watch/${item.media_type}/${item.media_id}`);
     } else if (item.media_type === 'tv') {

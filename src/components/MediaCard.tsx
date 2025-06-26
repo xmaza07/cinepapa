@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useWatchHistory } from '@/hooks/watch-history';
 import { Link, useNavigate } from 'react-router-dom';
 import { cn } from "@/lib/utils";
+import { triggerHapticFeedback, triggerSuccessHaptic } from '@/utils/haptic-feedback';
 import { Media } from '@/utils/types';
 import { posterSizes } from '@/utils/api';
 import { getImageUrl } from '@/utils/services/tmdb';
@@ -48,6 +49,9 @@ const MediaCard = React.memo(({ media, className, featured = false, minimal = fa
     ? `/movie/${mediaId}` 
     : `/tv/${mediaId}`;
   const handleClick = async () => {
+    // Provide haptic feedback when a card is selected
+    triggerHapticFeedback(25);
+    
     const detailPath = `/${media.media_type}/${media.id}`;
     // Track the media selection
     await Promise.all([
@@ -64,10 +68,15 @@ const MediaCard = React.memo(({ media, className, featured = false, minimal = fa
   const handleFavoriteClick = async (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
+    
+    // Different haptic feedback based on action (add/remove from favorites)
     if (isFavorite) {
+      triggerHapticFeedback(20);
       await removeFromFavorites(media.id, media.media_type);
       setIsFavorite(false);
     } else {
+      // Special pattern for adding to favorites
+      triggerSuccessHaptic();
       await addToFavorites({
         media_id: media.id,
         media_type: media.media_type,
@@ -85,10 +94,15 @@ const MediaCard = React.memo(({ media, className, featured = false, minimal = fa
   const handleWatchlistClick = async (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
+    
+    // Different haptic feedback based on action (add/remove from watchlist)
     if (isInMyWatchlist) {
+      triggerHapticFeedback(20);
       await removeFromWatchlist(media.id, media.media_type);
       setIsInMyWatchlist(false);
     } else {
+      // Success pattern for adding to watchlist
+      triggerSuccessHaptic();
       await addToWatchlist({
         media_id: media.id,
         media_type: media.media_type,

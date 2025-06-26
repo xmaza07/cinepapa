@@ -30,6 +30,10 @@ interface ChatbotContextType {
   isOpen: boolean;
   messages: ChatMessage[];
   isLoading: boolean;
+  hasUnread: boolean;
+  setHasUnread: (value: boolean) => void;
+  isMuted: boolean;
+  setIsMuted: (value: boolean) => void;
   openChatbot: () => void;
   closeChatbot: () => void;
   sendMessage: (message: string, context?: MessageContext) => Promise<void>;
@@ -57,6 +61,8 @@ export const ChatbotProvider: React.FC<ChatbotProviderProps> = ({ children }) =>
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [ratings, setRatings] = useState<Record<string, number>>({});
+  const [hasUnread, setHasUnread] = useState<boolean>(false);
+  const [isMuted, setIsMuted] = useState<boolean>(false);
 
   const openChatbot = () => setIsOpen(true);
   const closeChatbot = () => setIsOpen(false);
@@ -71,6 +77,36 @@ export const ChatbotProvider: React.FC<ChatbotProviderProps> = ({ children }) =>
       mediaItems,
     };
     setMessages((prev) => [...prev, newMessage]);
+    
+    // Set hasUnread flag for AI responses when chat is closed
+    if (!isUser && !isOpen) {
+      setHasUnread(true);
+      
+      // Play notification sound if not muted
+      if (!isMuted && typeof window !== 'undefined') {
+        try {
+          // Simple notification sound using Web Audio API
+          const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+          const oscillator = audioCtx.createOscillator();
+          const gainNode = audioCtx.createGain();
+          
+          oscillator.type = 'sine';
+          oscillator.frequency.setValueAtTime(830, audioCtx.currentTime);
+          oscillator.connect(gainNode);
+          gainNode.connect(audioCtx.destination);
+          
+          // Short beep sound with fade out
+          gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+          gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+          
+          oscillator.start(audioCtx.currentTime);
+          oscillator.stop(audioCtx.currentTime + 0.3);
+        } catch (error) {
+          console.error('Error playing notification sound:', error);
+        }
+      }
+    }
+    
     return id;
   };
 
@@ -327,6 +363,10 @@ export const ChatbotProvider: React.FC<ChatbotProviderProps> = ({ children }) =>
     isOpen,
     messages,
     isLoading,
+    hasUnread,
+    setHasUnread,
+    isMuted,
+    setIsMuted,
     openChatbot,
     closeChatbot,
     sendMessage,

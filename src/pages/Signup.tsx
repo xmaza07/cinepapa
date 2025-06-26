@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { triggerHapticFeedback, triggerSuccessHaptic } from '@/utils/haptic-feedback';
 import { useNavigate, Link } from 'react-router-dom';
 import { trackEvent } from '@/lib/analytics';
 import { useAuth } from '@/hooks';
@@ -20,6 +21,7 @@ export default function Signup() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    triggerHapticFeedback(20);
     if (password !== confirmPassword) {
       alert('Passwords do not match');
       return;
@@ -27,6 +29,7 @@ export default function Signup() {
     setIsLoading(true);
     try {
       await signUp(email, password);
+      triggerSuccessHaptic();
       await trackEvent({
         name: 'user_signup',
         params: {
@@ -43,6 +46,7 @@ export default function Signup() {
   };
 
   const handleGoogleSignIn = async () => {
+    triggerHapticFeedback(20);
     setIsLoading(true);
     try {
       await signInWithGoogle();

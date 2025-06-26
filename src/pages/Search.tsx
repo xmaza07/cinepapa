@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { triggerHapticFeedback, triggerSuccessHaptic } from '@/utils/haptic-feedback';
 import { trackEvent } from '@/lib/analytics';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { searchMedia } from '@/utils/api';
@@ -197,6 +198,7 @@ const Search = () => {
   }, []);
 
   const handleSearch = async (e?: React.FormEvent) => {
+    triggerHapticFeedback(20);
     if (e) {
       e.preventDefault();
     }
@@ -289,11 +291,13 @@ const Search = () => {
 
   const hasMoreResults = allResults.length > displayedResults.length;
 
-  const toggleAdvancedSearch = () => {
+const toggleAdvancedSearch = () => {
+    triggerHapticFeedback(20);
     setAdvancedSearch(!advancedSearch);
   };
 
-  const clearSearchHistory = () => {
+const clearSearchHistory = () => {
+    triggerHapticFeedback(15);
     setSearchHistory([]);
     localStorage.removeItem('searchHistory');
     toast({

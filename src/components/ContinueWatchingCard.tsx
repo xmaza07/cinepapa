@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { triggerHapticFeedback } from '@/utils/haptic-feedback';
 import { Play, Clock, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -46,7 +47,10 @@ const ContinueWatchingCard: React.FC<ContinueWatchingCardProps> = ({ item, onCon
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       whileHover={{ scale: 1.02 }}
-      onClick={() => onContinueWatching(item)}
+      onClick={() => {
+        triggerHapticFeedback(25); // Stronger feedback for main action
+        onContinueWatching(item);
+      }}
       style={{
         boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.3)'
       }}
@@ -67,7 +71,10 @@ const ContinueWatchingCard: React.FC<ContinueWatchingCardProps> = ({ item, onCon
                   variant="ghost"
                   size="icon"
                   className="h-7 w-7 rounded-full bg-black/30 hover:bg-accent/80 transition-colors -mt-1"
-                  onClick={e => onNavigateToDetails(e, item)}
+                  onClick={e => {
+                    triggerHapticFeedback(15); // Light feedback for info button
+                    onNavigateToDetails(e, item);
+                  }}
                 >
                   <Info className="h-3.5 w-3.5 text-white" />
                 </Button>

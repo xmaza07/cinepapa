@@ -1,24 +1,25 @@
+
+
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import styles from './Logo.module.css';
 
 /**
- * A distinctive, modern logo component for the Let's Stream navigation bar.
- * Features overlapping letters, dynamic gradient colors, and engaging hover effects.
+ * Neon & Retro logo for Let's Stream navigation bar.
+ * Features flickering neon text effect for 'L' and 'S'.
  */
-export const Logo: React.FC = () => {
+const Logo: React.FC = () => {
   const navigate = useNavigate();
-
   return (
-    <span
+    <div
       title="Let's Stream"
       onClick={() => navigate('/')}
-      className={styles.logo}
+      className="cursor-pointer font-mono text-5xl font-bold"
     >
-      <span className={styles.logoL}>L</span>
-      <span className={styles.logoS}>S</span>
-    </span>
+      <span className={styles.flickerL + ' text-white'}>L</span>
+      <span className={styles.flickerS + ' text-white'} style={{ marginLeft: '-0.25em' }}>S</span>
+    </div>
   );
-};
+}
 
 export default Logo;

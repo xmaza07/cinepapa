@@ -12,6 +12,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useWatchHistory } from '@/hooks/watch-history';
 import { DownloadSection } from '@/components/DownloadSection';
 import { useAuth } from '@/hooks';
+import { useHaptic } from '@/hooks/useHaptic';
 
 type TabType = 'about' | 'cast' | 'reviews' | 'downloads';
 
@@ -38,6 +39,7 @@ const MovieDetailsPage = () => {
   const [isInMyWatchlist, setIsInMyWatchlist] = useState(false);
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const { triggerHaptic } = useHaptic();
   const { user } = useAuth();
   
   useEffect(() => {
@@ -351,13 +353,12 @@ const MovieDetailsPage = () => {
       <div className="max-w-6xl mx-auto px-4 py-8">
         <div className="flex border-b border-white/10 mb-6">
           <button
-onClick={() => { triggerHapticFeedback(15); setActiveTab('about'); }}
-className={`py-2 px-4 font-medium whitespace-nowrap ${
+            className={`py-2 px-4 font-medium whitespace-nowrap ${
               activeTab === 'about' 
                 ? 'text-white border-b-2 border-accent' 
                 : 'text-white/60 hover:text-white'
             }`}
-            onClick={() => setActiveTab('about')}
+            onClick={() => { triggerHaptic(); setActiveTab('about'); }}
           >
             About
           </button>
@@ -367,7 +368,7 @@ className={`py-2 px-4 font-medium whitespace-nowrap ${
                 ? 'text-white border-b-2 border-accent' 
                 : 'text-white/60 hover:text-white'
             }`}
-onClick={() => { triggerHapticFeedback(15); setActiveTab('cast'); }} 
+            onClick={() => { triggerHaptic(); setActiveTab('cast'); }}
           >
             Cast
           </button>
@@ -377,7 +378,7 @@ onClick={() => { triggerHapticFeedback(15); setActiveTab('cast'); }}
                 ? 'text-white border-b-2 border-accent' 
                 : 'text-white/60 hover:text-white'
             }`}
-onClick={() => { triggerHapticFeedback(15); setActiveTab('reviews'); }} 
+            onClick={() => { triggerHaptic(); setActiveTab('reviews'); }}
           >
             Reviews
           </button>
@@ -387,7 +388,7 @@ onClick={() => { triggerHapticFeedback(15); setActiveTab('reviews'); }}
                 ? 'text-white border-b-2 border-accent' 
                 : 'text-white/60 hover:text-white'
             }`}
-onClick={() => { triggerHapticFeedback(15); setActiveTab('downloads'); }}
+            onClick={() => { triggerHaptic(); setActiveTab('downloads'); }}
             style={{ display: user ? undefined : 'none' }}
           >
             Downloads

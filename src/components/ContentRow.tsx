@@ -3,6 +3,7 @@ import { useState, useRef } from 'react';
 import { Media } from '@/utils/types';
 import MediaCard from './MediaCard';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import styles from './ContentRow.module.css';
 
 interface ContentRowProps {
   title: string;
@@ -17,7 +18,6 @@ const ContentRow = ({ title, media, featured = false, onLoadMore, isLoadingMore,
   const rowRef = useRef<HTMLDivElement>(null);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [showRightArrow, setShowRightArrow] = useState(true);
-  const [isHovering, setIsHovering] = useState(false);
   
   // Handle scroll position to show/hide arrows
   const handleScroll = () => {
@@ -44,22 +44,13 @@ const ContentRow = ({ title, media, featured = false, onLoadMore, isLoadingMore,
   if (!media || media.length === 0) return null;
   
   return (
-    <div 
-      className="px-0 md:px-0 mb-8 opacity-0 animate-fade-in w-full"
-      style={{ animationDelay: '0.2s', animationFillMode: 'forwards' }}
-    >
-      <h2 className="text-xl md:text-2xl font-bold text-white mb-4">{title}</h2>
-      <div 
-        className="relative group"
-        onMouseEnter={() => setIsHovering(true)}
-        onMouseLeave={() => setIsHovering(false)}
-      >
+    <div className={styles.container}>
+      <h2 className={styles.title}>{title}</h2>
+      <div className={styles.scrollContainer}>
         {/* Left scroll button */}
         {showLeftArrow && (
           <button
-            className={`absolute left-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 flex items-center justify-center rounded-full bg-black/70 text-white transition-all ${
-              isHovering ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
-            }`}
+            className={`${styles.scrollButton} ${styles.scrollButtonLeft} ${styles.scrollButtonHiddenLeft}`}
             onClick={scrollLeft}
             aria-label="Scroll left"
           >
@@ -69,16 +60,14 @@ const ContentRow = ({ title, media, featured = false, onLoadMore, isLoadingMore,
         {/* Content row */}
         <div 
           ref={rowRef}
-          className="flex overflow-x-auto hide-scrollbar gap-4 pb-4"
+          className={styles.contentRow}
           onScroll={handleScroll}
         >
           {media.map((item, index) => (
             <div 
               key={`${item.media_type}-${item.id}`} 
-              className={featured ? 'flex-none w-[220px]' : 'flex-none w-[160px] md:w-[180px]'}
+              className={`${styles.mediaItem} ${featured ? styles.mediaItemFeatured : styles.mediaItemRegular}`}
               style={{ 
-                opacity: 0,
-                animation: 'fade-in 0.5s ease-out forwards',
                 animationDelay: `${index * 0.05}s` 
               }}
             >
@@ -88,14 +77,12 @@ const ContentRow = ({ title, media, featured = false, onLoadMore, isLoadingMore,
         </div>
         {/* Infinite Scroll Trigger Only (no button) */}
         {loadMoreRef && (
-          <div ref={loadMoreRef} className="h-4 w-full" />
+          <div ref={loadMoreRef} className={styles.loadMoreTrigger} />
         )}
         {/* Right scroll button */}
         {showRightArrow && (
           <button
-            className={`absolute right-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 flex items-center justify-center rounded-full bg-black/70 text-white transition-all ${
-              isHovering ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-4'
-            }`}
+            className={`${styles.scrollButton} ${styles.scrollButtonRight} ${styles.scrollButtonHiddenRight}`}
             onClick={scrollRight}
             aria-label="Scroll right"
           >

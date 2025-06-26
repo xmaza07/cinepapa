@@ -1,0 +1,89 @@
+/* ContentRow CSS Module */
+
+.container {
+  @apply px-0 md:px-0 mb-8 opacity-0 w-full;
+  animation: fade-in 0.6s ease-out forwards;
+  animation-delay: 0.2s;
+  animation-fill-mode: forwards;
+}
+
+.title {
+  @apply text-xl md:text-2xl font-bold text-white mb-4 text-left;
+}
+
+.scrollContainer {
+  @apply relative;
+}
+
+.scrollContainer:hover .scrollButton {
+  opacity: 1;
+  transform: translateY(-50%) translateX(0);
+}
+
+.scrollButton {
+  @apply absolute top-1/2 -translate-y-1/2 z-10 w-10 h-10 flex items-center justify-center rounded-full bg-black/70 text-white transition-all;
+}
+
+.scrollButtonLeft {
+  @apply left-0;
+}
+
+.scrollButtonRight {
+  @apply right-0;
+}
+
+.scrollButtonVisible {
+  @apply opacity-100 translate-x-0;
+}
+
+.scrollButtonHiddenLeft {
+  @apply opacity-0 -translate-x-4;
+}
+
+.scrollButtonHiddenRight {
+  @apply opacity-0 translate-x-4;
+}
+
+.contentRow {
+  @apply flex overflow-x-auto gap-4 pb-4;
+}
+
+/* Hide scrollbar for webkit browsers */
+.contentRow::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbar for Firefox */
+.contentRow {
+  scrollbar-width: none;
+}
+
+.mediaItem {
+  @apply flex-none;
+  opacity: 0;
+  animation: fade-in 0.5s ease-out forwards;
+}
+
+.mediaItemRegular {
+  @apply w-[160px] md:w-[180px];
+}
+
+.mediaItemFeatured {
+  @apply w-[220px];
+}
+
+.loadMoreTrigger {
+  @apply h-4 w-full;
+}
+
+/* Keyframe animations */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

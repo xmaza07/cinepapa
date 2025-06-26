@@ -344,248 +344,157 @@ const Hero = ({ media, className = '' }: HeroProps) => {
   if (!filteredMedia.length) return null;
   
   return (
-    <section
-      ref={carouselRef}
-      className="relative w-full h-[60vh] sm:h-[65vh] md:h-[75vh] lg:h-[80vh] overflow-hidden group"
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-      onTouchStart={onTouchStart}
-      onTouchMove={onTouchMove}
-      onTouchEnd={onTouchEnd}
-      role="region"
-      aria-label="Featured media carousel"
-      aria-roledescription="carousel"
-    >
-      {/* Loading Skeleton */}
-      {firstLoad && !isLoaded && (
-        <div className="absolute inset-0 bg-background flex items-center justify-center z-10">
-          <div className="w-full h-full">
-            <Skeleton className="w-full h-full animate-pulse bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900" />
+    <section 
+  ref={carouselRef}
+  className="relative w-full h-[85vh] overflow-hidden"
+>
+  {/* Full-screen backdrop with minimal treatment */}
+  <div className="absolute inset-0">
+    <AnimatePresence mode="wait">
+      <motion.div
+        key={`bg-${currentIndex}`}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.8 }}
+        className="w-full h-full"
+      >
+        <img 
+          src={getImageUrl(featuredMedia?.backdrop_path, backdropSizes.large)}
+          alt={title}
+          className="w-full h-full object-cover"
+        />
+        
+        {/* Subtle gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-black/10" />
+      </motion.div>
+    </AnimatePresence>
+  </div>
+  
+  {/* Floating content area - minimal, positioned at bottom */}
+  <div className="absolute bottom-0 left-0 right-0 px-6 md:px-10 lg:px-16 py-12">
+    <div className="container mx-auto">
+      <motion.div
+        initial={{ y: 40, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+        className="max-w-3xl"
+      >
+        {/* Media type and rating in a horizontal line */}
+        <div className="flex items-center gap-6 mb-4">
+          <span className="text-primary font-medium uppercase text-sm tracking-widest">
+            {featuredMedia?.media_type === 'movie' ? 'Film' : 'Series'}
+          </span>
+          
+          <div className="flex items-center gap-4">
+            {releaseYear && (
+              <span className="text-white/80 text-sm flex items-center gap-1">
+                <Calendar className="w-3.5 h-3.5" />
+                {releaseYear}
+              </span>
+            )}
+            
+            {featuredMedia?.vote_average > 0 && (
+              <span className="text-white/80 text-sm flex items-center gap-1">
+                <Star className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400" />
+                {featuredMedia?.vote_average.toFixed(1)}
+              </span>
+            )}
           </div>
         </div>
-      )}
-
-      {/* Split Hero Layout with Background Image and Vertical Content Area */}
-      <div className="absolute inset-0 flex flex-col lg:flex-row">
-        {/* Background Image with Enhanced Monochromatic Overlay */}
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={`bg-${currentIndex}`}
-            variants={backdropVariants}
-            initial="initial"
-            animate="animate"
-            exit="exit"
-            className="absolute inset-0 lg:w-2/3 lg:relative"
-            style={{
-              transform: `translateX(${visualSwipeFeedback * 0.05}px)` // Visual feedback during swipe
-            }}
+        
+        {/* Title with elegant styling */}
+        <h1 className="text-5xl md:text-7xl font-bold text-white mb-4 tracking-tight"
+            style={{ textShadow: "0 4px 12px rgba(0,0,0,0.5)" }}>
+          {title}
+        </h1>
+        
+        {/* Overview with controlled width */}
+        <p className="text-white/90 text-base md:text-lg mb-8 max-w-2xl line-clamp-2 md:line-clamp-3">
+          {featuredMedia?.overview}
+        </p>
+        
+        {/* Action buttons with refined design */}
+        <div className="flex flex-wrap gap-3 md:gap-4">
+          <Button
+            onClick={handlePlay}
+            className="bg-white text-black hover:bg-white/90 px-6 md:px-8 py-2.5 rounded-full flex items-center gap-2 transition-all"
           >
-            {/* Hero Image with priority loading for first image */}
-            <img
-              src={getImageUrl(featuredMedia?.backdrop_path, backdropSizes.medium)}
-              srcSet={buildSrcSet(featuredMedia?.backdrop_path)}
-              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 100vw, 80vw"
-              alt={title}
-              className="w-full h-full object-cover filter grayscale-[20%]"
-              onLoad={() => {
-                setIsLoaded(true);
-                setFirstLoad(false);
-              }}
-              loading={currentIndex === 0 ? "eager" : "lazy"}
-              fetchPriority={currentIndex === 0 ? "high" : "auto"}
-            />
-
-            {/* Monochromatic gradient overlays */}
-            <div className="absolute inset-0 bg-gradient-to-t from-gray-950 from-10% via-gray-900/70 via-40% to-gray-950/30" />
-            <div className="absolute inset-0 bg-gradient-to-r from-gray-950 via-gray-900/60 to-transparent" />
-            
-            {/* Vertical split line (desktop only) */}
-            <div className="hidden lg:block absolute right-0 top-0 bottom-0 w-[1px] bg-gradient-to-b from-gray-800/0 via-gray-800/30 to-gray-800/0" />
-          </motion.div>
-        </AnimatePresence>
-
-        {/* Modern content area with vertical layout */}
-        <motion.div 
-          className="absolute inset-0 lg:relative lg:w-1/3 flex flex-col justify-end lg:justify-center items-start z-10"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.8 }}
-          style={{
-            transform: `translateX(${visualSwipeFeedback * 0.02}px)` // Subtle visual feedback during swipe
-          }}
-        >
-          <motion.div
-            className="w-full h-full flex flex-col justify-end lg:justify-center p-6 sm:p-8 md:p-10 lg:p-12"
-            variants={contentBlockVariants}
-            initial="initial"
-            animate="animate"
+            <Play className="w-5 h-5 fill-black" />
+            <span className="font-medium">Watch</span>
+          </Button>
+          
+          <Button
+            onClick={handleMoreInfo}
+            className="bg-black/30 backdrop-blur-sm border border-white/20 hover:bg-black/50 text-white px-6 md:px-8 py-2.5 rounded-full flex items-center gap-2 transition-all"
           >
-            {/* Metadata badges - More compact on mobile */}
-            <motion.div 
-              variants={contentItemVariants} 
-              className="flex flex-wrap items-center gap-2 md:gap-3 mb-3 md:mb-4"
-            >
-              <span className="px-2 py-1 rounded-sm bg-white/10 backdrop-blur-sm text-xs font-medium text-white uppercase tracking-wider border-l-2 border-white">
-                {featuredMedia?.media_type === 'movie' ? 'Movie' : 'TV Series'}
-              </span>
-
-              {releaseYear && (
-                <span className="flex items-center px-2 py-1 rounded-sm bg-white/5 backdrop-blur-sm text-xs font-medium text-white/90">
-                  <Calendar className="w-3 h-3 mr-1" />
-                  {releaseYear}
-                </span>
-              )}
-
-              {featuredMedia?.vote_average > 0 && (
-                <span className="flex items-center px-2 py-1 rounded-sm bg-white/5 backdrop-blur-sm text-xs font-medium text-white/90">
-                  <Star className="w-3 h-3 mr-1 fill-white text-white" />
-                  {featuredMedia?.vote_average.toFixed(1)}
-                </span>
-              )}
-            </motion.div>
-
-            {/* Title Section with Enhanced Typography */}
-            <motion.div variants={contentItemVariants} className="mb-3 md:mb-4">
-              {featuredMedia?.logo_path ? (
-                <img
-                  src={getImageUrl(featuredMedia.logo_path, backdropSizes.medium)}
-                  alt={title}
-                  className="max-h-16 md:max-h-24 mb-2 drop-shadow-lg filter grayscale"
-                  style={{ objectFit: 'contain' }}
-                />
-              ) : (
-                <h1 className="text-4xl sm:text-5xl md:text-6xl font-light tracking-tight text-white text-balance" 
-                    style={{ fontFamily: "'Playfair Display', serif" }}>
-                  {title}
-                </h1>
-              )}
-
-              {/* Tagline with serif styling */}
-              {featuredMedia?.tagline && (
-                <p className="text-lg md:text-xl text-white/80 mt-2 mb-2 font-serif italic">
-                  {featuredMedia.tagline}
-                </p>
-              )}
-            </motion.div>
-
-            {/* Overview - Styled with serif font */}
-            <motion.p 
-              variants={contentItemVariants}
-              className="text-white/80 mb-6 md:mb-8 line-clamp-3 sm:line-clamp-4 text-base md:text-lg font-serif leading-relaxed"
-            >
-              {featuredMedia?.overview}
-            </motion.p>
-
-            {/* Action buttons - Monochromatic styling */}
-            <motion.div 
-              variants={contentItemVariants}
-              className="flex flex-wrap gap-4 mt-2"
-            >
-              <Button
-                onClick={handlePlay}
-                className="bg-white hover:bg-white/90 text-gray-900 flex items-center transition-all active:scale-95 hover:scale-105 rounded-none px-6 py-3 group"
-                size={isMobile ? "default" : "lg"}
-                style={{ minWidth: isMobile ? 120 : 160, minHeight: isMobile ? 44 : 48 }}
-                aria-label="Play Now"
-              >
-                <Play className="h-5 w-5 mr-2 group-hover:translate-x-0.5 transition-transform" />
-                <span className="font-medium tracking-wide">Play Now</span>
-              </Button>
-
-              <Button
-                onClick={handleMoreInfo}
-                variant="outline"
-                size={isMobile ? "default" : "lg"}
-                className="border border-white/40 bg-transparent text-white hover:bg-white/10 hover:border-white flex items-center transition-all active:scale-95 rounded-none px-6 py-3 group"
-                style={{ minWidth: isMobile ? 120 : 160, minHeight: isMobile ? 44 : 48 }}
-                aria-label="More Info"
-              >
-                <Info className="h-5 w-5 mr-2 group-hover:scale-110 transition-transform" />
-                <span className="font-medium tracking-wide">Details</span>
-              </Button>
-            </motion.div>
-          </motion.div>
-        </motion.div>
-      </div>
-
-      {/* Enhanced monochromatic pagination indicators with progress animation */}
-      {filteredMedia.length > 1 && (
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 md:bottom-6 flex space-x-3 z-20">
-          {filteredMedia.map((_, index) => (
-            <button
-              key={index}
-              className={`h-[2px] rounded-none transition-all ${
-                index === currentIndex
-                  ? 'bg-white w-8 pagination-indicator-active'
-                  : 'bg-white/30 w-4 hover:bg-white/50'
-              }`}
-              onClick={() => {
-                setIsLoaded(false);
-                setCurrentIndex(index);
-              }}
-              aria-label={`View featured item ${index + 1}`}
-              aria-current={index === currentIndex ? 'true' : 'false'}
-            />
-          ))}
+            <Info className="w-5 h-5" />
+            <span className="font-medium">More Info</span>
+          </Button>
         </div>
-      )}
-
-      {/* Previous/Next buttons - Redesigned for monochromatic theme */}
-      {filteredMedia.length > 1 && (
-        <>
-          <button
-            className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/30 backdrop-blur-sm border border-white/10 text-white p-2 flex items-center justify-center opacity-0 group-hover:opacity-100 hover:opacity-100 transition-all hover:bg-white/10 z-20"
-            onClick={goToPrev}
-            aria-label="Previous slide"
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </button>
-          <button
-            className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/30 backdrop-blur-sm border border-white/10 text-white p-2 flex items-center justify-center opacity-0 group-hover:opacity-100 hover:opacity-100 transition-all hover:bg-white/10 z-20"
-            onClick={goToNext}
-            aria-label="Next slide"
-          >
-            <ChevronRight className="w-5 h-5" />
-          </button>
-        </>
-      )}
-
-      {/* Auto-rotation control - Monochromatic styling */}
+      </motion.div>
+    </div>
+  </div>
+  
+  {/* Side navigation arrows */}
+  {filteredMedia.length > 1 && (
+    <div className="absolute top-1/2 left-0 right-0 -translate-y-1/2 flex justify-between px-4 md:px-6 pointer-events-none">
       <button
-        className="absolute top-4 right-4 w-8 h-8 rounded-full bg-black/30 backdrop-blur-sm border border-white/10 text-white p-1.5 flex items-center justify-center z-20 focus:opacity-100 transition-all hover:bg-white/10"
-        onClick={toggleAutoRotation}
-        aria-label={isAutoRotating ? "Pause auto-rotation" : "Resume auto-rotation"}
+        onClick={goToPrev}
+        className="w-12 h-12 rounded-full bg-black/20 backdrop-blur-sm hover:bg-black/40 flex items-center justify-center transition-all pointer-events-auto"
+        aria-label="Previous slide"
       >
-        <span className="relative block w-5 h-5">
-          {/* AnimatePresence for icon switch */}
-          <AnimatePresence initial={false} mode="wait">
-            {isAutoRotating ? (
-              <motion.span
-                key="pause"
-                initial={{ opacity: 0, scale: 0.7, rotate: -90 }}
-                animate={{ opacity: 1, scale: 1, rotate: 0 }}
-                exit={{ opacity: 0, scale: 0.7, rotate: 90 }}
-                transition={{ duration: 0.25, ease: "easeInOut" }}
-                className="absolute inset-0 flex items-center justify-center"
-              >
-                <Pause className="w-5 h-5" />
-              </motion.span>
-            ) : (
-              <motion.span
-                key="play"
-                initial={{ opacity: 0, scale: 0.7, rotate: 90 }}
-                animate={{ opacity: 1, scale: 1, rotate: 0 }}
-                exit={{ opacity: 0, scale: 0.7, rotate: -90 }}
-                transition={{ duration: 0.25, ease: "easeInOut" }}
-                className="absolute inset-0 flex items-center justify-center"
-              >
-                <Play className="w-5 h-5" />
-              </motion.span>
-            )}
-          </AnimatePresence>
-        </span>
+        <ChevronLeft className="w-6 h-6 text-white" />
       </button>
-    </section>
+      <button
+        onClick={goToNext}
+        className="w-12 h-12 rounded-full bg-black/20 backdrop-blur-sm hover:bg-black/40 flex items-center justify-center transition-all pointer-events-auto"
+        aria-label="Next slide"
+      >
+        <ChevronRight className="w-6 h-6 text-white" />
+      </button>
+    </div>
+  )}
+  
+  {/* Progress bar indicators at top */}
+  <div className="absolute top-0 left-0 right-0 flex h-1">
+    {filteredMedia.map((_, index) => (
+      <div
+        key={index}
+        className={`flex-1 transition-all ${
+          index === currentIndex ? 'bg-primary' : 'bg-white/20'
+        }`}
+        onClick={() => setCurrentIndex(index)}
+        role="button"
+        tabIndex={0}
+        aria-label={`Go to slide ${index + 1}`}
+      >
+        {index === currentIndex && (
+          <motion.div
+            className="h-full bg-white"
+            initial={{ width: "0%" }}
+            animate={{ width: "100%" }}
+            transition={{ duration: 10, ease: "linear" }}
+            key={`progress-${currentIndex}`}
+          />
+        )}
+      </div>
+    ))}
+  </div>
+  
+  {/* Auto-rotation control - Minimal corner placement */}
+  <button
+    onClick={toggleAutoRotation}
+    className="absolute bottom-4 right-4 z-20 w-8 h-8 rounded-full bg-black/30 backdrop-blur-sm hover:bg-black/50 flex items-center justify-center transition-all"
+    aria-label={isAutoRotating ? "Pause auto-rotation" : "Resume auto-rotation"}
+  >
+    {isAutoRotating ? (
+      <Pause className="w-4 h-4 text-white" />
+    ) : (
+      <Play className="w-4 h-4 text-white" />
+    )}
+  </button>
+</section>
   );
 };
 

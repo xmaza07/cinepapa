@@ -1,0 +1,64 @@
+/* Accessibility Note: Ensure sufficient contrast for readability. */
+@keyframes slideInL {
+  from {
+    transform: translateX(-100%) rotateY(90deg);
+  }
+  to {
+    transform: translateX(0) rotateY(0deg);
+  }
+}
+
+@keyframes slideInS {
+  from {
+    transform: translateX(100%) rotateY(90deg);
+  }
+  to {
+    transform: translateX(0.5em) rotateY(0deg);
+  }
+}
+
+.logo {
+  position: relative;
+  font-size: 2rem;
+  font-weight: bold;
+  cursor: pointer;
+  perspective: 500px; /* Add perspective for 3D effect */
+}
+
+.logoL, .logoS {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  transform-style: preserve-3d; /* Preserve 3D transformations */
+  text-shadow: 0 0 2px #fff, 0 0 5px #f09, 0 0 10px #f09; /* Reduced Neon glow */
+}
+
+.logoL {
+  animation: slideInL 1s forwards;
+  background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  z-index: 2;
+}
+
+.logoS {
+  animation: slideInS 1s forwards;
+  background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  transform: translateX(0.5em);
+  z-index: 1;
+}
+
+.logo:hover .logoL {
+  transform: translateX(-0.1em) rotateY(-20deg) scale(1.1);
+  text-shadow: 0 0 5px #fff, 0 0 10px #f09, 0 0 15px #f09; /* Reduced Intensify glow on hover */
+}
+
+.logo:hover .logoS {
+  transform: translateX(0.6em) rotateY(20deg) scale(1.1);
+  text-shadow: 0 0 5px #fff, 0 0 10px #f09, 0 0 15px #f09; /* Reduced Intensify glow on hover */
+}

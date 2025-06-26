@@ -33,3 +33,6 @@ mcp_server
 
 #planning
 plan
+
+# Temporary files
+.gemini

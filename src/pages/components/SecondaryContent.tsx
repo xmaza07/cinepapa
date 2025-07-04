@@ -38,13 +38,7 @@ import {
 
 const SecondaryContent = () => {
   // Thematic/Curated
-  const [recentlyAdded, setRecentlyAdded] = useState<Media[]>([]);
-  const [mostWatched, setMostWatched] = useState<Media[]>([]);
-  const [awardWinners, setAwardWinners] = useState<Media[]>([]);
-  const [criticallyAcclaimed, setCriticallyAcclaimed] = useState<Media[]>([]);
   const [editorsPicks, setEditorsPicks] = useState<Media[]>([]);
-  const [hiddenGems, setHiddenGems] = useState<Media[]>([]);
-  const [classics, setClassics] = useState<Media[]>([]);
   const [basedOnTrueStories, setBasedOnTrueStories] = useState<Media[]>([]);
   // Genre-Based (all with infinite scroll)
   const [actionMovies, setActionMovies] = useState<Media[]>([]);
@@ -234,24 +228,12 @@ const SecondaryContent = () => {
   useEffect(() => {
     const fetchAllContent = async () => {
       try {
-        // Thematic/Curated
-        const [recent, mostWatched, awards, critics, editors, hidden, classic, trueStories] = await Promise.all([
-          getRecentlyAdded(),
-          getMostWatchedThisWeek(),
-          getAwardWinners(),
-          getCriticallyAcclaimed(),
+        // Thematic/Curated (removed: Recently Added, Most Watched, Award Winners, Critically Acclaimed, Hidden Gems, Classics)
+        const [editors, trueStories] = await Promise.all([
           getEditorsPicks(),
-          getHiddenGems(),
-          getClassics(),
           getBasedOnTrueStories()
         ]);
-        setRecentlyAdded(recent);
-        setMostWatched(mostWatched);
-        setAwardWinners(awards);
-        setCriticallyAcclaimed(critics);
         setEditorsPicks(editors);
-        setHiddenGems(hidden);
-        setClassics(classic);
         setBasedOnTrueStories(trueStories);
 
         // Genre-Based (Action row loads page 1 only here)
@@ -325,13 +307,7 @@ const SecondaryContent = () => {
   return (
     <>
       {/* Thematic/Curated Rows */}
-      {recentlyAdded.length > 0 && <ContentRow title="Recently Added" media={recentlyAdded} />}
-      {mostWatched.length > 0 && <ContentRow title="Most Watched This Week" media={mostWatched} />}
-      {awardWinners.length > 0 && <ContentRow title="Award Winners" media={awardWinners} />}
-      {criticallyAcclaimed.length > 0 && <ContentRow title="Critically Acclaimed" media={criticallyAcclaimed} />}
       {editorsPicks.length > 0 && <ContentRow title="Editor's Picks" media={editorsPicks} />}
-      {hiddenGems.length > 0 && <ContentRow title="Hidden Gems" media={hiddenGems} />}
-      {classics.length > 0 && <ContentRow title="Classics" media={classics} />}
       {basedOnTrueStories.length > 0 && <ContentRow title="Based on True Stories" media={basedOnTrueStories} />}
 
       {/* Genre-Based Rows (all with infinite scroll) */}

@@ -16,6 +16,7 @@ interface ContentRowProps {
 }
 
 const ContentRow = ({ title, media, featured = false, onLoadMore, isLoadingMore, loadMoreRef }: ContentRowProps) => {
+  const [activeCardId, setActiveCardId] = useState<string | number | null>(null);
   const rowRef = useRef<HTMLDivElement>(null);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [showRightArrow, setShowRightArrow] = useState(true);
@@ -118,7 +119,14 @@ const ContentRow = ({ title, media, featured = false, onLoadMore, isLoadingMore,
                 animationDelay: `${index * 0.05}s` 
               }}
             >
-              <MediaCard media={item} featured={featured} />
+              <MediaCard
+                media={item}
+                featured={featured}
+                isActive={activeCardId === item.id}
+                onCardClick={(id) => {
+                  setActiveCardId((prev) => (prev === id ? null : id));
+                }}
+              />
             </div>
           ))}
         </div>

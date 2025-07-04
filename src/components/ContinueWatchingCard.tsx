@@ -43,16 +43,13 @@ const formatTimeRemaining = (position: number, duration: number) => {
 const ContinueWatchingCard: React.FC<ContinueWatchingCardProps> = ({ item, onContinueWatching, onNavigateToDetails }) => {
   return (
     <motion.div
-      className="relative flex-none w-[280px] md:w-[300px] aspect-video bg-card rounded-xl overflow-hidden group cursor-pointer hover:shadow-2xl hover:scale-[1.03] transition-all duration-300 border border-transparent hover:border-accent/70"
+      className="relative flex-none w-[320px] md:w-[380px] aspect-video bg-gray-900 rounded overflow-hidden group cursor-pointer transition-all duration-300 hover:scale-110 hover:z-20"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      whileHover={{ scale: 1.02 }}
+      whileHover={{ scale: 1.1 }}
       onClick={() => {
-        triggerHapticFeedback(25); // Stronger feedback for main action
+        triggerHapticFeedback(25);
         onContinueWatching(item);
-      }}
-      style={{
-        boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.3)'
       }}
     >
       <img
@@ -60,56 +57,30 @@ const ContinueWatchingCard: React.FC<ContinueWatchingCardProps> = ({ item, onCon
         alt={item.title}
         className="w-full h-full object-cover transition-transform group-hover:scale-110 group-hover:brightness-110"
       />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent backdrop-blur-sm" />
-      <div className="absolute bottom-4 left-4 right-4 z-10">
-        <div className="flex justify-between items-start mb-1">
-          <h3 className="text-white font-semibold line-clamp-1 text-base md:text-lg drop-shadow-sm">{item.title}</h3>
-          <TooltipProvider delayDuration={300}>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7 rounded-full bg-black/30 hover:bg-accent/80 transition-colors -mt-1"
-                  onClick={e => {
-                    triggerHapticFeedback(15); // Light feedback for info button
-                    onNavigateToDetails(e, item);
-                  }}
-                >
-                  <Info className="h-3.5 w-3.5 text-white" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="top">
-                <p>View details</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+      {/* Netflix-style gradient overlay */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+      
+      {/* Progress bar at bottom */}
+      <div className="absolute bottom-0 left-0 right-0 h-1 bg-gray-600">
+        <div 
+          className="h-full bg-red-600 transition-all duration-300"
+          style={{ width: `${(item.watch_position / item.duration) * 100}%` }}
+        />
+      </div>
+      
+      {/* Netflix-style title overlay */}
+      <div className="absolute bottom-2 left-3 right-3">
+        <h3 className="text-white font-medium text-sm line-clamp-1">{item.title}</h3>
+        {item.media_type === 'tv' && (
+          <p className="text-gray-300 text-xs">S{item.season} E{item.episode}</p>
+        )}
+      </div>
+      
+      {/* Netflix-style play overlay on hover */}
+      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+        <div className="w-12 h-12 bg-white bg-opacity-90 rounded-full flex items-center justify-center">
+          <Play className="w-6 h-6 text-black fill-current ml-1" />
         </div>
-        <div className="flex items-center justify-between text-xs text-white/70 mb-2">
-          <span className="flex items-center">
-            <Clock className="h-3 w-3 mr-1" />
-            {formatLastWatched(item.created_at)}
-          </span>
-          {item.media_type === 'tv' && (
-            <span>S{item.season} E{item.episode}</span>
-          )}
-        </div>
-        <div className="mb-3 relative">
-          <Progress
-            value={(item.watch_position / item.duration) * 100}
-            className="h-1.5 bg-white/10 rounded-full"
-          />
-          <div className="text-xs text-white/70 mt-1 text-right">
-            {formatTimeRemaining(item.watch_position, item.duration)}
-          </div>
-        </div>
-        <Button
-          className="w-full bg-gradient-to-r from-accent to-accent/80 hover:from-accent/80 hover:to-accent/60 text-white flex items-center justify-center gap-1 shadow-lg transition-all duration-200"
-          size="sm"
-        >
-          <Play className="h-3 w-3" />
-          Continue
-        </Button>
       </div>
     </motion.div>
   );

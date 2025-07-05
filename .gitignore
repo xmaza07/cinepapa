@@ -36,3 +36,5 @@ plan
 
 # Temporary files
 .gemini
+
+dev-dist/

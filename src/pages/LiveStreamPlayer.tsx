@@ -10,7 +10,7 @@ import PageTransition from '@/components/PageTransition';
 import { useLiveStreams } from '@/hooks/use-live-streams';
 import { LiveStream } from '@/pages/LiveStreams';
 // Removed custom API proxy imports
-import { initializeProxySystem } from '@/utils/proxy-sw-registration';
+
 
 const LiveStreamPlayer = () => {
   const { id } = useParams<{ id: string }>();
@@ -29,7 +29,7 @@ const LiveStreamPlayer = () => {
   // Initialize proxy system when component mounts
   useEffect(() => {
     const init = async () => {
-      await initializeProxySystem();
+
     };
     
     init();

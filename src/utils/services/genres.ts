@@ -118,7 +118,7 @@ export const getCriticallyAcclaimed = getAwardWinners;
 export const getEditorsPicks = getAwardWinners; // Placeholder, could be a custom curated list
 
 export const getMostWatchedThisWeek = async (page: number = 1): Promise<Media[]> => {
-  // TMDB does not provide direct viewership data; using popularity as a proxy
+  // TMDB does not provide direct viewership data; using popularity as an estimate
   try {
     const response = await tmdb.get('/discover/movie', {
       params: {

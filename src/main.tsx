@@ -7,8 +7,7 @@ interface BeforeInstallPromptEvent extends Event {
   }>;
   prompt(): Promise<void>;
 }
-// Re-enable iframe proxy service worker registration (does not affect main SW)
-import { registerIframeProxySW } from './utils/iframe-proxy-sw';
+// ...existing code...
 // Store the event on the window so React components can access it
 window.addEventListener('beforeinstallprompt', (e) => {
   window.__deferredPWAInstallPrompt = e as BeforeInstallPromptEvent;
@@ -33,8 +32,7 @@ const initApp = () => {
       <HapticApp />
     </React.StrictMode>
   );
-  // Register the iframe proxy service worker (does not affect main SW)
-  registerIframeProxySW();
+  // ...existing code...
 };
 
 // If the DOM is already loaded, run immediately, otherwise wait for the load event

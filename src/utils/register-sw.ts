@@ -1,6 +1,6 @@
 // Initialize the service worker
 
-import { initializeProxySystem } from './proxy-sw-registration';
+// ...existing code...
 
 // Initialize the service worker
 export function initializeSW() {
@@ -11,8 +11,7 @@ export function initializeSW() {
         const registration = await navigator.serviceWorker.register('/sw.js');
         console.log('Service Worker registered with scope:', registration.scope);
         
-        // Also initialize our proxy system for CORS handling
-        await initializeProxySystem();
+        // ...existing code...
         
         // Listen for updates
         registration.onupdatefound = () => {

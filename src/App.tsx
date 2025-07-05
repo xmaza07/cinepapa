@@ -15,7 +15,7 @@ import ChatbotButton from './components/chatbot/ChatbotButton';
 import ChatbotWindow from './components/chatbot/ChatbotWindow';
 import ProactiveSuggestions from './components/chatbot/ProactiveSuggestions';
 import AppRoutes from './routes.tsx';
-// import { initializeProxySystem } from './utils/proxy-sw-registration';
+// ...existing code...
 import { trackPageView } from './lib/analytics';
 import './App.css';
 import './styles/notifications.css';
@@ -49,14 +49,7 @@ function App() {
   const [swUpdateAvailable, setSwUpdateAvailable] = React.useState(false);
 
   // React.useEffect(() => {
-  //   // Initialize the proxy system with error handling
-  //   initializeProxySystem()
-  //     .then(registered => {
-  //       console.log(`Proxy system ${registered ? 'registered successfully' : 'not registered or using fallback'}`);
-  //     })
-  //     .catch(error => {
-  //       console.error('Error initializing proxy system:', error);
-  //     });
+  // ...existing code...
   // }, []);
 
 

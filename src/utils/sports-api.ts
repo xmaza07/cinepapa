@@ -138,7 +138,7 @@ export const getMatchPosterUrl = (posterId: string) => {
     return DEFAULT_POSTER_URL;
   }
   if (posterId.startsWith('http')) {
-    return `${API_BASE_URL}/api/images/proxy/${encodeURIComponent(posterId)}.webp`;
+    return `${API_BASE_URL}/api/images/${encodeURIComponent(posterId)}.webp`;
   }
   return `${API_BASE_URL}/api/images/poster/${posterId}.webp`;
 };

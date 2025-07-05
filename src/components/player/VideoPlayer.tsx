@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { useEffect, useRef } from 'react';
-import { registerIframeOrigin, resetServiceWorkerData } from '@/utils/iframe-proxy-sw';
+// ...existing code...
 
 
 interface VideoPlayerProps {
@@ -15,17 +15,9 @@ interface VideoPlayerProps {
 const VideoPlayer = ({ isLoading, iframeUrl, title, poster, onLoaded, onError }: VideoPlayerProps) => {
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
-  useEffect(() => {
-    return () => {
-      resetServiceWorkerData();
-    };
-  }, []);
+  // ...existing code...
 
-  useEffect(() => {
-    if (iframeUrl) {
-      registerIframeOrigin(iframeUrl);
-    }
-  }, [iframeUrl]);
+  // ...existing code...
 
   const handleIframeError = () => {
     onError('Failed to load iframe content');

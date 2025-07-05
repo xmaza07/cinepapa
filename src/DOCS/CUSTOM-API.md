@@ -81,4 +81,4 @@ Response:
 > - `lang`: The language of the streaming link.
 > - `provider`: The source of the streaming link. 
 
-Our video player is going to use the `file` field to load the video in /src/components/PlyrPlayer.js file.
+

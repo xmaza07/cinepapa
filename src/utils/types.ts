@@ -126,7 +126,7 @@ export interface Company {
   origin_country: string;
 }
 
-// Custom video source result for advanced streaming info (HLS, headers, subtitles, etc)
+// ...existing code...
 export interface CustomVideoSourceResult {
   url: string;
   headers?: Record<string, string>;
@@ -137,7 +137,7 @@ export interface CustomVideoSourceResult {
   }>;
 }
 
-// Video source interface
+// ...existing code...
 export interface VideoSource {
   key: string;
   name: string;

@@ -4,7 +4,7 @@ import { ExternalLink } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import Navbar from '@/components/Navbar';
-import VideoPlayer from '@/components/player/VideoPlayer';
+import { VideoPlayer } from '@/components/player/VideoPlayer';
 import VideoSourceSelector from '@/components/player/VideoSourceSelector';
 import EpisodeNavigation from '@/components/player/EpisodeNavigation';
 import MediaActions from '@/components/player/MediaActions';
@@ -30,8 +30,8 @@ const Player = () => {
     isLoading,
     isPlayerLoaded,
     iframeUrl,
-    streamUrl,
-    isCustomSource,
+    // ...existing code...
+    // ...existing code...
     selectedSource,
     isFavorite,
     isInMyWatchlist,
@@ -62,14 +62,14 @@ const Player = () => {
       <motion.nav 
         initial={{ y: -100 }}
         animate={{ y: 0 }}
-        exit={{ y: -100 }}
-        className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-b from-black/80 to-transparent"
+        transition={{ duration: 0.5 }}
+        className="sticky top-0 z-30"
       >
         <Navbar />
       </motion.nav>
 
-      <div className="relative z-10 container mx-auto px-4">
-        <MediaActions 
+      <div className="container mx-auto py-8">
+        <MediaActions
           isFavorite={isFavorite}
           isInWatchlist={isInMyWatchlist}
           onToggleFavorite={toggleFavorite}
@@ -80,8 +80,6 @@ const Player = () => {
 
         <VideoPlayer 
           isLoading={isLoading}
-          isCustomSource={isCustomSource}
-          streamUrl={streamUrl}
           iframeUrl={iframeUrl}
           title={title}
           poster={posterUrl}
@@ -102,7 +100,6 @@ const Player = () => {
               onNextEpisode={goToNextEpisode}
             />
           )}
-
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
@@ -119,12 +116,10 @@ const Player = () => {
                 View Details
               </Button>
             </div>
-
             <VideoSourceSelector 
               videoSources={videoSources}
               selectedSource={selectedSource}
               onSourceChange={handleSourceChange}
-              isCustomSource={isCustomSource}
             />
           </div>
         </motion.div>

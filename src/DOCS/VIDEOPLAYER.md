@@ -5,7 +5,7 @@
 To install Vistack:
 
     ```bash
-    npm i @vidstack/react@next hls.js
+    npm i @vidstack/react@next
     ```
 
 To use the video player, import the necessary components from the vidstack library and set up your video source accordingly
@@ -383,7 +383,7 @@ We strongly recommend using adaptive streaming protocols such as HLS over provid
 
 Supported Codecs
 Section titled Supported Codecs
-Vidstack Player relies on the native browser runtime to handle media playback, hence it’s important you review what containers and codecs are supported by them. This also applies to libraries like hls.js and dash.js which we use for HLS/DASH playback in browsers that don’t support it natively.
+Vidstack Player relies on the native browser runtime to handle media playback, hence it’s important you review what containers and codecs are supported by them.
 
 While there are a vast number of media container formats, the ones listed below are the ones you are most likely to encounter. Some support only audio while others support both audio and video. The most commonly used containers for media on the web are probably MPEG-4 (MP4), Web Media File (WEBM), and MPEG Audio Layer III (MP3).
 
@@ -679,10 +679,10 @@ Thumbnails are small, static images or frames extracted from the video or audio 
 
 Usage
 Section titled Usage
-Thumbnails can be loaded using the Thumbnail component or useThumbnails hook. They’re also supported out the box by the Default Layout and Plyr Layout.
+Thumbnails can be loaded using the Thumbnail component or useThumbnails hook. They’re also supported out the box by the Default Layout.
 
 // 1. Layouts.
-<PlyrLayout thumbnails="/thumbnails.vtt" />
+
 <DefaultVideoLayout thumbnails="/thumbnails.vtt" />
 
 // 2. Thumbnail component.
@@ -792,7 +792,7 @@ const storyboard: ThumbnailStoryboard = {
 Provide objects directly like so:
 
 // 1. Layouts.
-<PlyrLayout thumbnails={storyboard} />
+
 <DefaultVideoLayout thumbnails={storyboard} />
 
 // 2. Thumbnail component.
@@ -807,7 +807,7 @@ Adaptive streaming protocols like HLS and DASH not only enable streaming media i
 Video streaming platforms such as Cloudflare Stream and Mux will take an input video file (e.g., awesome-video.mp4) and create multiple renditions out of the box for you, with multiple resolutions (width/height) and bit rates:
 
 HLS manifest with multiple child resolution manifests.
-By default, the best quality is automatically selected by the streaming engine such as hls.js or dash.js. You’ll usually see this as an “Auto” option in the player quality menu. It can also be manually set if the engine is not making optimal decisions, as they’re generally more conservative to avoid excessive bandwidth usage.
+By default, the best quality is automatically selected by the streaming engine. You’ll usually see this as an “Auto” option in the player quality menu. It can also be manually set if the engine is not making optimal decisions, as they’re generally more conservative to avoid excessive bandwidth usage.
 
 Once you have your HLS or DASH playlist by either creating it yourself using FFMPEG or using a streaming provider, you can pass it to the player like so:
 
@@ -816,7 +816,6 @@ Once you have your HLS or DASH playlist by either creating it yourself using FFM
 
 {/*Example with Mux.*/}
 <MediaPlayer src="https://stream.mux.com/<PLAYBACK_ID>.m3u8">
-
 
 ## Events
 
@@ -835,7 +834,7 @@ function Player() {
   return (
     <MediaPlayer onLoadedMetadata={onLoadedMetadata}>
       <MediaProvider />
-      {/* ... */}
+      {/*...*/}
     </MediaPlayer>
   );
 }
@@ -873,7 +872,7 @@ function Player() {
   return (
     <MediaPlayer onPlay={onPlay} onPlayFail={onPlayFail} onMediaPlayRequest={onPlayRequest}>
       <MediaProvider />
-      {/* ... */}
+      {/*...*/}
     </MediaPlayer>
   );
 }
@@ -922,7 +921,7 @@ function Player() {
   return (
     <MediaPlayer onPlaying={onPlaying}>
       <MediaProvider />
-      {/* ... */}
+      {/*...*/}
     </MediaPlayer>
   );
 }
@@ -958,7 +957,7 @@ function Player() {
 
   return (
     <MediaPlayer onPlay={() => setPaused(false)} onPause={() => setPaused(true)}>
-      {/* ... */}
+      {/*...*/}
     </MediaPlayer>
   );
 }
@@ -987,7 +986,7 @@ function Player() {
   // - This hook makes it easy to access all media state.
   const { paused } = useMediaStore(player);
 
-  return <MediaPlayer ref={player}>{/* ... */}</MediaPlayer>;
+  return <MediaPlayer ref={player}>{/*...*/}</MediaPlayer>;
 }
 You can omit the ref if you’re calling the hooks inside a player child component as the media context is available:
 
@@ -1025,7 +1024,7 @@ function Player() {
   return (
     <MediaPlayer ref={player}>
       <MediaProvider />
-      {/* ... */}
+      {/*...*/}
     </MediaPlayer>
   );
 }
@@ -1060,7 +1059,7 @@ function PlayerChildComponent() {
     remote.play(nativeEvent);
   }
 
-  return <button onPointerUp={onClick}>{/* ... */}</button>;
+  return <button onPointerUp={onClick}>{/*...*/}</button>;
 }
 The example above shows that event triggers can be provided to all methods on the MediaRemoteControl class. Trigger events enable connecting media events back to their origin event. This can be useful when trying to understand how a media event was triggered, or when analyzing data such as the time difference between the request and when it was performed.
 
@@ -1095,7 +1094,7 @@ The Tailwind plugin provides media variants which can be used to prefix utilitie
 function Example() {
   return (
     <MediaPlayer>
-      {/* show when paused */}
+      {/*show when paused*/}
       <div className="media-paused:opacity-100 opacity-0"></div>
 
       {/* hide when paused  */}
@@ -1112,64 +1111,64 @@ Section titled Media Variants
 <div className="media-paused:opacity-0" />
 Playback
 Section titled Playback
-Variant	Description
-media-autoplay-error	Autoplay has failed to start.
-media-autoplay	Autoplay has successfully started.
-media-buffering	Not ready for playback or waiting for more data.
-media-can-fullscreen	Fullscreen is available.
-media-can-load	Media can begin loading.
-media-can-load-poster	Poster can begin loading.
-media-can-pip	Picture-in-Picture is available.
-media-can-play	Media is ready to be played.
-media-can-seek	Whether seeking is permitted for live stream.
-media-captions	Caption or subtitle text track is showing.
-media-controls	Controls are visible.
-media-ios-controls	Native iOS controls are visible.
-media-ended	Playback has reached the end.
-media-error	Issue with media loading/playback.
-media-fullscreen	Media is in fullscreen mode.
-media-live-edge	Current time is at the live edge.
-media-live	Media is a live stream.
-media-loop	Media is set to loop back to start on end.
-media-muted	Media is muted.
-media-paused	Playback is in a paused state.
-media-pip	Media is in picture-in-picture mode.
-media-playing	Playback has started or resumed.
-media-playsinline	Media should play inline by default (iOS Safari).
-media-preview	Time slider preview is visible.
-media-seeking	Media or user is seeking to new playback position.
-media-started	Media playback has started.
-media-waiting	Media is waiting for more data (i.e., buffering).
+Variant Description
+media-autoplay-error Autoplay has failed to start.
+media-autoplay Autoplay has successfully started.
+media-buffering Not ready for playback or waiting for more data.
+media-can-fullscreen Fullscreen is available.
+media-can-load Media can begin loading.
+media-can-load-poster Poster can begin loading.
+media-can-pip Picture-in-Picture is available.
+media-can-play Media is ready to be played.
+media-can-seek Whether seeking is permitted for live stream.
+media-captions Caption or subtitle text track is showing.
+media-controls Controls are visible.
+media-ios-controls Native iOS controls are visible.
+media-ended Playback has reached the end.
+media-error Issue with media loading/playback.
+media-fullscreen Media is in fullscreen mode.
+media-live-edge Current time is at the live edge.
+media-live Media is a live stream.
+media-loop Media is set to loop back to start on end.
+media-muted Media is muted.
+media-paused Playback is in a paused state.
+media-pip Media is in picture-in-picture mode.
+media-playing Playback has started or resumed.
+media-playsinline Media should play inline by default (iOS Safari).
+media-preview Time slider preview is visible.
+media-seeking Media or user is seeking to new playback position.
+media-started Media playback has started.
+media-waiting Media is waiting for more data (i.e., buffering).
 View Type
 Section titled View Type
-Variant	Description
-media-audio	Whether media type is of audio.
-media-video	Whether media type is of video.
-media-view-audio	Whether view type is of audio.
-media-view-video	Whether view type is of video.
+Variant Description
+media-audio Whether media type is of audio.
+media-video Whether media type is of video.
+media-view-audio Whether view type is of audio.
+media-view-video Whether view type is of video.
 Stream Type
 Section titled Stream Type
-Variant	Description
-media-stream-unknown	Whether stream type is unknown.
-media-stream-demand	Whether stream type is on-demand.
-media-stream-live	Whether stream type is live.
-media-stream-dvr	Whether stream type is live DVR.
-media-stream-ll	Whether stream type is low-latency live.
-media-stream-ll-dvr	Whether stream type is low-latency live DVR.
+Variant Description
+media-stream-unknown Whether stream type is unknown.
+media-stream-demand Whether stream type is on-demand.
+media-stream-live Whether stream type is live.
+media-stream-dvr Whether stream type is live DVR.
+media-stream-ll Whether stream type is low-latency live.
+media-stream-ll-dvr Whether stream type is low-latency live DVR.
 Remote Playback
 Section titled Remote Playback
-Variant	Description
-media-can-air	Whether AirPlay is available.
-media-air	Whether AirPlay has connected.
-media-air-connecting	Whether AirPlay is connecting.
-media-air-disconnected	Whether AirPlay has disconnected.
-media-can-cast	Whether Google Cast is available.
-media-cast	Whether Google Cast has connected.
-media-cast-connecting	Whether Google Cast is connecting.
-media-cast-disconnected	Whether Google Cast has disconnected.
-media-remote-connected	Whether remote playback has connected.
-media-remote-connecting	Whether remote playback is connecting.
-media-remote-disconnected	Whether remote playback has disconnected.
+Variant Description
+media-can-air Whether AirPlay is available.
+media-air Whether AirPlay has connected.
+media-air-connecting Whether AirPlay is connecting.
+media-air-disconnected Whether AirPlay has disconnected.
+media-can-cast Whether Google Cast is available.
+media-cast Whether Google Cast has connected.
+media-cast-connecting Whether Google Cast is connecting.
+media-cast-disconnected Whether Google Cast has disconnected.
+media-remote-connected Whether remote playback has connected.
+media-remote-connecting Whether remote playback is connecting.
+media-remote-disconnected Whether remote playback has disconnected.
 Not Variants
 Section titled Not Variants
 All media variants can be prefixed with not- to negate the selector. Classes with this prefix will be transformed into media-player:not([state]) selectors.
@@ -1186,7 +1185,7 @@ Section titled Data Attributes
 Data attributes are applied to components throughout the library to expose internal state for styling purposes. Tailwind supports data attributes out of the box to apply styles conditionally.
 
 <Controls.Root className="data-[visible]:opacity-100 opacity-0 transition-opacity">
-  {/* ... */}
+  {/*...*/}
 </Controls.Root>
 INFO
 All component API references include the exposed data attributes. See the player data attributes as an example.
@@ -1197,7 +1196,7 @@ The data-focus attribute is applied to all components when focused via keyboard.
 
 // Example - available on all interactable components.
 <PlayButton className="outline-none data-[focus]:ring-4 data-[focus]:ring-blue-400">
-  {/* ... */}
+  {/*...*/}
 </PlayButton>
 Hocus
 Section titled Hocus
@@ -1205,5 +1204,5 @@ The data-hocus attribute is applied to components when they’re being keyboard 
 
 // Example - available on all interactable components.
 <PlayButton className="outline-none data-[hocus]:ring-4 data-[hocus]:ring-blue-400">
-  {/* ... */}
+  {/*...*/}
 </PlayButton>

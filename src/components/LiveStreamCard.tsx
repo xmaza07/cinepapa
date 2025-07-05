@@ -3,7 +3,7 @@ import { FC } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Play } from 'lucide-react';
-import { createProxyStreamUrl } from '@/utils/cors-proxy-api';
+// ...existing code...
 import { LiveStream } from '@/pages/LiveStreams';
 import { Button } from './ui/button';
 
@@ -18,24 +18,10 @@ const LiveStreamCard: FC<LiveStreamCardProps> = ({ stream }) => {
     navigate(`/watch/live/${stream.match_id}`, { state: { stream } });
   };
 
-  // Use proxy URLs for all external images with additional headers for better compatibility
-  const banner = createProxyStreamUrl(stream.banner, {
-    'Referer': 'https://www.fancode.com/',
-    'Origin': 'https://www.fancode.com',
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36'
-  });
-  
-  const team1Flag = createProxyStreamUrl(stream.team_1_flag, {
-    'Referer': 'https://www.fancode.com/',
-    'Origin': 'https://www.fancode.com',
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36'
-  });
-  
-  const team2Flag = createProxyStreamUrl(stream.team_2_flag, {
-    'Referer': 'https://www.fancode.com/',
-    'Origin': 'https://www.fancode.com',
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36'
-  });
+  // Use direct URLs for images (proxy removed)
+  const banner = stream.banner;
+  const team1Flag = stream.team_1_flag;
+  const team2Flag = stream.team_2_flag;
 
   return (
     <motion.div
@@ -53,14 +39,12 @@ const LiveStreamCard: FC<LiveStreamCardProps> = ({ stream }) => {
           className="w-full h-full object-cover"
           loading="lazy"
         />
-        
         {/* Event Category Badge */}
         <div className="absolute top-3 right-3 z-20">
           <span className="bg-accent/90 text-xs font-bold uppercase tracking-wider px-2 py-1 rounded">
             {stream.event_catagory}
           </span>
         </div>
-        
         {/* Event Name */}
         <div className="absolute bottom-0 left-0 right-0 p-4 z-20">
           <p className="text-white/80 text-sm">

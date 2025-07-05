@@ -12,14 +12,14 @@ interface VideoSourceSelectorProps {
   videoSources: VideoSource[];
   selectedSource: string;
   onSourceChange: (sourceKey: string) => void;
-  isCustomSource: boolean;
+  // Removed isCustomSource
 }
 
 const VideoSourceSelector = ({
   videoSources,
   selectedSource,
   onSourceChange,
-  isCustomSource
+  // Removed isCustomSource
 }: VideoSourceSelectorProps) => {
   const { toast } = useToast();
   const { updatePreferences } = useUserPreferences();

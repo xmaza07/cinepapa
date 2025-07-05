@@ -5,7 +5,7 @@
  */
 
 import { registerIframeProxySW, isProxyServiceWorkerActive } from './iframe-proxy-sw';
-import { injectPopupBlocker } from './cors-proxy-api';
+// ...existing code...
 
 // Initialize the proxy system
 export async function initializeProxySystem(): Promise<boolean> {
@@ -19,7 +19,7 @@ export async function initializeProxySystem(): Promise<boolean> {
     // If service worker registration failed, add a fallback popup blocker
     if (!registered || !isProxyServiceWorkerActive()) {
       console.log('Using fallback popup blocker mechanism');
-      injectPopupBlocker();
+      // ...existing code...
     }
     
     return registered;
@@ -27,7 +27,7 @@ export async function initializeProxySystem(): Promise<boolean> {
     console.error('Failed to initialize proxy system:', error);
     
     // Always inject the fallback as a safety measure
-    injectPopupBlocker();
+    // ...existing code...
     
     return false;
   }

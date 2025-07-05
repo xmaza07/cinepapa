@@ -5,11 +5,11 @@ import { ArrowLeft, ExternalLink, Share2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { toast } from '@/hooks/use-toast';
-import PlyrPlayer from '@/components/PlyrPlayer';
+
 import PageTransition from '@/components/PageTransition';
 import { useLiveStreams } from '@/hooks/use-live-streams';
 import { LiveStream } from '@/pages/LiveStreams';
-import { createProxyStreamUrl } from '@/utils/cors-proxy-api';
+// Removed custom API proxy imports
 import { initializeProxySystem } from '@/utils/proxy-sw-registration';
 
 const LiveStreamPlayer = () => {
@@ -117,14 +117,14 @@ const LiveStreamPlayer = () => {
           <>
             <div className="w-full aspect-video mb-6 overflow-hidden rounded-lg shadow-xl">
               {stream && (
-                <PlyrPlayer
+                <video
                   src={stream.stream_link}
-                  poster={createProxyStreamUrl(stream.banner)}
+                  poster={stream.banner}
                   title={stream.match_name}
-                  mediaType="movie" // Using movie as the type for the LiveStream
-                  mediaId={stream.match_id.toString()}
-                  onLoaded={handlePlayerLoad}
-                  onError={handlePlayerError}
+                  controls
+                  className="w-full h-full"
+                  onLoadedData={handlePlayerLoad}
+                  onError={() => handlePlayerError('Failed to load video')}
                 />
               )}
             </div>
@@ -169,7 +169,7 @@ const LiveStreamPlayer = () => {
                 <div className="flex items-center gap-4">
                   <div className="flex flex-col items-center">
                     <img 
-                      src={createProxyStreamUrl(stream.team_1_flag)} 
+                      src={stream.team_1_flag} 
                       alt={stream.team_1} 
                       className="w-12 h-12 object-cover rounded-full border-2 border-white/20" 
                     />
@@ -182,7 +182,7 @@ const LiveStreamPlayer = () => {
                   
                   <div className="flex flex-col items-center">
                     <img 
-                      src={createProxyStreamUrl(stream.team_2_flag)} 
+                      src={stream.team_2_flag} 
                       alt={stream.team_2} 
                       className="w-12 h-12 object-cover rounded-full border-2 border-white/20" 
                     />

@@ -24,7 +24,7 @@ These components have frequent user interactions and should be updated first:
 ### 3. Player Controls
 
 - **VideoPlayer.tsx**: All player control buttons
-- **PlyrPlayer.tsx**: Custom controls (already implemented)
+
 - **EpisodeNavigation.tsx**: Next/previous episode buttons
 - **MediaActions.tsx**: Share, favorite, watchlist buttons
 

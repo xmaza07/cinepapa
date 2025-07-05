@@ -228,9 +228,9 @@ const Profile = () => {
                   </div>
                   <Switch
                     checked={userPreferences?.isWatchHistoryEnabled}
-                    onCheckedChange={(checked) => {
+                    onCheckedChange={() => {
                       triggerHapticFeedback(20);
-                      toggleWatchHistory(checked);
+                      toggleWatchHistory();
                     }}
                     aria-label="Toggle watch history"
                   />
@@ -239,48 +239,7 @@ const Profile = () => {
                 {/* Accent Color Picker */}
                 <AccentColorPicker />
                 
-                {/* Video Source Preference */}
-                <div className="space-y-2">
-                  <h3 className="text-lg font-medium text-white">Preferred Video Source</h3>
-                  <p className="text-sm text-white/70">
-                    Select your default video source for movies and TV shows
-                  </p>
-                  <Select 
-                    value={userPreferences?.preferred_source || ''} 
-                    onValueChange={async (value) => {
-                      triggerSuccessHaptic();
-                      await updatePreferences({ preferred_source: value });
-                      await trackEvent({
-                        name: 'user_profile_update',
-                        params: {
-                          field: 'preferred_source',
-                          value,
-                          user: user?.email || user?.uid || 'unknown',
-                        },
-                      });
-                    }}
-                  >
-                    <SelectTrigger className="w-full sm:w-[200px] bg-white/10 border-white/20 text-white">
-                      <SelectValue placeholder="Select source" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-background border-white/10">
-                      {videoSources.map(source => (
-                        <SelectItem 
-                          key={source.key} 
-                          value={source.key}
-                          className="text-white focus:text-white focus:bg-white/10"
-                        >
-                          <div className="flex items-center gap-2">
-                            {userPreferences?.preferred_source === source.key && (
-                              <Check className="h-4 w-4" />
-                            )}
-                            {source.name}
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                {/* Video Source Preference removed */}
 
                 {/* Feature Notifications Toggle */}
                 <div className="flex items-center justify-between">
@@ -292,9 +251,9 @@ const Profile = () => {
                   </div>
                   <Switch
                     checked={userPreferences?.isNotificationsEnabled}
-                    onCheckedChange={(checked) => {
+                    onCheckedChange={() => {
                       triggerHapticFeedback(20);
-                      toggleNotifications(checked);
+                      toggleNotifications();
                     }}
                     aria-label="Toggle feature notifications"
                   />

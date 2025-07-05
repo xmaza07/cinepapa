@@ -54,15 +54,6 @@ export default {
 					DEFAULT: 'hsl(var(--card))',
 					foreground: 'hsl(var(--card-foreground))'
 				},
-				// Netflix Color System
-				netflix: {
-					black: '#000000',
-					red: '#E50914',
-					'dark-gray': '#141414',
-					'medium-gray': '#2F2F2F',
-					'light-gray': '#BABABA',
-					white: '#FFFFFF'
-				},
 				sidebar: {
 					DEFAULT: 'hsl(var(--sidebar-background))',
 					foreground: 'hsl(var(--sidebar-foreground))',
@@ -120,15 +111,6 @@ export default {
 				'pulse-slow': {
 					'0%, 100%': { opacity: '1' },
 					'50%': { opacity: '0.5' }
-				},
-				// Netflix-specific keyframes
-				'netflix-hover': {
-					'0%': { transform: 'scale(1)' },
-					'100%': { transform: 'scale(1.25)' }
-				},
-				'netflix-scale': {
-					'0%': { transform: 'scale(1) translateZ(0)' },
-					'100%': { transform: 'scale(1.1) translateZ(0)' }
 				}
 			},
 			animation: {
@@ -142,9 +124,6 @@ export default {
 				'pulse-slow': 'pulse-slow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
         gradient: 'gradient-shift 3s ease infinite',
         sparkle: 'sparkle 1.5s ease-out infinite',
-        // Netflix-specific animations
-        'netflix-hover': 'netflix-hover 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
-        'netflix-scale': 'netflix-scale 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
 			},
       backgroundSize: {
         '300%': '300% 300%',

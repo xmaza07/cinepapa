@@ -137,9 +137,10 @@ const ContinueWatching = ({ maxItems = 20 }: ContinueWatchingProps) => {
   };
   
   return (
-    <div className="px-4 md:px-12 mt-8 mb-16 pb-8">
-      <h2 className="text-xl md:text-2xl font-bold text-white mb-4">
-        Continue Watching for {user?.displayName || user?.email?.split('@')[0] || 'You'}
+    <div className="px-4 md:px-8 mt-8 mb-6">
+      <h2 className="text-2xl md:text-3xl font-extrabold text-white mb-6 flex items-center gap-2 drop-shadow">
+        <Clock className="h-6 w-6 text-accent" />
+        Continue Watching
       </h2>
       
       <div 
@@ -154,7 +155,7 @@ const ContinueWatching = ({ maxItems = 20 }: ContinueWatchingProps) => {
 
         <motion.div 
           ref={rowRef}
-          className="flex overflow-x-auto hide-scrollbar gap-1 pb-4"
+          className="flex overflow-x-auto hide-scrollbar gap-6 pb-4"
           onScroll={handleScroll}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}

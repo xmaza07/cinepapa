@@ -13,44 +13,35 @@
 
 @layer base {
   :root {
-    /* Netflix Color System */
-    --background: 0 0% 0%; /* Pure black */
-    --foreground: 0 0% 100%; /* Pure white */
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
 
-    --card: 0 0% 8%; /* Netflix dark gray #141414 */
-    --card-foreground: 0 0% 100%;
+    --card: 240 0% 3.9%; /* Changed saturation to 0% */
+    --card-foreground: 0 0% 98%;
 
-    --popover: 0 0% 8%;
-    --popover-foreground: 0 0% 100%;
+    --popover: 240 10% 3.9%;
+    --popover-foreground: 0 0% 98%;
 
-    --primary: 0 0% 100%; /* White for primary elements */
-    --primary-foreground: 0 0% 0%; /* Black text on white */
+    --primary: 0 0% 98%;
+    --primary-foreground: 240 5.9% 10%;
 
-    --secondary: 0 0% 18%; /* Netflix medium gray #2F2F2F */
-    --secondary-foreground: 0 0% 100%;
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
 
-    --muted: 0 0% 18%;
-    --muted-foreground: 0 0% 73%; /* Netflix light gray #BABABA */
+    --muted: 240 0% 15.9%; /* Changed saturation to 0% */
+    --muted-foreground: 240 0% 64.9%; /* Changed saturation to 0% */
 
-    --accent: 348 83% 47%; /* Netflix red #E50914 */
-    --accent-foreground: 0 0% 100%;
+    --accent: 347 80% 55%;  /* #E63462 in HSL */
+    --accent-foreground: 210 40% 98%;
 
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 0 0% 18%;
-    --input: 0 0% 18%;
-    --ring: 0 0% 73%;
+    --border: 240 0% 15.9%; /* Changed saturation to 0% */
+    --input: 240 0% 15.9%; /* Changed saturation to 0% */
+    --ring: 240 0% 83.9%; /* Changed saturation to 0% */
 
-    --radius: 0.25rem; /* Netflix uses smaller radius */
-    
-    /* Netflix-specific variables */
-    --netflix-header-height: 70px;
-    --netflix-row-spacing: 3rem;
-    --netflix-card-spacing: 0.25rem;
-    --netflix-hover-scale: 1.5;
-    --netflix-transition-duration: 0.3s;
-    --netflix-transition-timing: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    --radius: 0.75rem;
   }
 
   * {
@@ -112,43 +103,6 @@
   
   .text-shadow-sm {
     text-shadow: 0 1px 5px rgba(0, 0, 0, 0.4);
-  }
-  
-  /* Netflix-specific utility classes */
-  .netflix-button-primary {
-    @apply bg-white text-black border-none rounded font-bold px-6 py-2 text-base flex items-center gap-2 hover:bg-white/90 transition-colors;
-  }
-  
-  .netflix-button-secondary {
-    @apply bg-white/30 text-white border border-white/50 rounded font-bold px-6 py-2 hover:bg-white/40 transition-colors;
-  }
-  
-  .netflix-card {
-    @apply transition-transform duration-300 ease-out rounded overflow-hidden cursor-pointer;
-    transition-timing-function: var(--netflix-transition-timing);
-  }
-  
-  .netflix-card:hover {
-    transform: scale(var(--netflix-hover-scale));
-    z-index: 10;
-    box-shadow: 0 8px 34px rgba(0, 0, 0, 0.6);
-  }
-  
-  .netflix-gradient-left {
-    background: linear-gradient(to right, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.7) 30%, rgba(0, 0, 0, 0.3) 60%, rgba(0, 0, 0, 0) 100%);
-  }
-  
-  .netflix-gradient-bottom {
-    background: linear-gradient(to top, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.4) 50%, rgba(0, 0, 0, 0) 100%);
-  }
-  
-  .netflix-text {
-    font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
-    letter-spacing: -0.02em;
-  }
-  
-  .netflix-aspect-ratio {
-    aspect-ratio: 16 / 9;
   }
   
   /* Hero component monochromatic overlays */

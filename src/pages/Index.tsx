@@ -100,12 +100,11 @@ const Index = () => {
           </div>
         ) : (
           <>
-            {/* Netflix-style full-screen hero */}
-            <div className="w-full">
-              {trendingMedia.length > 0 && <Hero media={trendingMedia.slice(0, 10)} />}
+            <div className="pt-16 flex-shrink-0 w-full"> {/* Add padding-top to account for navbar */}
+              {trendingMedia.length > 0 && <Hero media={trendingMedia.slice(0, 10)} className="hero w-full px-0 md:px-0" />}
             </div>
 
-            <div className={`flex-1 flex flex-col bg-black transition-opacity duration-300 w-full px-0 md:px-0 ${contentVisible ? 'opacity-100' : 'opacity-0'}`}>
+            <div className={`flex-1 flex flex-col mt-8 md:mt-12 transition-opacity duration-300 w-full px-0 md:px-0 ${contentVisible ? 'opacity-100' : 'opacity-0'}`}>
               {user && <ContinueWatching />}
               <ContentRow title="Trending Now" media={trendingMedia} featured />
               <ContentRow title="Popular Movies" media={popularMovies} />

@@ -1,16 +1,14 @@
 /* ContentRow CSS Module */
 
 .container {
-  @apply px-4 md:px-12 mb-2 opacity-0 w-full;
+  @apply px-0 md:px-0 mb-8 opacity-0 w-full;
   animation: fade-in 0.6s ease-out forwards;
   animation-delay: 0.2s;
   animation-fill-mode: forwards;
 }
 
 .title {
-  @apply text-xl md:text-2xl font-bold text-white mb-2 text-left;
-  font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
-  letter-spacing: -0.02em;
+  @apply text-xl md:text-2xl font-bold text-white mb-4 text-left;
 }
 
 .scrollContainer {
@@ -47,10 +45,7 @@
 }
 
 .contentRow {
-  @apply flex overflow-x-auto gap-4 pb-8;
-  /* Allow hover effects to overflow */
-  overflow-y: visible;
-  background: linear-gradient(to right, rgba(0,0,0,0.1), rgba(0,0,0,0));
+  @apply flex overflow-x-auto gap-4 pb-4;
 }
 
 /* Hide scrollbar for webkit browsers */
@@ -70,11 +65,11 @@
 }
 
 .mediaItemRegular {
-  @apply w-[45vw] md:w-[22vw] lg:w-[18vw] max-w-[320px];
+  @apply w-[160px] md:w-[180px];
 }
 
 .mediaItemFeatured {
-  @apply w-[60vw] md:w-[30vw] lg:w-[25vw] max-w-[400px];
+  @apply w-[220px];
 }
 
 .loadMoreTrigger {

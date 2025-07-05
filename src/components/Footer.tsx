@@ -72,7 +72,7 @@ const Footer = () => {
   };
 
   return (
-    <footer className="mt-auto bg-black border-t border-gray-800 pt-12 pb-8">
+    <footer className="mt-auto bg-gradient-to-b from-black/60 to-black border-t border-white/10 pt-8 pb-6">
       <div className="max-w-6xl mx-auto px-4 md:px-8">
         <div className={`${isMobile ? 'flex flex-col' : 'grid grid-cols-1 md:grid-cols-4 gap-8'}`}>
           

@@ -4,31 +4,26 @@ import { Link, useNavigate } from 'react-router-dom';
 import { cn } from "@/lib/utils";
 import { triggerHapticFeedback, triggerSuccessHaptic } from '@/utils/haptic-feedback';
 import { Media } from '@/utils/types';
-import { backdropSizes, posterSizes } from '@/utils/api';
+import { posterSizes } from '@/utils/api';
 import { getImageUrl } from '@/utils/services/tmdb';
-import { Star, Info, Heart, Play, Plus, ThumbsUp, ChevronDown } from 'lucide-react';
+import { Star, Info, Heart } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { trackMediaPreference, trackMediaView } from '@/lib/analytics';
-import { NetflixButton } from '@/components/ui/netflix-button';
 
 interface MediaCardProps {
   media: Media;
   className?: string;
   featured?: boolean;
   minimal?: boolean;
-  isActive: boolean;
-  onCardClick: (id: number | string) => void;
 }
 
 /**
- * Netflix-style MediaCard component with 16:9 aspect ratio and hover effects
+ * MediaCard component displays a media item (movie or TV show) with poster, title, rating, and actions.
  * @param {MediaCardProps} props
  */
-const MediaCard = React.memo(({ media, className, featured = false, minimal = false, isActive, onCardClick }: MediaCardProps) => {
+const MediaCard = React.memo(({ media, className, featured = false, minimal = false }: MediaCardProps) => {
   const [imageError, setImageError] = useState(false);
   const [imgLoading, setImgLoading] = useState(true);
-  const [isHovered, setIsHovered] = useState(false);
-  const [hoverTimeout, setHoverTimeout] = useState<NodeJS.Timeout | null>(null);
   const { addToFavorites, removeFromFavorites, isInFavorites, addToWatchlist, removeFromWatchlist, isInWatchlist } = useWatchHistory();
   const [isFavorite, setIsFavorite] = useState(false);
   const [isInMyWatchlist, setIsInMyWatchlist] = useState(false);
@@ -49,8 +44,6 @@ const MediaCard = React.memo(({ media, className, featured = false, minimal = fa
   }, [media.id, media.media_type, isInFavorites, isInWatchlist]);
 
   const mediaId = media.media_id || media.id;
-
-  
 
   const detailPath = media.media_type === 'movie' 
     ? `/movie/${mediaId}` 
@@ -102,11 +95,13 @@ const MediaCard = React.memo(({ media, className, featured = false, minimal = fa
     e.stopPropagation();
     e.preventDefault();
     
+    // Different haptic feedback based on action (add/remove from watchlist)
     if (isInMyWatchlist) {
       triggerHapticFeedback(20);
       await removeFromWatchlist(media.id, media.media_type);
       setIsInMyWatchlist(false);
     } else {
+      // Success pattern for adding to watchlist
       triggerSuccessHaptic();
       await addToWatchlist({
         media_id: media.id,
@@ -119,51 +114,6 @@ const MediaCard = React.memo(({ media, className, featured = false, minimal = fa
       });
       setIsInMyWatchlist(true);
     }
-  };
-
-  // Netflix-style play handler
-  const handlePlay = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    e.preventDefault();
-    triggerHapticFeedback(25);
-    
-    if (media.media_type === 'tv') {
-      navigate(`/watch/tv/${media.id}/1/1`);
-    } else {
-      navigate(`/watch/${media.media_type}/${media.id}`);
-    }
-  };
-
-  // Netflix match percentage (mock for now)
-  const matchPercentage = Math.floor(Math.random() * 40) + 60; // 60-99%
-  
-  const title = media.title || media.name || 'Untitled';
-  const releaseYear = (media.release_date || media.first_air_date)?.substring(0, 4);
-
-  // Netflix-style hover delay
-
-  // Touch support: tap to toggle info panel on mobile
-  const isTouchDevice = typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0);
-
-  const handleMouseEnter = () => {
-    if (isTouchDevice) return;
-    if (hoverTimeout) clearTimeout(hoverTimeout);
-    const timeout = setTimeout(() => {
-      setIsHovered(true);
-    }, 500); // 500ms delay like Netflix
-    setHoverTimeout(timeout);
-  };
-
-  const handleMouseLeave = () => {
-    if (isTouchDevice) return;
-    if (hoverTimeout) clearTimeout(hoverTimeout);
-    setIsHovered(false);
-  };
-
-  // On touch, tap toggles info panel
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    e.stopPropagation();
-    setIsHovered((prev) => !prev);
   };
 
   if (minimal) {
@@ -191,142 +141,92 @@ const MediaCard = React.memo(({ media, className, featured = false, minimal = fa
   }
 
   return (
-    <motion.div
-      whileHover={{
-        scale: 1.10,
-        zIndex: 50,
-      }}
-      animate={isActive ? {
-        scale: 1.10,
-        zIndex: 50,
-      } : {}}
+    <Link
+      to={detailPath}
       className={cn(
-        "group/card relative cursor-pointer transition-all duration-300 ease-out",
-        "hover:z-50",
+        "relative block group/card transform transition-all duration-300 hover:-translate-y-2 focus:outline-none focus:ring-2 focus:ring-blue-500",
         className
       )}
-      style={{ borderColor: 'transparent', borderWidth: 2, borderStyle: 'solid' }}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-      onTouchEnd={handleTouchEnd}
-      onClick={() => onCardClick(media.id)}
+      onClick={handleClick}
+      aria-label={`View details for ${media.title || media.name}`}
+      tabIndex={0}
+      role="button"
     >
-      <motion.div
-        layout
-        className="relative overflow-hidden rounded bg-gray-900 shadow-lg"
-        transition={{ duration: 0.3, ease: "easeOut" }}
-        onClick={isActive ? handleClick : undefined}
-      >
-        {/* Netflix 16:9 aspect ratio container */}
-        <div className="relative aspect-video w-full">
+      <motion.div>
+        <div className="relative rounded-md overflow-hidden shadow-md aspect-[2/3]">
           {imgLoading && (
-            <div className="absolute inset-0 bg-gray-800 animate-pulse" />
+            <div className="absolute inset-0 bg-gray-800 animate-pulse z-10" aria-hidden="true" />
           )}
           <img
-            src={imageError ? '/placeholder.svg' : getImageUrl(media.backdrop_path, backdropSizes.medium) || '/placeholder.svg'}
-            alt={title}
-            className={cn(
-              "w-full h-full object-cover transition-opacity duration-300",
-              imgLoading ? "opacity-0" : "opacity-100"
-            )}
+            src={imageError ? '/placeholder.svg' : getImageUrl(media.poster_path, posterSizes.medium) || '/placeholder.svg'}
+            alt={media.title || media.name || 'Media Poster'}
+            className={cn("object-cover w-full h-full transition-transform duration-500 group-hover/card:scale-110", imgLoading ? "opacity-0" : "opacity-100")}
             loading="lazy"
             onError={handleImageError}
             onLoad={handleImageLoad}
           />
-          {/* Netflix-style gradient overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-          {/* Show title at the bottom when not hovered/active, and always show on mobile when info panel is open */}
-          {(!(isHovered || isActive) || (isHovered || isActive && window.innerWidth < 768)) && (
-            <div className="absolute bottom-0 left-0 right-0 bg-black/80 px-2 py-1 z-50">
-              <span className="block text-xs md:text-sm text-white font-bold truncate text-center drop-shadow-lg" style={{
-                textShadow: '0 2px 8px #000, 0 0px 2px #000',
-              }}>{title}</span>
-            </div>
-          )}
-        </div>
-
-        {/* Glassmorphism hover info panel */}
-        <motion.div
-          initial={{ opacity: 0, y: '100%' }}
-          animate={{
-            opacity: isHovered || isActive ? 1 : 0,
-            y: isHovered || isActive ? 0 : '100%',
-            scale: isHovered || isActive ? 1.05 : 1,
-          }}
-          transition={{
-            type: 'spring',
-            stiffness: 400,
-            damping: 28,
-            duration: 0.35,
-            ease: 'backOut',
-          }}
-          className={cn(
-            "absolute inset-x-0 bottom-0 bg-black/50 backdrop-blur-lg border-t border-white/20 p-4 space-y-3 shadow-2xl",
-            "md:rounded-b-lg md:inset-x-0 md:bottom-0 md:top-auto md:h-auto md:w-auto",
-            "rounded-b-lg",
-            "!h-full !w-full !top-0 !left-0 !right-0 !bottom-0 z-50 flex flex-col justify-end md:static md:flex-none md:justify-normal",
-            !(isHovered || isActive) && "pointer-events-none",
-          )}
-          style={{
-            ...(isHovered || isActive ? {
-              // On small screens, make the info panel cover the card
-              borderRadius: window.innerWidth < 768 ? 12 : undefined,
-            } : {}),
-          }}
-        >
-            {/* Match percentage and year */}
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-green-400 font-bold">{matchPercentage}% Match</span>
-              {releaseYear && <span className="text-gray-300">{releaseYear}</span>}
-            </div>
-            {/* Title */}
-            <h3 className="text-white font-bold text-base line-clamp-1">{title}</h3>
-            {/* Action buttons */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <button
-                  onClick={handlePlay}
-                  className="w-9 h-9 bg-white/90 rounded-full flex items-center justify-center hover:bg-white transition-colors"
-                  aria-label="Play"
-                >
-                  <Play className="w-5 h-5 text-black fill-current" />
-                </button>
-                <button
-                  onClick={handleWatchlistClick}
-                  className="w-9 h-9 bg-white/20 rounded-full flex items-center justify-center hover:bg-white/30 transition-colors"
-                  aria-label={isInMyWatchlist ? "Remove from list" : "Add to list"}
-                >
-                  <Plus className={cn("w-5 h-5 text-white transition-transform", isInMyWatchlist && "rotate-45")} />
-                </button>
-                <button
-                  onClick={handleFavoriteClick}
-                  className="w-9 h-9 bg-white/20 rounded-full flex items-center justify-center hover:bg-white/30 transition-colors"
-                  aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
-                >
-                  <ThumbsUp className={cn("w-5 h-5 transition-colors", isFavorite ? "text-white" : "text-gray-300")} />
-                </button>
-              </div>
-              <Link
-                to={`/${media.media_type}/${media.id}`}
-                className="w-9 h-9 bg-white/20 rounded-full flex items-center justify-center hover:bg-white/30 transition-colors"
-                aria-label="More info"
-              >
-                <ChevronDown className="w-5 h-5 text-white" />
-              </Link>
-            </div>
-            {/* Genres/Rating */}
-            <div className="flex items-center justify-between text-xs text-gray-300">
-              <span>{media.media_type === 'movie' ? 'Movie' : 'Series'}</span>
-              {media.vote_average > 0 && (
-                <div className="flex items-center space-x-1">
-                  <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-                  <span>{media.vote_average.toFixed(1)}</span>
-                </div>
+          <div className="absolute top-2 right-2 z-20 flex flex-col gap-2">
+            <button
+              className={cn(
+                "p-1 rounded-full bg-black/60 hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-400 transition-colors",
+                isFavorite ? "text-red-500" : "text-white"
               )}
+              aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
+              onClick={handleFavoriteClick}
+              tabIndex={0}
+              type="button"
+              role="button"
+            >
+              <Heart size={20} fill={isFavorite ? "#ef4444" : "none"} />
+            </button>
+            <button
+              className={cn(
+                "p-1 rounded-full bg-black/60 hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-colors",
+                isInMyWatchlist ? "text-blue-400" : "text-white"
+              )}
+              aria-label={isInMyWatchlist ? "Remove from watchlist" : "Add to watchlist"}
+              onClick={handleWatchlistClick}
+              tabIndex={0}
+              type="button"
+              role="button"
+            >
+              <svg width="20" height="20" fill={isInMyWatchlist ? "#60a5fa" : "none"} stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M5 5v14l7-5 7 5V5a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2z" /></svg>
+            </button>
+          </div>
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover/card:opacity-100 transition-opacity duration-300 pointer-events-none" />
+          <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/90 to-transparent translate-y-full group-hover/card:translate-y-0 transition-transform duration-300">
+            <p className="text-white/80 text-xs line-clamp-3">{media.overview}</p>
+            <div className="flex justify-center mt-2">
+              <button
+                className="glass px-3 py-1 rounded text-xs flex items-center gap-1 text-white hover:bg-white/20 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400"
+                aria-label="Show details"
+                tabIndex={0}
+                type="button"
+                role="button"
+              >
+                <Info size={12} /> Details
+              </button>
             </div>
-        </motion.div>
+          </div>
+        </div>
+        <div className="mt-2 px-1 transition-all duration-300 group-hover/card:translate-y-0">
+          <h3 className="text-white font-medium line-clamp-1 text-balance">{media.title || media.name}</h3>
+          <div className="flex items-center justify-between mt-1 text-sm text-white/70">
+            <span className="line-clamp-1">
+              {media.media_type === 'movie'
+                ? media.release_date?.substring(0, 4)
+                : media.first_air_date?.substring(0, 4)}
+            </span>
+            {media.vote_average > 0 && (
+              <div className="flex items-center text-amber-400">
+                <Star className="h-4 w-4 mr-1 fill-amber-400 group-hover/card:animate-pulse" />
+                {media.vote_average.toFixed(1)}
+              </div>
+            )}
+          </div>
+        </div>
       </motion.div>
-    </motion.div>
+    </Link>
   );
 });
 

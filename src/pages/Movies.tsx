@@ -253,7 +253,7 @@ const Movies = () => {
                 <div className="py-12 text-center text-white">Error loading movies. Please try again.</div>
               ) : (
                 <>
-                  <MediaGrid media={ensureExtendedMediaArray(filteredTopRatedMovies)} title="Top Rated Movies" listView={viewMode === 'list'} />
+                  {/* <MediaGrid media={ensureExtendedMediaArray(filteredTopRatedMovies)} title="Top Rated Movies" listView={viewMode === 'list'} /> */}
                   
                   {hasMoreTopRated && (
                     <div className="flex justify-center my-8">

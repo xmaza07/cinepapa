@@ -3,7 +3,6 @@ import {
   getTrending,
   getPopularMovies,
   getPopularTVShows,
-  getTopRatedMovies,
   getTopRatedTVShows,
 } from '@/utils/api';
 import { Media } from '@/utils/types';
@@ -24,7 +23,7 @@ const Index = () => {
   const [trendingMedia, setTrendingMedia] = useState<Media[]>([]);
   const [popularMovies, setPopularMovies] = useState<Media[]>([]);
   const [popularTVShows, setPopularTVShows] = useState<Media[]>([]);
-  const [topRatedMovies, setTopRatedMovies] = useState<Media[]>([]);
+  // const [topRatedMovies, setTopRatedMovies] = useState<Media[]>([]);
   const [topRatedTVShows, setTopRatedTVShows] = useState<Media[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [contentVisible, setContentVisible] = useState(false);
@@ -39,13 +38,11 @@ const Index = () => {
           trendingData,
           popularMoviesData,
           popularTVData,
-          topMoviesData,
           topTVData
         ] = await Promise.all([
           getTrending(),
           getPopularMovies(),
           getPopularTVShows(),
-          getTopRatedMovies(),
           getTopRatedTVShows()
         ]);
 
@@ -54,7 +51,6 @@ const Index = () => {
         setTrendingMedia(filteredTrendingData);
         setPopularMovies(popularMoviesData);
         setPopularTVShows(popularTVData);
-        setTopRatedMovies(topMoviesData);
         setTopRatedTVShows(topTVData);
       } catch (error) {
         console.error('Error fetching homepage data:', error);
@@ -109,7 +105,6 @@ const Index = () => {
               <ContentRow title="Trending Now" media={trendingMedia} featured />
               <ContentRow title="Popular Movies" media={popularMovies} />
               <ContentRow title="Popular TV Shows" media={popularTVShows} />
-              <ContentRow title="Top Rated Movies" media={topRatedMovies} />
               <ContentRow title="Top Rated TV Shows" media={topRatedTVShows} />
               {/* Lazy load secondary content */}
               {secondaryLoaded && (

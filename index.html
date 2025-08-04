@@ -1,25 +1,35 @@
-
 <!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.ico" />
+    <link rel="icon" type="image/png" href="/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#000000" />
+    <meta name="theme-color" content="#3b82f6" />
+    
+    <meta name="description" content="Stream movies and TV shows online with Cinepapa." />
     <link rel="apple-touch-icon" href="/apple-icon-180.png" />
-    <link rel="manifest" href="/manifest.json" />
-    <meta name="description" content="Streaming movies and TV shows" />
-    <!-- Preload critical assets -->
+    <link rel="manifest" href="/manifest.json?v=3" />
+
+    <!-- Preload logo -->
     <link rel="preload" href="/logo.jpeg" as="image" />
-  
-     
+    
   <!-- Google Fonts: Audiowide -->
     <link href="https://fonts.googleapis.com/css2?family=Audiowide&display=swap" rel="stylesheet" />
-
-    
+  
     <title>Cinepapa</title>
+
+    <style>
+      body {
+        font-family: 'Audiowide', cursive;
+        background-color: #000;
+        margin: 0;
+        padding: 0;
+        color: #00ffff;
+      }
+    </style>
+
     <script>
-      // URL and base path for easier debugging in console
+      // URL and base path for debugging and asset paths
       window.appBaseUrl = window.location.origin;
       try {
         window.appBasePath = import.meta.env?.BASE_URL || "/";
@@ -28,10 +38,101 @@
       }
     </script>
   </head>
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const lastShown = localStorage.getItem("telegramMessageLastShown");
+    const now = Date.now();
+
+    // 24 hours in milliseconds
+    const oneDay = 24 * 60 * 60 * 1000;
+
+    if (!lastShown || now - lastShown > oneDay) {
+      // Save the current time as last shown
+      localStorage.setItem("telegramMessageLastShown", now.toString());
+
+      // Create the Telegram message container
+      const telegramMessage = document.createElement("div");
+      telegramMessage.id = "telegramMessage";
+      telegramMessage.style.position = "fixed";
+      telegramMessage.style.top = "50%";
+      telegramMessage.style.left = "50%";
+      telegramMessage.style.transform = "translate(-50%, -50%)";
+      telegramMessage.style.backgroundColor = "#0088cc";
+      telegramMessage.style.color = "white";
+      telegramMessage.style.padding = "20px";
+      telegramMessage.style.borderRadius = "15px";
+      telegramMessage.style.display = "flex";
+      telegramMessage.style.flexDirection = "column";
+      telegramMessage.style.alignItems = "center";
+      telegramMessage.style.justifyContent = "center";
+      telegramMessage.style.boxShadow = "0 4px 15px rgba(0, 0, 0, 0.3)";
+      telegramMessage.style.opacity = "0";
+      telegramMessage.style.transition = "opacity 0.5s ease";
+      telegramMessage.style.zIndex = "1000";
+      telegramMessage.style.textAlign = "center";
+      telegramMessage.style.width = "90%";
+      telegramMessage.style.maxWidth = "400px";
+
+      // Telegram icon
+      const telegramIcon = document.createElement("img");
+      telegramIcon.src = "https://upload.wikimedia.org/wikipedia/commons/8/82/Telegram_logo.svg";
+      telegramIcon.alt = "Telegram Icon";
+      telegramIcon.style.width = "60px";
+      telegramIcon.style.height = "60px";
+      telegramIcon.style.borderRadius = "50%";
+      telegramIcon.style.marginBottom = "10px";
+      telegramIcon.style.boxShadow = "0 2px 5px rgba(0, 0, 0, 0.2)";
+
+      // Link
+      const telegramLink = document.createElement("a");
+      telegramLink.href = "https://telegram.me/cine_papa";
+      telegramLink.target = "_blank";
+      telegramLink.style.color = "white";
+      telegramLink.style.textDecoration = "none";
+      telegramLink.style.fontSize = "18px";
+      telegramLink.style.fontWeight = "bold";
+      telegramLink.style.marginBottom = "10px";
+      telegramLink.textContent = "Join us on Telegram";
+
+      // Countdown timer
+      const timer = document.createElement("div");
+      timer.id = "countdownTimer";
+      timer.style.color = "white";
+      timer.style.fontSize = "14px";
+      timer.style.marginTop = "10px";
+
+      // Append elements
+      telegramMessage.appendChild(telegramIcon);
+      telegramMessage.appendChild(telegramLink);
+      telegramMessage.appendChild(timer);
+      document.body.appendChild(telegramMessage);
+
+      // Fade in
+      setTimeout(() => {
+        telegramMessage.style.opacity = "1";
+      }, 500);
+
+      // Countdown
+      let timeLeft = 5;
+      const countdown = setInterval(() => {
+        timer.textContent = `Closing in ${timeLeft} second${timeLeft === 1 ? "" : "s"}...`;
+        timeLeft -= 1;
+        if (timeLeft < 0) {
+          clearInterval(countdown);
+          telegramMessage.style.opacity = "0";
+          setTimeout(() => {
+            telegramMessage.remove();
+          }, 500);
+        }
+      }, 1000);
+    }
+  });
+</script>
   <body>
     <div id="root"></div>
     <noscript>You need to enable JavaScript to run this app.</noscript>
-    <!-- Service worker registration happens in src/utils/register-sw.ts -->
+
+    <!-- Main JS Entry -->
     <script type="module" src="/src/main.tsx"></script>
     <script src="https://cdn.gpteng.co/gptengineer.js" defer></script>
   </body>

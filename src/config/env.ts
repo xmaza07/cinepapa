@@ -2,7 +2,7 @@
 interface EnvConfig {
   GEMINI_API_KEY: string;
   TMDB_API_KEY: string;
-  NODE_ENV: 'development' | 'production' | 'test';
+  NODE_ENV: 'production' | 'production' | 'test';
 }
 
 // For development/demo purposes, using mock values
@@ -10,7 +10,7 @@ interface EnvConfig {
 const env: EnvConfig = {
   GEMINI_API_KEY: '',
   TMDB_API_KEY: '',
-  NODE_ENV: 'development' // or 'development', 'test'
+  NODE_ENV: 'production' // or 'development', 'test'
 };
 
 export default env;

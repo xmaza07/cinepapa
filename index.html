@@ -18,6 +18,23 @@
   
     <title>Cinepapa</title>
 
+    <!-- Non-Routes Support -->
+  <script>
+  // Wait until page is loaded
+  window.addEventListener("DOMContentLoaded", () => {
+    const params = new URLSearchParams(window.location.search);
+    const redirectPath = params.get("redirect");
+
+    if (redirectPath) {
+      setTimeout(() => {
+        window.location.href = "/" + redirectPath;
+      }, 3000); // 3 seconds
+    }
+  });
+</script>
+
+    <!-- Non ROutes Support End Here -->
+
     <style>
       body {
         font-family: 'Audiowide', cursive;

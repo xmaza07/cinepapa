@@ -45,25 +45,24 @@
   document.addEventListener("DOMContentLoaded", () => {
     const lastShown = localStorage.getItem("telegramMessageLastShown");
     const now = Date.now();
-
-    // 24 hours in milliseconds
     const oneDay = 24 * 60 * 60 * 1000;
 
     if (!lastShown || now - lastShown > oneDay) {
-      // Save the current time as last shown
       localStorage.setItem("telegramMessageLastShown", now.toString());
 
-      // Create the Telegram message container
       const telegramMessage = document.createElement("div");
       telegramMessage.id = "telegramMessage";
       telegramMessage.style.position = "fixed";
       telegramMessage.style.top = "50%";
       telegramMessage.style.left = "50%";
       telegramMessage.style.transform = "translate(-50%, -50%)";
-      telegramMessage.style.backgroundColor = "#0088cc";
+      telegramMessage.style.background = "rgba(0, 0, 0, 0.6)";
+      telegramMessage.style.backdropFilter = "blur(12px)";
+      telegramMessage.style.webkitBackdropFilter = "blur(12px)";
+      telegramMessage.style.border = "1px solid rgba(255, 255, 255, 0.1)";
       telegramMessage.style.color = "white";
       telegramMessage.style.padding = "20px";
-      telegramMessage.style.borderRadius = "15px";
+      telegramMessage.style.borderRadius = "20px";
       telegramMessage.style.display = "flex";
       telegramMessage.style.flexDirection = "column";
       telegramMessage.style.alignItems = "center";
@@ -71,10 +70,11 @@
       telegramMessage.style.boxShadow = "0 4px 15px rgba(0, 0, 0, 0.3)";
       telegramMessage.style.opacity = "0";
       telegramMessage.style.transition = "opacity 0.5s ease";
-      telegramMessage.style.zIndex = "1000";
+      telegramMessage.style.zIndex = "99999";
       telegramMessage.style.textAlign = "center";
       telegramMessage.style.width = "90%";
       telegramMessage.style.maxWidth = "400px";
+      telegramMessage.style.fontFamily = "'Audiowide', cursive";
 
       // Telegram icon
       const telegramIcon = document.createElement("img");
@@ -86,7 +86,7 @@
       telegramIcon.style.marginBottom = "10px";
       telegramIcon.style.boxShadow = "0 2px 5px rgba(0, 0, 0, 0.2)";
 
-      // Link
+      // Telegram link
       const telegramLink = document.createElement("a");
       telegramLink.href = "https://telegram.me/cine_papa";
       telegramLink.target = "_blank";
@@ -97,6 +97,15 @@
       telegramLink.style.marginBottom = "10px";
       telegramLink.textContent = "Join us on Telegram";
 
+      // VPN warning
+      const vpnMessage = document.createElement("div");
+      vpnMessage.textContent = "🔒 Turn on VPN if content is not showing. Recommended: 1.1.1.1";
+      vpnMessage.style.fontSize = "13px";
+      vpnMessage.style.color = "rgba(255, 255, 255, 0.8)";
+      vpnMessage.style.marginTop = "5px";
+      vpnMessage.style.marginBottom = "10px";
+      vpnMessage.style.lineHeight = "1.4";
+
       // Countdown timer
       const timer = document.createElement("div");
       timer.id = "countdownTimer";
@@ -104,16 +113,17 @@
       timer.style.fontSize = "14px";
       timer.style.marginTop = "10px";
 
-      // Append elements
+      // Assemble popup
       telegramMessage.appendChild(telegramIcon);
       telegramMessage.appendChild(telegramLink);
+      telegramMessage.appendChild(vpnMessage);
       telegramMessage.appendChild(timer);
       document.body.appendChild(telegramMessage);
 
       // Fade in
       setTimeout(() => {
         telegramMessage.style.opacity = "1";
-      }, 500);
+      }, 300);
 
       // Countdown
       let timeLeft = 5;

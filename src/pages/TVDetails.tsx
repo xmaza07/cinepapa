@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import ContentRow from '@/components/ContentRow';
 import Navbar from '@/components/Navbar';
@@ -23,24 +23,66 @@ const TVDetailsPage = () => {
   const isMobile = useIsMobile();
   const [activeTab, setActiveTab] = useState<TabType>('episodes');
   const { user } = useAuth();
-  
-  const { 
-    tvShow, 
-    episodes, 
-    selectedSeason, 
-    setSelectedSeason, 
-    isLoading, 
-    error, 
-    recommendations, 
-    cast, 
+
+  const {
+    tvShow,
+    episodes,
+    selectedSeason,
+    setSelectedSeason,
+    isLoading,
+    error,
+    recommendations,
+    cast,
     trailerKey,
-    isFavorite, 
-    isInMyWatchlist, 
-    handlePlayEpisode, 
-    handleToggleFavorite, 
-    handleToggleWatchlist, 
-    getLastWatchedEpisode
+    isFavorite,
+    isInMyWatchlist,
+    handlePlayEpisode,
+    handleToggleFavorite,
+    handleToggleWatchlist,
+    getLastWatchedEpisode,
   } = useTVDetails(id);
+
+  // Disqus integration
+  useEffect(() => {
+    if (!tvShow?.id) return;
+
+    // Define Disqus configuration
+    (window as any).disqus_config = function () {
+      this.page.url = window.location.href; // Current page URL
+      this.page.identifier = `tv-${tvShow.id}`; // Unique identifier for the TV show
+      this.page.title = tvShow.name; // TV show title
+    };
+
+    // Load Disqus script
+    const loadDisqus = () => {
+      const d = document;
+      const s = d.createElement('script');
+      s.src = 'https://cinepapa.disqus.com/embed.js';
+      s.setAttribute('data-timestamp', `${+new Date()}`);
+      s.async = true;
+      (d.head || d.body).appendChild(s);
+    };
+
+    // Reset or load Disqus
+    if ((window as any).DISQUS) {
+      // Reset Disqus for new TV show
+      (window as any).DISQUS.reset({
+        reload: true,
+        config: (window as any).disqus_config,
+      });
+    } else {
+      // Load Disqus for the first time
+      loadDisqus();
+    }
+
+    // Cleanup: Clear thread content (but keep script for performance)
+    return () => {
+      const disqusThread = document.getElementById('disqus_thread');
+      if (disqusThread) {
+        disqusThread.innerHTML = '';
+      }
+    };
+  }, [tvShow?.id, tvShow?.name]);
 
   if (isLoading) {
     return (
@@ -49,7 +91,7 @@ const TVDetailsPage = () => {
       </div>
     );
   }
-  
+
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-background">
@@ -60,7 +102,7 @@ const TVDetailsPage = () => {
       </div>
     );
   }
-  
+
   if (!tvShow) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-background">
@@ -71,20 +113,20 @@ const TVDetailsPage = () => {
       </div>
     );
   }
-  
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      
+
       <div className="relative">
-        <button 
+        <button
           onClick={() => navigate(-1)}
           className="absolute top-20 left-6 z-10 text-white p-2 rounded-full bg-black/30 hover:bg-black/50 transition-colors"
           aria-label="Go back"
         >
           <ArrowLeft className="h-5 w-5" />
         </button>
-        
+
         {!isMobile && trailerKey && (
           <div className="absolute inset-0 bg-black/60">
             <iframe
@@ -96,7 +138,7 @@ const TVDetailsPage = () => {
           </div>
         )}
 
-        <TVShowHeader 
+        <TVShowHeader
           tvShow={tvShow}
           isFavorite={isFavorite}
           isInWatchlist={isInMyWatchlist}
@@ -106,13 +148,13 @@ const TVDetailsPage = () => {
           lastWatchedEpisode={getLastWatchedEpisode()}
         />
       </div>
-      
+
       <div className="max-w-6xl mx-auto px-4 py-8">
         <div className="flex border-b border-white/10 mb-6 overflow-x-auto pb-1 hide-scrollbar">
           <button
             className={`py-2 px-4 font-medium whitespace-nowrap ${
-              activeTab === 'episodes' 
-                ? 'text-white border-b-2 border-accent' 
+              activeTab === 'episodes'
+                ? 'text-white border-b-2 border-accent'
                 : 'text-white/60 hover:text-white'
             }`}
             onClick={() => setActiveTab('episodes')}
@@ -121,9 +163,7 @@ const TVDetailsPage = () => {
           </button>
           <button
             className={`py-2 px-4 font-medium whitespace-nowrap ${
-              activeTab === 'about' 
-                ? 'text-white border-b-2 border-accent' 
-                : 'text-white/60 hover:text-white'
+              activeTab === 'about' ? 'text-white border-b-2 border-accent' : 'text-white/60 hover:text-white'
             }`}
             onClick={() => setActiveTab('about')}
           >
@@ -131,9 +171,7 @@ const TVDetailsPage = () => {
           </button>
           <button
             className={`py-2 px-4 font-medium whitespace-nowrap ${
-              activeTab === 'cast' 
-                ? 'text-white border-b-2 border-accent' 
-                : 'text-white/60 hover:text-white'
+              activeTab === 'cast' ? 'text-white border-b-2 border-accent' : 'text-white/60 hover:text-white'
             }`}
             onClick={() => setActiveTab('cast')}
           >
@@ -141,9 +179,7 @@ const TVDetailsPage = () => {
           </button>
           <button
             className={`py-2 px-4 font-medium whitespace-nowrap ${
-              activeTab === 'reviews' 
-                ? 'text-white border-b-2 border-accent' 
-                : 'text-white/60 hover:text-white'
+              activeTab === 'reviews' ? 'text-white border-b-2 border-accent' : 'text-white/60 hover:text-white'
             }`}
             onClick={() => setActiveTab('reviews')}
           >
@@ -151,9 +187,7 @@ const TVDetailsPage = () => {
           </button>
           <button
             className={`py-2 px-4 font-medium whitespace-nowrap ${
-              activeTab === 'downloads' 
-                ? 'text-white border-b-2 border-accent' 
-                : 'text-white/60 hover:text-white'
+              activeTab === 'downloads' ? 'text-white border-b-2 border-accent' : 'text-white/60 hover:text-white'
             }`}
             onClick={() => setActiveTab('downloads')}
             style={{ display: user ? undefined : 'none' }}
@@ -161,9 +195,9 @@ const TVDetailsPage = () => {
             Downloads
           </button>
         </div>
-        
+
         {activeTab === 'episodes' && (
-          <TVShowEpisodes 
+          <TVShowEpisodes
             seasons={tvShow.seasons}
             episodes={episodes}
             selectedSeason={selectedSeason}
@@ -171,15 +205,11 @@ const TVDetailsPage = () => {
             onPlayEpisode={handlePlayEpisode}
           />
         )}
-        
-        {activeTab === 'about' && (
-          <TVShowAbout tvShow={tvShow} />
-        )}
-        
-        {activeTab === 'cast' && (
-          <TVShowCast cast={cast} />
-        )}
-        
+
+        {activeTab === 'about' && <TVShowAbout tvShow={tvShow} />}
+
+        {activeTab === 'cast' && <TVShowCast cast={cast} />}
+
         {activeTab === 'reviews' && (
           <div className="mb-8">
             <h2 className="text-2xl font-bold text-white mb-6">User Reviews</h2>
@@ -194,22 +224,30 @@ const TVDetailsPage = () => {
               tvShowName={tvShow.name}
               seasons={tvShow.seasons}
               episodesBySeason={Object.fromEntries(
-                tvShow.seasons.map(season => [
+                tvShow.seasons.map((season) => [
                   season.season_number,
-                  (episodes || []).filter(ep => ep.season_number === season.season_number)
+                  (episodes || []).filter((ep) => ep.season_number === season.season_number),
                 ])
               )}
             />
           </div>
         )}
       </div>
-      
+
       {recommendations.length > 0 && (
-        <ContentRow
-          title="More Like This"
-          media={recommendations}
-        />
+        <ContentRow title="More Like This" media={recommendations} />
       )}
+
+      {/* Disqus Comments Section */}
+      <div className="max-w-6xl mx-auto px-4 py-8">
+        <h3 className="text-xl font-semibold text-white mb-4">Comments</h3>
+        <div id="disqus_thread">
+          <p className="text-white/70">Loading comments... If comments do not load, please check your connection or try again later.</p>
+        </div>
+        <noscript>
+          Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a>
+        </noscript>
+      </div>
     </div>
   );
 };
